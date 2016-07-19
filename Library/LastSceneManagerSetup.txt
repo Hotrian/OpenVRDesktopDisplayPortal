@@ -1,0 +1,4 @@
+sceneSetups:
+- path: Assets/HOTK/Example Content/HOTK_DisplayMirror.unity
+  isLoaded: 1
+  isActive: 1

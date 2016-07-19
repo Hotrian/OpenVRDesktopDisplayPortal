@@ -1,0 +1,32 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2015
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenVRDesktopDisplayPortal.CSharp.Plugins", "OpenVRDesktopDisplayPortal.CSharp.Plugins.csproj", "{390FC235-D1B8-0C16-8132-F5C4668D6406}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenVRDesktopDisplayPortal.CSharp", "OpenVRDesktopDisplayPortal.CSharp.csproj", "{1D65418B-7D9F-8E74-7EF9-9B5AF7DC875F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenVRDesktopDisplayPortal.CSharp.Editor", "OpenVRDesktopDisplayPortal.CSharp.Editor.csproj", "{390D7AE8-2ACF-766D-5182-7AB0DDBB4A86}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{390FC235-D1B8-0C16-8132-F5C4668D6406}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{390FC235-D1B8-0C16-8132-F5C4668D6406}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{390FC235-D1B8-0C16-8132-F5C4668D6406}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{390FC235-D1B8-0C16-8132-F5C4668D6406}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1D65418B-7D9F-8E74-7EF9-9B5AF7DC875F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1D65418B-7D9F-8E74-7EF9-9B5AF7DC875F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1D65418B-7D9F-8E74-7EF9-9B5AF7DC875F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1D65418B-7D9F-8E74-7EF9-9B5AF7DC875F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{390D7AE8-2ACF-766D-5182-7AB0DDBB4A86}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{390D7AE8-2ACF-766D-5182-7AB0DDBB4A86}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{390D7AE8-2ACF-766D-5182-7AB0DDBB4A86}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{390D7AE8-2ACF-766D-5182-7AB0DDBB4A86}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
