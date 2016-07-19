@@ -48,7 +48,7 @@ public class TooltipController : MonoBehaviour
     public void SetTooltipText(string text)
     {
         if (_tooltipText == null) return;
-        _tooltipText.text = text;
+        _tooltipText.text = text.Replace("<br>", "\n");
         Tooltip.SetActive(!string.IsNullOrEmpty(text));
         _tooltipRectTransform.sizeDelta = new Vector2(_tooltipText.preferredWidth, _tooltipText.preferredHeight);
     }

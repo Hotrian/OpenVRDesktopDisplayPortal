@@ -50,6 +50,7 @@ public class DropdownMatchEnumOptions : MonoBehaviour
             default:
                 throw new ArgumentOutOfRangeException();
         }
+        Dropdown.onValueChanged.Invoke(0);
     }
 
     private bool SetToRightController = false;
