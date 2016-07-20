@@ -1,3 +1,5 @@
+[![Donate](https://img.shields.io/badge/Donate-PayPal-blue.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=UK5EVMA4DFBWY)
+
 This is a stripped down version of the SteamVR Unity Plugin with a custom Overlay script that displays _almost_ any Desktop Window in VR :D
 
 To use this download the [latest release](https://github.com/Hotrian/OpenVRDesktopDisplayPortal/releases), then click on the dropdown menu at the top left (see the example graphic down below), then configure the overlay to your liking :). You can hold your mouse over the UI elements for some hints on usage. More detailed instructions are down below.
