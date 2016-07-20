@@ -7,6 +7,17 @@ See also my [OpenVRTwitchChat](https://github.com/Hotrian/OpenVRTwitchChat) prog
 #### Oculus Rift users:
 We're receiving reports that some Rift users find some games are incompatible with the SteamVR Overlay system. You can read more about it in [the issue posted here](https://github.com/Hotrian/OpenVRTwitchChat/issues/4). The jist of things is that some games seem to skip the SteamVR Compositor and draw directly to the Rift instead. Check the SteamVR Display Mirror and see if you can see the Overlays there. If you can see the Overlays in the Mirror but not the Rift, then that game is probably incompatible :(. Please post your findings in [the issue](https://github.com/Hotrian/OpenVRTwitchChat/issues/4).
 
+## Table of Contents
+- [Example](https://github.com/Hotrian/OpenVRDesktopDisplayPortal#example)
+- [Features](https://github.com/Hotrian/OpenVRDesktopDisplayPortal#features)
+- [Demos](https://github.com/Hotrian/OpenVRDesktopDisplayPortal#demos)
+- [Instructions](https://github.com/Hotrian/OpenVRDesktopDisplayPortal#instructions)
+- [Tested Applications](https://github.com/Hotrian/OpenVRDesktopDisplayPortal#tested-applications)
+- [Known Issues](https://github.com/Hotrian/OpenVRDesktopDisplayPortal#known-issues)
+- [Additional Notes / Tips & Tricks](https://github.com/Hotrian/OpenVRDesktopDisplayPortal#additional-notes--tips--tricks)
+- [How can I help?](https://github.com/Hotrian/OpenVRDesktopDisplayPortal#how-can-i-help)
+- [Special Thanks](https://github.com/Hotrian/OpenVRDesktopDisplayPortal#special-thanks)
+
 ## Example
 ![example](http://i.imgur.com/dQHNuGP.png)
 
@@ -17,6 +28,7 @@ We're receiving reports that some Rift users find some games are incompatible wi
 - Offset Overlays positionally and rotationally.
 - Basic Gaze Detection and Animation support (Fade In/Out and/or Scale Up/Down on Gaze).
 - Basic Save/Load Support! Only saves some settings right now.
+- Multiple windows! Run the exe multiple times and configure them as desired!
 
 ## Demos
 Netflix in Tiltbrush:
@@ -34,6 +46,30 @@ Netflix in Tiltbrush:
 - Finally, The [bottom right](http://image.prntscr.com/image/61e64d0420f144409345f4a6b96c31f6.png) controls the Alpha and Scale of the overlay. You can also choose an animation (fade in/out and/or scale up/down) that will occur when you look directly at the overlay. Again, mouseover these to see exactly which one does what.
 - One last tip is that the window is resizeable and [you can make it pretty small](http://i.imgur.com/Mjy24cv.png) without overlapping any of the controls if you want to :).
 
+## Tested Applications
+#### Mirrored from:
+| App Name      | Working       | Not working  |
+|:------------- |:-------------:|:------------:|
+| Firefox       | ☑             |              |
+| Hulu          | ☑             |              |
+| Netflix       | ☑             |              |
+| Skype         | ☑             |              |
+| VLC           | ☑             |              |
+| Youtube       | ☑             |              |
+#### Mirrored to:
+(This just tracks which games support SteamVR overlays since they should otherwise work in every SteamVR game)
+
+(Should work in all games on the Vive, but it will be noted here if we find any that do not)
+
+| SteamVR App Name                | Working       | Not working (Vive) | Not working (Rift) | Links |
+|:------------------------------- |:-------------:|:------------------:|:------------------:|:-----:|
+| Elite Dangerous                 | ?             |                    | ☒?                 | [1](https://github.com/Hotrian/OpenVRTwitchChat/issues/4) [2](https://www.reddit.com/r/SteamVR/comments/4jc1u1/steamvr_overlay_not_working_with_oculus_rift_some/d37jgzn) |
+| Keep Talking and Nobody Explodes| ?             |                    | ☒?                 | [1](https://github.com/Hotrian/OpenVRTwitchChat/issues/4) |
+| Project Cars                    | ?             |                    | ☒?                 | [1](https://www.reddit.com/r/SteamVR/comments/4jc1u1/steamvr_overlay_not_working_with_oculus_rift_some/) |
+| Subnautica                      | ?             |                    | ☒?                 | [1](https://github.com/Hotrian/OpenVRTwitchChat/issues/4) |
+| Raw Data                        | ☑?           |                    | ?                   | [1](https://www.youtube.com/watch?v=04B5kRfHbZo&t=19m40s) |
+| The Brookhaven Experiment       | ☑?           |                    | ?                   | [1](https://www.youtube.com/watch?v=Jrt9I0RQp-w&t=2m27s) |
+| TiltBrush                       | ☑?           |                    | ?                   | [1](https://gfycat.com/TautHopefulFieldmouse) [2](https://www.youtube.com/watch?v=tpqIQ5UkGrY) |
 ## Known Issues
 - SteamVR_ControllerManager.cs doesn't correctly auto-identify controllers for me, so I wrote my own manager, HOTK_TrackedDeviceManager.cs. My Device Manager is super pre-alpha but should correctly identify both Controllers as long as at least one of them is assigned to either the left or right hand, and they are both connected. If neither Controller is assigned to a hand, they are assigned on a first come first serve basis. If only one Controller is connected, and it isn't already assigned, it will be assigned to the right hand.
 - Oculus Rift Users are reporting some games seem to be incompatible, please see [the issue posted here](https://github.com/Hotrian/OpenVRTwitchChat/issues/4).
