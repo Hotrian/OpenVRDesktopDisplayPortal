@@ -88,9 +88,6 @@
     <Reference Include="SyntaxTree.VisualStudio.Unity.Bridge">
       <HintPath>Library\UnityAssemblies\SyntaxTree.VisualStudio.Unity.Bridge.dll</HintPath>
     </Reference>
-    <Reference Include="System.Drawing">
-      <HintPath>Assets\HOTK\Portal\System.Drawing.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="OpenVRDesktopDisplayPortal.CSharp.Plugins.csproj">

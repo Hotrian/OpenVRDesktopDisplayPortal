@@ -61,9 +61,6 @@
     <Reference Include="UnityEditor">
       <HintPath>Library\UnityAssemblies\UnityEditor.dll</HintPath>
     </Reference>
-    <Reference Include="System.Drawing">
-      <HintPath>Assets\HOTK\Portal\System.Drawing.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="OpenVRDesktopDisplayPortal.CSharp.Plugins.csproj">
@@ -77,6 +74,7 @@
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\AttachUIToScreen.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\ButtonHideWhenNotController.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\ButtonSwapControllers.cs" />
+    <Compile Include="Assets\HOTK\Example Content\UI Scripts\DisableOnEventTrigger.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\DropdownHideWhenNotController.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\DropdownMatchEnumOptions.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\InputFieldHideAnimationSettingsWhenNotSelected.cs" />

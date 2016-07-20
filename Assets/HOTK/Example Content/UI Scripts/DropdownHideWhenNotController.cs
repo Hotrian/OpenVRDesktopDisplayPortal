@@ -18,9 +18,7 @@ public class DropdownHideWhenNotController : MonoBehaviour
     public void SetDropdownState(string val)
     {
         if (LinkedDropdown == null) return;
-        var dev =
-            (HOTK_Overlay.AttachmentDevice)
-                Enum.Parse(typeof (HOTK_Overlay.AttachmentDevice), LinkedDropdown.options[LinkedDropdown.value].text);
+        var dev = (HOTK_Overlay.AttachmentDevice) Enum.Parse(typeof (HOTK_Overlay.AttachmentDevice), LinkedDropdown.options[LinkedDropdown.value].text);
         switch (dev)
         {
             case HOTK_Overlay.AttachmentDevice.LeftController:

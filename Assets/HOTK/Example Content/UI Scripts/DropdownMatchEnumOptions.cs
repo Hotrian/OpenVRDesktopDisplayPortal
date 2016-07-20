@@ -21,6 +21,7 @@ public class DropdownMatchEnumOptions : MonoBehaviour
 
     public void OnEnable()
     {
+        if (Dropdown == null) return;
         Dropdown.ClearOptions();
         var strings = new List<string>();
         switch (EnumOptions)
@@ -50,7 +51,7 @@ public class DropdownMatchEnumOptions : MonoBehaviour
             default:
                 throw new ArgumentOutOfRangeException();
         }
-        Dropdown.onValueChanged.Invoke(0);
+        Dropdown.onValueChanged.Invoke(Dropdown.value);
     }
 
     private bool SetToRightController = false;
