@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Drawing;
 using System.Runtime.InteropServices;
+using Graphics = System.Drawing.Graphics;
 
 namespace ScreenCapture
 {
@@ -55,8 +56,8 @@ namespace ScreenCapture
             info = new Win32Stuff.WINDOWINFO();
             info.cbSize = (uint)Marshal.SizeOf(info);
             Win32Stuff.GetWindowInfo(wnd, ref info);
-            size.cx = info.rcWindow.Width + (settings.offsetWidth - settings.offsetX);// Win32Stuff.GetSystemMetrics(Win32Stuff.SM_CXSCREEN);
-            size.cy = info.rcWindow.Height + (settings.offsetHeight - settings.offsetY);// Win32Stuff.GetSystemMetrics(Win32Stuff.SM_CYSCREEN
+            size.cx = Math.Max(1, info.rcClient.Width + settings.offsetWidth - settings.offsetX);// Win32Stuff.GetSystemMetrics(Win32Stuff.SM_CXSCREEN);
+            size.cy = Math.Max(1, info.rcClient.Height + settings.offsetHeight - settings.offsetY);// Win32Stuff.GetSystemMetrics(Win32Stuff.SM_CYSCREEN
 
             hBitmap = GDIStuff.CreateCompatibleBitmap(hDC, size.cx, size.cy);
 
@@ -87,8 +88,9 @@ namespace ScreenCapture
             info = new Win32Stuff.WINDOWINFO();
             info.cbSize = (uint)Marshal.SizeOf(info);
             Win32Stuff.GetWindowInfo(wnd, ref info);
-            size.cx = info.rcClient.Width + (settings.offsetWidth - settings.offsetX);// Win32Stuff.GetSystemMetrics(Win32Stuff.SM_CXSCREEN);
-            size.cy = info.rcClient.Height + (settings.offsetHeight - settings.offsetY);// Win32Stuff.GetSystemMetrics(Win32Stuff.SM_CYSCREEN
+
+            size.cx = Math.Max(1, info.rcClient.Width + settings.offsetWidth - settings.offsetX);// Win32Stuff.GetSystemMetrics(Win32Stuff.SM_CXSCREEN);
+            size.cy = Math.Max(1, info.rcClient.Height + settings.offsetHeight - settings.offsetY);// Win32Stuff.GetSystemMetrics(Win32Stuff.SM_CYSCREEN
 
             hBitmap = GDIStuff.CreateCompatibleBitmap(hDC, size.cx, size.cy);
 

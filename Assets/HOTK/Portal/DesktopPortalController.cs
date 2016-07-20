@@ -17,17 +17,6 @@ public class DesktopPortalController : MonoBehaviour
     public Toggle DirectCaptureToggle;
     public Toggle MinimizedToggle;
 
-    public Text ToggleHelpTextHelpText;
-    public Text DirectCaptureHelpText;
-    public Text SelectApplicationHelpText;
-    public Text ControlOffsetsHelpText;
-    public Text ToggleMinimizedHelpText;
-    public Image ToggleHelpTextHelpImage;
-    public Image DirectCaptureHelpImage;
-    public Image SelectApplicationHelpImage;
-    public Image ControlOffsetsHelpImage;
-    public Image ToggleMinimizedHelpImage;
-
     public InputField OffsetXField;
     public InputField OffsetYField;
     public InputField OffsetWidthField;
@@ -186,22 +175,6 @@ public class DesktopPortalController : MonoBehaviour
         {
             SelectedWindowSettings.directMode = DirectCaptureToggle.isOn;
         }
-    }
-
-    public void ToggleHelpLabels()
-    {
-        if (HelpLabelToggle == null) return;
-        if (ToggleHelpTextHelpText != null) ToggleHelpTextHelpText.gameObject.SetActive(HelpLabelToggle.isOn);
-        if (DirectCaptureHelpText != null) DirectCaptureHelpText.gameObject.SetActive(HelpLabelToggle.isOn);
-        if (SelectApplicationHelpText != null) SelectApplicationHelpText.gameObject.SetActive(HelpLabelToggle.isOn);
-        if (ControlOffsetsHelpText != null) ControlOffsetsHelpText.gameObject.SetActive(HelpLabelToggle.isOn);
-        if (ToggleMinimizedHelpText != null) ToggleMinimizedHelpText.gameObject.SetActive(HelpLabelToggle.isOn);
-
-        if (ToggleHelpTextHelpImage != null) ToggleHelpTextHelpImage.gameObject.SetActive(HelpLabelToggle.isOn);
-        if (DirectCaptureHelpImage != null) DirectCaptureHelpImage.gameObject.SetActive(HelpLabelToggle.isOn);
-        if (SelectApplicationHelpImage != null) SelectApplicationHelpImage.gameObject.SetActive(HelpLabelToggle.isOn);
-        if (ControlOffsetsHelpImage != null) ControlOffsetsHelpImage.gameObject.SetActive(HelpLabelToggle.isOn);
-        if (ToggleMinimizedHelpImage != null) ToggleMinimizedHelpImage.gameObject.SetActive(HelpLabelToggle.isOn);
     }
 
     // Update is called once per frame
