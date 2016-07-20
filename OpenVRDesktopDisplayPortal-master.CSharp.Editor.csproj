@@ -5,16 +5,16 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>10.0.20506</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{79EA0976-5755-E95B-D47A-F8A0346003FF}</ProjectGuid>
+    <ProjectGuid>{0659BE2D-AC7F-1B3E-8407-B2E02F9947FB}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <AssemblyName>Assembly-CSharp-Editor-firstpass</AssemblyName>
+    <AssemblyName>Assembly-CSharp-Editor</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{E097FAD1-6243-4DAD-9C02-E9B9EFC3FFC1};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <TargetFrameworkProfile>Unity Full v3.5</TargetFrameworkProfile>
     <CompilerResponseFile></CompilerResponseFile>
-    <UnityProjectType>EditorPlugins:7</UnityProjectType>
+    <UnityProjectType>Editor:5</UnityProjectType>
     <UnityBuildTarget>StandaloneWindows:5</UnityBuildTarget>
     <UnityVersion>5.3.5f1</UnityVersion>
     <RootNamespace></RootNamespace>
@@ -88,51 +88,31 @@
     <Reference Include="SyntaxTree.VisualStudio.Unity.Bridge">
       <HintPath>Library\UnityAssemblies\SyntaxTree.VisualStudio.Unity.Bridge.dll</HintPath>
     </Reference>
-    <Reference Include="UnityEditor.EditorTestsRunner">
-      <HintPath>Library\UnityAssemblies\UnityEditor.EditorTestsRunner.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEditor.Networking">
-      <HintPath>Library\UnityAssemblies\UnityEditor.Networking.dll</HintPath>
-    </Reference>
-    <Reference Include="nunit.framework">
-      <HintPath>Library\UnityAssemblies\nunit.framework.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEditor.UI">
-      <HintPath>Library\UnityAssemblies\UnityEditor.UI.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.Networking">
-      <HintPath>Library\UnityAssemblies\UnityEngine.Networking.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEditor.Advertisements">
-      <HintPath>Library\UnityAssemblies\UnityEditor.Advertisements.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEditor.TreeEditor">
-      <HintPath>Library\UnityAssemblies\UnityEditor.TreeEditor.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.UI">
-      <HintPath>Library\UnityAssemblies\UnityEngine.UI.dll</HintPath>
+    <Reference Include="System.Drawing">
+      <HintPath>Assets\Plugins\System.Drawing.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="OpenVRDesktopDisplayPortal.CSharp.Plugins.csproj">
-      <Project>{390FC235-D1B8-0C16-8132-F5C4668D6406}</Project>
-      <Name>OpenVRDesktopDisplayPortal.CSharp.Plugins</Name>
+    <ProjectReference Include="OpenVRDesktopDisplayPortal-master.CSharp.Plugins.csproj">
+      <Project>{696B8A85-D2FC-C910-FCA5-BF712248BAC1}</Project>
+      <Name>OpenVRDesktopDisplayPortal-master.CSharp.Plugins</Name>
     </ProjectReference>
-    <ProjectReference Include="OpenVRDesktopDisplayPortal.CSharp.csproj">
-      <Project>{1D65418B-7D9F-8E74-7EF9-9B5AF7DC875F}</Project>
-      <Name>OpenVRDesktopDisplayPortal.CSharp</Name>
+    <ProjectReference Include="OpenVRDesktopDisplayPortal-master.CSharp.csproj">
+      <Project>{4C87CEAA-7644-3247-B506-33BF806FE3C3}</Project>
+      <Name>OpenVRDesktopDisplayPortal-master.CSharp</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\Plugins\SteamVR\Editor\SteamVR_Editor.cs" />
-    <Compile Include="Assets\Plugins\SteamVR\Editor\SteamVR_Settings.cs" />
-    <Compile Include="Assets\Plugins\SteamVR\Editor\SteamVR_Update.cs" />
+    <Compile Include="Assets\Editor\HOTK\HOTK_OverlayInspector.cs" />
+    <Compile Include="Assets\SteamVR\Editor\SteamVR_Editor.cs" />
+    <Compile Include="Assets\SteamVR\Editor\SteamVR_Settings.cs" />
+    <Compile Include="Assets\SteamVR\Editor\SteamVR_Update.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Assets\Plugins\SteamVR\Resources\SteamVR_Blit.shader" />
-    <None Include="Assets\Plugins\SteamVR\Resources\SteamVR_BlitFlip.shader" />
-    <None Include="Assets\Plugins\SteamVR\Resources\SteamVR_HiddenArea.shader" />
-    <None Include="Assets\Plugins\SteamVR\readme.txt" />
+    <None Include="Assets\SteamVR\Resources\SteamVR_Blit.shader" />
+    <None Include="Assets\SteamVR\Resources\SteamVR_BlitFlip.shader" />
+    <None Include="Assets\SteamVR\Resources\SteamVR_HiddenArea.shader" />
+    <None Include="Assets\SteamVR\readme.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\SyntaxTree\UnityVS\2015\UnityVS.CSharp.targets" />
 </Project>

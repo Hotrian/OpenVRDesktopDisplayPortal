@@ -5,16 +5,16 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>10.0.20506</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{390FC235-D1B8-0C16-8132-F5C4668D6406}</ProjectGuid>
+    <ProjectGuid>{4C87CEAA-7644-3247-B506-33BF806FE3C3}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <AssemblyName>Assembly-CSharp-firstpass</AssemblyName>
+    <AssemblyName>Assembly-CSharp</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{E097FAD1-6243-4DAD-9C02-E9B9EFC3FFC1};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
-    <TargetFrameworkProfile>Unity Subset v3.5</TargetFrameworkProfile>
+    <TargetFrameworkProfile>Unity Full v3.5</TargetFrameworkProfile>
     <CompilerResponseFile></CompilerResponseFile>
-    <UnityProjectType>GamePlugins:3</UnityProjectType>
+    <UnityProjectType>Game:1</UnityProjectType>
     <UnityBuildTarget>StandaloneWindows:5</UnityBuildTarget>
     <UnityVersion>5.3.5f1</UnityVersion>
     <RootNamespace></RootNamespace>
@@ -61,9 +61,55 @@
     <Reference Include="UnityEditor">
       <HintPath>Library\UnityAssemblies\UnityEditor.dll</HintPath>
     </Reference>
+    <Reference Include="System.Drawing">
+      <HintPath>Assets\Plugins\System.Drawing.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\Plugins\openvr_api.cs" />
+    <ProjectReference Include="OpenVRDesktopDisplayPortal-master.CSharp.Plugins.csproj">
+      <Project>{696B8A85-D2FC-C910-FCA5-BF712248BAC1}</Project>
+      <Name>OpenVRDesktopDisplayPortal-master.CSharp.Plugins</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Assets\HOTK\Example Content\DesktopCameraScript.cs" />
+    <Compile Include="Assets\HOTK\Example Content\UI Scripts\AlphaMatchInputField.cs" />
+    <Compile Include="Assets\HOTK\Example Content\UI Scripts\AttachUIToScreen.cs" />
+    <Compile Include="Assets\HOTK\Example Content\UI Scripts\ButtonHideWhenNotController.cs" />
+    <Compile Include="Assets\HOTK\Example Content\UI Scripts\ButtonSwapControllers.cs" />
+    <Compile Include="Assets\HOTK\Example Content\UI Scripts\DisableOnEventTrigger.cs" />
+    <Compile Include="Assets\HOTK\Example Content\UI Scripts\DropdownHideWhenNotController.cs" />
+    <Compile Include="Assets\HOTK\Example Content\UI Scripts\DropdownMatchEnumOptions.cs" />
+    <Compile Include="Assets\HOTK\Example Content\UI Scripts\InputFieldHideAnimationSettingsWhenNotSelected.cs" />
+    <Compile Include="Assets\HOTK\Example Content\UI Scripts\OffsetMatchInputField.cs" />
+    <Compile Include="Assets\HOTK\Example Content\UI Scripts\OffsetMatchSlider.cs" />
+    <Compile Include="Assets\HOTK\Example Content\UI Scripts\RotationMatchInputField.cs" />
+    <Compile Include="Assets\HOTK\Example Content\UI Scripts\RotationMatchSlider.cs" />
+    <Compile Include="Assets\HOTK\Example Content\UI Scripts\ScaleMatchInputField.cs" />
+    <Compile Include="Assets\HOTK\Example Content\UI Scripts\TooltipController.cs" />
+    <Compile Include="Assets\HOTK\HOTK_Overlay.cs" />
+    <Compile Include="Assets\HOTK\HOTK_TrackedDevice.cs" />
+    <Compile Include="Assets\HOTK\HOTK_TrackedDeviceManager.cs" />
+    <Compile Include="Assets\HOTK\Portal\DesktopPortalController.cs" />
+    <Compile Include="Assets\ScreenCapture\CaptureScreen.cs" />
+    <Compile Include="Assets\ScreenCapture\GDIStuff.cs" />
+    <Compile Include="Assets\ScreenCapture\RECT.cs" />
+    <Compile Include="Assets\ScreenCapture\Win32Stuff.cs" />
+    <Compile Include="Assets\ScreenCapture\WindowSettings.cs" />
+    <Compile Include="Assets\SteamVR\Scripts\SteamVR.cs" />
+    <Compile Include="Assets\SteamVR\Scripts\SteamVR_Camera.cs" />
+    <Compile Include="Assets\SteamVR\Scripts\SteamVR_CameraFlip.cs" />
+    <Compile Include="Assets\SteamVR\Scripts\SteamVR_CameraMask.cs" />
+    <Compile Include="Assets\SteamVR\Scripts\SteamVR_Controller.cs" />
+    <Compile Include="Assets\SteamVR\Scripts\SteamVR_ControllerManager.cs" />
+    <Compile Include="Assets\SteamVR\Scripts\SteamVR_Ears.cs" />
+    <Compile Include="Assets\SteamVR\Scripts\SteamVR_ExternalCamera.cs" />
+    <Compile Include="Assets\SteamVR\Scripts\SteamVR_Frustum.cs" />
+    <Compile Include="Assets\SteamVR\Scripts\SteamVR_GameView.cs" />
+    <Compile Include="Assets\SteamVR\Scripts\SteamVR_Overlay.cs" />
+    <Compile Include="Assets\SteamVR\Scripts\SteamVR_Render.cs" />
+    <Compile Include="Assets\SteamVR\Scripts\SteamVR_TrackedObject.cs" />
+    <Compile Include="Assets\SteamVR\Scripts\SteamVR_Utils.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\SteamVR\Resources\SteamVR_Blit.shader" />
