@@ -51,37 +51,8 @@ Netflix in Tiltbrush:
 - One last tip is that the window is resizeable and [you can make it pretty small](http://i.imgur.com/Mjy24cv.png) without overlapping any of the controls if you want to :).
 
 ## Tested Applications
-#### Mirrored from:
-| App Name      | Working       | Not working  |
-|:------------- |:-------------:|:------------:|
-| Firefox       | ☑             |              |
-| Hulu          | ☑             |              |
-| Netflix       | ☑             |              |
-| Skype         | ☑             |              |
-| VLC           | ☑             |              |
-| Youtube       | ☑             |              |
-#### Mirrored to:
-(This just tracks which games support SteamVR overlays since they should otherwise work in every SteamVR game)
+Moved to the [Compatibility Article](https://github.com/Hotrian/OpenVRDesktopDisplayPortal/wiki/Compatibility) on the wiki.
 
-(Should work in all games on the Vive, but it will be noted here if we find any that do not)
-
-| SteamVR App Name                | Working       | Not working (Vive) | Not working (Rift) | Links |
-|:------------------------------- |:-------------:|:------------------:|:------------------:|:-----:|
-| Budget Cuts Demo                | ☑             |                    | ?                   | |
-| Cosmic Trip                     | ☑             |                    | ?                   | |
-| Cyberpong VR                    | ☑             |                    | ?                   | |
-| Elite Dangerous                 | ?             |                    | ☒?                 | [1](https://github.com/Hotrian/OpenVRTwitchChat/issues/4) [2](https://www.reddit.com/r/SteamVR/comments/4jc1u1/steamvr_overlay_not_working_with_oculus_rift_some/d37jgzn) |
-| [H3VR](http://store.steampowered.com/app/450540/) | ☑ |              | ?                   | |
-| Job Simulator                   | ☑             |                    | ?                   | |
-| Keep Talking and Nobody Explodes| ☑             |                    | ☒?                 | [1](https://github.com/Hotrian/OpenVRTwitchChat/issues/4) |
-| New Retro Arcade: Neon          | ☑             |                    | ?                   | |
-| Project Cars                    | ☑             |                    | ☒?                 | [1](https://www.reddit.com/r/SteamVR/comments/4jc1u1/steamvr_overlay_not_working_with_oculus_rift_some/) |
-| Raw Data                        | ☑             |                    | ?                   | [1](https://www.youtube.com/watch?v=04B5kRfHbZo&t=19m40s) |
-| Subnautica                      | ?             |                    | ☒?                 | [1](https://github.com/Hotrian/OpenVRTwitchChat/issues/4) |
-| The Brookhaven Experiment       | ☑             |                    | ?                   | [1](https://www.youtube.com/watch?v=Jrt9I0RQp-w&t=2m27s) |
-| Tabletop Simulator              | ☑             |                    | ?                   | |
-| TiltBrush                       | ☑             |                    | ?                   | [1](https://gfycat.com/TautHopefulFieldmouse) [2](https://www.youtube.com/watch?v=tpqIQ5UkGrY) |
-| The Lab                         | ☑             |                    | ?                   | |
 ## Known Issues
 - SteamVR_ControllerManager.cs doesn't correctly auto-identify controllers for me, so I wrote my own manager, HOTK_TrackedDeviceManager.cs. My Device Manager is super pre-alpha but should correctly identify both Controllers as long as at least one of them is assigned to either the left or right hand, and they are both connected. If neither Controller is assigned to a hand, they are assigned on a first come first serve basis. If only one Controller is connected, and it isn't already assigned, it will be assigned to the right hand.
 - Oculus Rift Users are reporting some games seem to be incompatible, please see [the issue posted here](https://github.com/Hotrian/OpenVRTwitchChat/issues/4).
