@@ -50,21 +50,21 @@ public class DropdownSaveLoadController : MonoBehaviour
 
     public void OnEnable()
     {
-        if (TwitchSettingsSaver.CurrentProgramSettings == null) TwitchSettingsSaver.LoadProgramSettings();
+        if (PortalSettingsSaver.CurrentProgramSettings == null) PortalSettingsSaver.LoadProgramSettings();
         ReloadOptions();
-        if (TwitchSettingsSaver.CurrentProgramSettings != null && !string.IsNullOrEmpty(TwitchSettingsSaver.CurrentProgramSettings.LastProfile)) OnLoadPressed(true);
+        if (PortalSettingsSaver.CurrentProgramSettings != null && !string.IsNullOrEmpty(PortalSettingsSaver.CurrentProgramSettings.LastProfile)) OnLoadPressed(true);
     }
 
     private void ReloadOptions()
     {
         Dropdown.ClearOptions();
         var strings = new List<string> { NewString };
-        strings.AddRange(TwitchSettingsSaver.SavedProfiles.Select(config => config.Key));
+        strings.AddRange(PortalSettingsSaver.SavedProfiles.Select(config => config.Key));
 
         Dropdown.AddOptions(strings);
 
         // If no settings loaded yet, select "New"
-        if (string.IsNullOrEmpty(TwitchSettingsSaver.Current))
+        if (string.IsNullOrEmpty(PortalSettingsSaver.Current))
         {
             Dropdown.value = 0;
             OnValueChanges();
@@ -73,7 +73,7 @@ public class DropdownSaveLoadController : MonoBehaviour
         {
             for (var i = 0; i < Dropdown.options.Count; i++)
             {
-                if (Dropdown.options[i].text != TwitchSettingsSaver.Current) continue;
+                if (Dropdown.options[i].text != PortalSettingsSaver.Current) continue;
                 Dropdown.value = i;
                 OnValueChanges();
                 break;
@@ -120,10 +120,10 @@ public class DropdownSaveLoadController : MonoBehaviour
     {
         CancelConfirmingDelete();
         PortalSettings settings;
-        if (!TwitchSettingsSaver.SavedProfiles.TryGetValue(Dropdown.options[Dropdown.value].text, out settings)) return;
+        if (!PortalSettingsSaver.SavedProfiles.TryGetValue(Dropdown.options[Dropdown.value].text, out settings)) return;
         Debug.Log(startup ? "Loading last used settings " + Dropdown.options[Dropdown.value].text : "Loading saved settings " + Dropdown.options[Dropdown.value].text);
-        TwitchSettingsSaver.Current = Dropdown.options[Dropdown.value].text;
-        if (!startup) TwitchSettingsSaver.SaveProgramSettings();
+        PortalSettingsSaver.Current = Dropdown.options[Dropdown.value].text;
+        if (!startup) PortalSettingsSaver.SaveProgramSettings();
 
         XSlider.Slider.value = settings.X;
         YSlider.Slider.value = settings.Y;
@@ -187,7 +187,7 @@ public class DropdownSaveLoadController : MonoBehaviour
         }
         else
         {
-            TwitchSettingsSaver.DeleteProfile(Dropdown.options[Dropdown.value].text);
+            PortalSettingsSaver.DeleteProfile(Dropdown.options[Dropdown.value].text);
             CancelConfirmingDelete();
             ReloadOptions();
         }
@@ -207,7 +207,7 @@ public class DropdownSaveLoadController : MonoBehaviour
         else // Overwrite an existing save
         {
             PortalSettings settings;
-            if (!TwitchSettingsSaver.SavedProfiles.TryGetValue(Dropdown.options[Dropdown.value].text, out settings)) return;
+            if (!PortalSettingsSaver.SavedProfiles.TryGetValue(Dropdown.options[Dropdown.value].text, out settings)) return;
             Debug.Log("Overwriting saved settings " + Dropdown.options[Dropdown.value].text);
             settings.SaveFileVersion = PortalSettings.CurrentSaveVersion;
 
@@ -220,17 +220,18 @@ public class DropdownSaveLoadController : MonoBehaviour
 
             settings.AlphaStart = OverlayToSave.Alpha; settings.AlphaEnd = OverlayToSave.Alpha2; settings.AlphaSpeed = OverlayToSave.AlphaSpeed;
             settings.ScaleStart = OverlayToSave.Scale; settings.ScaleEnd = OverlayToSave.Scale2; settings.ScaleSpeed = OverlayToSave.ScaleSpeed;
-            TwitchSettingsSaver.SaveProfiles();
+            PortalSettingsSaver.SaveProfiles();
         }
     }
 
     public void OnSaveNewPressed()
     {
-        if (string.IsNullOrEmpty(SaveName.text) || TwitchSettingsSaver.SavedProfiles.ContainsKey(SaveName.text)) return;
+        if (string.IsNullOrEmpty(SaveName.text) || PortalSettingsSaver.SavedProfiles.ContainsKey(SaveName.text)) return;
         _savingNew = false;
         Debug.Log("Adding saved settings " + SaveName.text);
-        TwitchSettingsSaver.SavedProfiles.Add(SaveName.text, ConvertToTwitchSettings(OverlayToSave));
-        TwitchSettingsSaver.SaveProfiles();
+        PortalSettingsSaver.SavedProfiles.Add(SaveName.text, ConvertToTwitchSettings(OverlayToSave));
+        PortalSettingsSaver.SaveProfiles();
+        PortalSettingsSaver.Current = SaveName.text;
         SaveName.text = "";
         ReloadOptions();
     }

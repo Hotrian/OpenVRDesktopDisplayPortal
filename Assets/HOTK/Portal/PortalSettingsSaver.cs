@@ -28,7 +28,7 @@ public class PortalSettings
     public float ScaleStart, ScaleEnd, ScaleSpeed;
 }
 
-public static class TwitchSettingsSaver
+public static class PortalSettingsSaver
 {
     public static string ProgramSettingsFileName = Application.persistentDataPath + "/programSettings.gd";
     public static string ProfilesFileName = Application.persistentDataPath + "/savedProfiles.gd";

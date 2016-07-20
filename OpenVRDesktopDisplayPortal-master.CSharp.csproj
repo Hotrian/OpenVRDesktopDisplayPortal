@@ -80,9 +80,11 @@
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\DisableOnEventTrigger.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\DropdownHideWhenNotController.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\DropdownMatchEnumOptions.cs" />
+    <Compile Include="Assets\HOTK\Example Content\UI Scripts\DropdownSaveLoadController.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\InputFieldHideAnimationSettingsWhenNotSelected.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\OffsetMatchInputField.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\OffsetMatchSlider.cs" />
+    <Compile Include="Assets\HOTK\Example Content\UI Scripts\OpenClosePanelScript.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\RotationMatchInputField.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\RotationMatchSlider.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\ScaleMatchInputField.cs" />
@@ -91,6 +93,7 @@
     <Compile Include="Assets\HOTK\HOTK_TrackedDevice.cs" />
     <Compile Include="Assets\HOTK\HOTK_TrackedDeviceManager.cs" />
     <Compile Include="Assets\HOTK\Portal\DesktopPortalController.cs" />
+    <Compile Include="Assets\HOTK\Portal\PortalSettingsSaver.cs" />
     <Compile Include="Assets\ScreenCapture\CaptureScreen.cs" />
     <Compile Include="Assets\ScreenCapture\GDIStuff.cs" />
     <Compile Include="Assets\ScreenCapture\RECT.cs" />
