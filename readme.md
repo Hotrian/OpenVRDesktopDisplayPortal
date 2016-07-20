@@ -23,7 +23,7 @@ We're receiving reports that some Rift users find some games are incompatible wi
 - [Special Thanks](https://github.com/Hotrian/OpenVRDesktopDisplayPortal#special-thanks)
 
 ## Example
-![example](http://i.imgur.com/dQHNuGP.png)
+![example](http://i.imgur.com/etpVvga.png)
 
 ## Features
 - See your favorite Desktop application in VR! From _almost_ any SteamVR game!
@@ -31,7 +31,7 @@ We're receiving reports that some Rift users find some games are incompatible wi
 - Easily snap Controller attached Overlays to a set "Base Position".
 - Offset Overlays positionally and rotationally.
 - Basic Gaze Detection and Animation support (Fade In/Out and/or Scale Up/Down on Gaze).
-- Basic Save/Load Support! Only saves some settings right now.
+- Basic Save/Load Support! Saves most settings right now. Window Cropping and Capture settings are saved per application automatically; Overlay settings are saved by the profile system on the top right.
 - Multiple windows! Run the exe multiple times and configure them as desired!
 
 ## Demos
@@ -41,14 +41,17 @@ Netflix in Tiltbrush:
 - VLC in VR [showing it attached to a controller](https://vid.me/ohee). This one recorded pretty laggy for some reason but still shows that these attach to your controller if desired :) Also demos FPS control.
 
 ## Instructions
-- The controls [on the top left](http://image.prntscr.com/image/a26fd89c2f81433f942e3f5a76740b3d.png) control which window is being mirrored into VR, as well as the framerate and whether or not "Direct Capture" is being used.
+- Mouseover any UI elements for tooltips.
+- The controls [on the top left](http://i.imgur.com/798RPdH.png) control which window is being mirrored into VR, as well as the framerate, whether or not "Direct Capture" is being used, and the minimize/restore state of the selected window.
 - Direct Capture targets the window before it is processed by the [DWM](https://en.wikipedia.org/wiki/Desktop_Window_Manager). Because of this, some special effects are missing such as the window border (including titlebar). The benefit is that Direct Capture is faster and can capture windows even if they are behind other windows. As far as I know, the only reason not to use Direct Capture is because some programs don't support it. If you select a window and just get a blank display try disabling Direct Capture.
-- The little recycle icon [to the right of the application dropdown](http://image.prntscr.com/image/a26fd89c2f81433f942e3f5a76740b3d.png) refreshes the list of windows. You'll have to click this to make the dropdown update with the list of current windows.
-- Most applications do not draw internally when they are minimized. Because of this, you can only capture applications that are not minimized in most cases. There is a [toggle button](http://image.prntscr.com/image/011be138eb1c448d993ee513ec9889d9.png) to the right of the four input boxes at the top, that should be able to minimize/restore windows for you.
-- The [four input boxes at the top](http://image.prntscr.com/image/011be138eb1c448d993ee513ec9889d9.png) control the size and position of the image being captured. Mouseover them to see which does which, but from left to right they are X, Y, Width, Height. The full image is displayed by default, but you can adjust these values to cut out parts of the window :)
-- The controls [on the bottom left](http://image.prntscr.com/image/200693763c494a57a2d74c382bee7038.png) control the Offset, Rotation, and Base Position (for controllers only). The Sliders are linked to the text boxes directly to their left. You can choose to use the sliders or the text boxes to get your overlay exactly where you want it. The base positions just make it a little quicker to attach the overlay to somewhere fancy on your controller, such as behind it or below it.
-- Finally, The [bottom right](http://image.prntscr.com/image/61e64d0420f144409345f4a6b96c31f6.png) controls the Alpha and Scale of the overlay. You can also choose an animation (fade in/out and/or scale up/down) that will occur when you look directly at the overlay. Again, mouseover these to see exactly which one does what.
-- One last tip is that the window is resizeable and [you can make it pretty small](http://i.imgur.com/Mjy24cv.png) without overlapping any of the controls if you want to :).
+- Most applications do not draw internally when they are minimized. Because of this, you can only capture applications that are not minimized in most cases. The lower toggle button on the top left should be able to control the minimize/restore state of the selected application.
+- The little recycle icon to the right of the application dropdown refreshes the list of windows. You'll have to click this to make the dropdown update with the list of current windows.
+- Some windows can only be captured while they are on screen and dragging them off screen will cause part of their display to appear blank or stop updating.
+- The [four input boxes at the top](http://i.imgur.com/CeWuxvI.png) control the size and position of the image being captured. The full image is displayed by default, but you can adjust these values to cut out parts of the window :). Mouseover them and the tooltip will tell you which is which.
+- The controls [on the bottom left](http://i.imgur.com/DyEz9D0.png) control the Offset, Rotation, and Base Position (Base Position for controllers only). The Sliders are linked to the text boxes directly to their left. You can choose to use the sliders or the text boxes to get your overlay exactly where you want it. The base positions just make it a little quicker to attach the overlay to somewhere fancy on your controller, such as behind it or below it.
+- The [bottom right](http://i.imgur.com/94vljYe.png) controls the Alpha and Scale of the overlay. You can also choose an animation (fade in/out and/or scale up/down) that will occur when you look directly at the overlay. Again, mouseover these to see exactly which one does what.
+- Finally, The [top right](http://i.imgur.com/D1y3vjd.png) controls allow you to Save/Load profiles for the Overlay settings. The window crop settings will save on a per application basis as you adjust them, but the position/rotation/alpha/scale/animation for the overlay are saved and loaded through this interface.
+- One last tip is that the window is resizeable and [you can make it pretty small](http://i.imgur.com/7qIhgEr.png) without overlapping any of the controls if you want to :).
 
 ## Tested Applications
 Moved to the [Compatibility Article](https://github.com/Hotrian/OpenVRDesktopDisplayPortal/wiki/Compatibility) on the wiki.
@@ -64,7 +67,6 @@ Moved to the [Compatibility Article](https://github.com/Hotrian/OpenVRDesktopDis
 - When attaching Overlays to controllers, the offset is reoriented to match the Base Position's orientation. X+ should always move the Overlay to the Right, Y+ should always move Up, and Z+ should always move Forward, relative to the Overlay.
 - You can put the Overlay up in the sky and tilt it if you don't like it on the controllers and find it obtrusive in the world. Just set the Base Position to "World", then mess with the middle "Positional Control" slider and the top "Rotational Control" slider until you find a position that works for you :)
 - You can stream the Display Mirror if you want your viewers to be able to see the Overlay, or you can stream the game's output if you do not.
-- Save currently only saves information about each application (saves Direct Capture on/off status, plus the X/Y/Width/Height info and recalls it the next time you select that application again).
 - Smaller windows will run much faster, and look about the same in VR. I have a pretty weak GPU but if you have a 1080 let me know how well it works :).
 
 ## How can I help?
