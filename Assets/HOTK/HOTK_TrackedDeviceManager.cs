@@ -40,12 +40,6 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
     private uint _rightIndex = OpenVR.k_unTrackedDeviceIndexInvalid;
     private uint _hmdIndex = OpenVR.k_unTrackedDeviceIndexInvalid;
 
-    public void Awake()
-    {
-        FindHMD();
-        FindControllers();
-    }
-
     public void Update()
     {
         FindHMD();

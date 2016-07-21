@@ -2,12 +2,15 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using ScreenCapture;
 using UnityEngine.UI;
+using Color = UnityEngine.Color;
+using Debug = UnityEngine.Debug;
 using Image = UnityEngine.UI.Image;
 
 public class DesktopPortalController : MonoBehaviour
@@ -27,6 +30,10 @@ public class DesktopPortalController : MonoBehaviour
     public Dropdown ApplicationDropdown;
     public GameObject DisplayQuad;
 
+    public Text FPSCounter;
+    public Text ResolutionDisplay;
+
+
     Dictionary<string, IntPtr> Windows = new Dictionary<string, IntPtr>();
     List<string> Titles = new List<string>();
 
@@ -42,7 +49,12 @@ public class DesktopPortalController : MonoBehaviour
     Bitmap bitmap;
     Texture2D texture;
     MemoryStream stream;
-    
+
+    private bool _showFPS;
+    private Stopwatch FPSTimer = new Stopwatch();
+    private int _currentWindowWidth;
+    private int _currentWindowHeight;
+
     public void Start ()
     {
         var ins = SteamVR.instance;
@@ -65,6 +77,48 @@ public class DesktopPortalController : MonoBehaviour
             SaveLoad.Load();
 
             StartCoroutine("UpdateUI");
+            StartCoroutine("ReloadWindowList");
+        }
+    }
+
+    public void EnableFPSCounter()
+    {
+        FPSCounter.gameObject.SetActive(true);
+        ResolutionDisplay.gameObject.SetActive(true);
+       _showFPS = true;
+    }
+
+    private int _FPSCount;
+    public void Update()
+    {
+        if (_showFPS)
+        {
+            if (FPSTimer.IsRunning)
+            {
+                if (FPSTimer.ElapsedMilliseconds >= 1000)
+                {
+                    FPSTimer.Reset();
+                    FPSCounter.text = "FPS: " + _FPSCount;
+                    var val = Overlay.Framerate != HOTK_Overlay.FramerateMode.AsFastAsPossible ? (int)Overlay.Framerate : -1;
+                    if (val != -1)
+                    {
+                        if (_FPSCount < val)
+                        {
+                            FPSCounter.color = _FPSCount < val/2 ? Color.red : Color.yellow;
+                        }
+                        else FPSCounter.color = Color.white;
+                    }
+                    else FPSCounter.color = Color.white;
+
+                    _FPSCount = 0;
+                    FPSTimer.Start();
+                }
+            }
+            else
+            {
+                FPSTimer.Start();
+            }
+            _FPSCount++;
         }
     }
 
@@ -86,30 +140,44 @@ public class DesktopPortalController : MonoBehaviour
         }
     }
 
-    public void RefreshWindowList()
+    IEnumerator ReloadWindowList()
+    {
+        while (Application.isPlaying)
+        {
+            RefreshWindowList();
+            yield return new WaitForSeconds(10f);
+        }
+    }
+
+    public void StopRefreshing()
+    {
+        StopCoroutine("ReloadWindowList");
+    }
+
+    public void StartRefreshing()
+    {
+        StopCoroutine("ReloadWindowList");
+        StartCoroutine("ReloadWindowList");
+    }
+
+    private void RefreshWindowList()
     {
         var windows = Win32Stuff.FindWindowsWithSize();
         Windows.Clear();
         Titles.Clear();
-        string title;
-        int count = 0;
-        int copy = 0;
-        bool found;
+        var count = 0;
         foreach (var w in windows)
         {
-            title = Win32Stuff.GetWindowText(w);
+            var title = Win32Stuff.GetWindowText(w);
             if (title.Length > 0)
             {
-                copy = 0;
-                found = false;
+                var copy = 0;
+                var found = false;
                 while (!found)
                 {
                     try
                     {
-                        if (copy == 0)
-                            Windows.Add(title, w);
-                        else
-                            Windows.Add(string.Format("{0} ({1})", title, copy), w);
+                        Windows.Add(copy == 0 ? title : string.Format("{0} ({1})", title, copy), w);
 
                         found = true;
                     }
@@ -119,25 +187,42 @@ public class DesktopPortalController : MonoBehaviour
                     }
                 }
 
-
-                if (copy == 0)
-                    Titles.Add(title);
-                else
-                    Titles.Add(string.Format("{0} ({1})", title, copy));
+                Titles.Add(copy == 0 ? title : string.Format("{0} ({1})", title, copy));
                 count++;
             }
         }
 
-        Debug.Log("Found " + count + " windows");
-
         ApplicationDropdown.ClearOptions();
         ApplicationDropdown.AddOptions(Titles);
 
-        ApplicationDropdown.captionText.text = count + " window(s) detected";
+        bool foundCurrent = false;
+        if (!string.IsNullOrEmpty(SelectedWindowTitle))
+        {
+            for (var i = 0; i < ApplicationDropdown.options.Count; i++)
+            {
+                if (ApplicationDropdown.options[i].text != SelectedWindowTitle) continue;
+                _reselecting = true;
+                ApplicationDropdown.value = i;
+                foundCurrent = true;
+                break;
+            }
+        }
+        
+        if (!foundCurrent)
+        {
+            ApplicationDropdown.captionText.text = count + " window(s) detected";
+            Debug.Log("Found " + count + " windows");
+        }
     }
 
+    private bool _reselecting;
     public void OptionChanged()
     {
+        if (_reselecting)
+        {
+            _reselecting = false;
+            return;
+        }
         StopCoroutine("Capture");
         StopCoroutine("CaptureWindow");
         SelectedWindowTitle = ApplicationDropdown.captionText.text;
@@ -148,7 +233,7 @@ public class DesktopPortalController : MonoBehaviour
         {
             SelectedWindow = window;
             SelectedWindowFullPath = Win32Stuff.GetFilePath(SelectedWindow);
-            int pos = SelectedWindowFullPath.LastIndexOfAny(new char[] { Path.PathSeparator, Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }) + 1;
+            int pos = SelectedWindowFullPath.LastIndexOfAny(new char[] {Path.PathSeparator, Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar}) + 1;
             SelectedWindowPath = SelectedWindowFullPath.Substring(0, pos);
             SelectedWindowEXE = SelectedWindowFullPath.Substring(pos);
             SelectedWindowSettings = LoadConfig(SelectedWindowFullPath);
@@ -178,7 +263,7 @@ public class DesktopPortalController : MonoBehaviour
     }
 
     // Update is called once per frame
-    IEnumerator CaptureDesktop()
+    /*IEnumerator CaptureDesktop()
     {
         Overlay.OverlayTexture = texture;
         DisplayMaterial.mainTexture = texture;
@@ -190,10 +275,11 @@ public class DesktopPortalController : MonoBehaviour
             texture.LoadImage(stream.ToArray());
             yield return new WaitForEndOfFrame();
         }
-    }
+    }*/
 
     CaptureScreen.SIZE size;
     Win32Stuff.WINDOWINFO info;
+
     IEnumerator CaptureWindow()
     {
         Overlay.OverlayTexture = texture;
@@ -222,7 +308,13 @@ public class DesktopPortalController : MonoBehaviour
                 bitmap.Save(stream, ImageFormat.Png);
                 stream.Seek(0, SeekOrigin.Begin);
                 texture.LoadImage(stream.ToArray());
-                DisplayQuad.transform.localScale = new Vector3(size.cx / 100f, size.cy / 100f, 1f);
+                if (_currentWindowWidth != size.cx || _currentWindowHeight != size.cy)
+                {
+                    _currentWindowWidth = size.cx;
+                    _currentWindowHeight = size.cy;
+                    ResolutionDisplay.text = string.Format("( {0} x {1} )", size.cx, size.cy);
+                    DisplayQuad.transform.localScale = new Vector3(size.cx / 100f, size.cy / 100f, 1f);
+                }
                 Overlay.RefreshTexture();
                 switch (Overlay.Framerate)
                 {
@@ -238,17 +330,23 @@ public class DesktopPortalController : MonoBehaviour
                     case HOTK_Overlay.FramerateMode._10FPS:
                         yield return new WaitForSeconds(FramerateFractions[3]);
                         break;
-                    case HOTK_Overlay.FramerateMode._30FPS:
+                    case HOTK_Overlay.FramerateMode._15FPS:
                         yield return new WaitForSeconds(FramerateFractions[4]);
                         break;
-                    case HOTK_Overlay.FramerateMode._60FPS:
+                    case HOTK_Overlay.FramerateMode._24FPS:
                         yield return new WaitForSeconds(FramerateFractions[5]);
                         break;
-                    case HOTK_Overlay.FramerateMode._90FPS:
+                    case HOTK_Overlay.FramerateMode._30FPS:
                         yield return new WaitForSeconds(FramerateFractions[6]);
                         break;
-                    case HOTK_Overlay.FramerateMode._120FPS:
+                    case HOTK_Overlay.FramerateMode._60FPS:
                         yield return new WaitForSeconds(FramerateFractions[7]);
+                        break;
+                    case HOTK_Overlay.FramerateMode._90FPS:
+                        yield return new WaitForSeconds(FramerateFractions[8]);
+                        break;
+                    case HOTK_Overlay.FramerateMode._120FPS:
+                        yield return new WaitForSeconds(FramerateFractions[9]);
                         break;
                     case HOTK_Overlay.FramerateMode.AsFastAsPossible:
                         yield return new WaitForEndOfFrame();
@@ -263,14 +361,7 @@ public class DesktopPortalController : MonoBehaviour
     // Cache these fractions so they aren't constantly recalculated
     private static readonly float[] FramerateFractions = new[]
     {
-        1f,
-        1f/2f,
-        1f/5f,
-        1f/10f,
-        1f/30f,
-        1f/60f,
-        1f/90f,
-        1f/120f
+        1f, 1f/2f, 1f/5f, 1f/10f, 1/15f, 1/24f, 1f/30f, 1f/60f, 1f/90f, 1f/120f
     };
 
     public void WindowSettingConfirmed(string Setting)

@@ -23,7 +23,8 @@ public class HOTK_OverlayInspector : Editor
         if (overlay.ShowSettingsAppearance)
         {
             EditorGUILayout.PropertyField(serializedObject.FindProperty("OverlayTexture"), new GUIContent() {text = "Texture"});
-            
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("Framerate"), new GUIContent() { text = "Framerate" });
+
             EditorGUILayout.PropertyField(serializedObject.FindProperty("AnimateOnGaze"));
             if (overlay.AnimateOnGaze == HOTK_Overlay.AnimationType.Alpha || overlay.AnimateOnGaze == HOTK_Overlay.AnimationType.AlphaAndScale)
             {

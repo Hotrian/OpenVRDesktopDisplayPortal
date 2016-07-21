@@ -5,6 +5,10 @@ using UnityEngine.UI;
 [RequireComponent(typeof(Slider))]
 public class RotationMatchSlider : MonoBehaviour
 {
+    public static Slider XSlider;
+    public static Slider YSlider;
+    public static Slider ZSlider;
+
     public HOTK_Overlay Overlay;
     public RotationAxis Axis;
 
@@ -16,11 +20,42 @@ public class RotationMatchSlider : MonoBehaviour
 
     private Slider _slider;
 
+    public void Awake()
+    {
+        switch (Axis)
+        {
+            case RotationAxis.X:
+                XSlider = Slider;
+                break;
+            case RotationAxis.Y:
+                YSlider = Slider;
+                break;
+            case RotationAxis.Z:
+                ZSlider = Slider;
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+    }
+
+    private bool _ignoreNextUpdate;
+    public void IgnoreNextUpdate()
+    {
+        _ignoreNextUpdate = true;
+    }
+
     public void OnSliderChanged()
     {
+        if (_ignoreNextUpdate)
+        {
+            _ignoreNextUpdate = false;
+            return;
+        }
         if (InputField != null) InputField.text = Slider.value.ToString();
         if (Overlay == null) return;
-        float dx = Overlay.transform.eulerAngles.x, dy = Overlay.transform.eulerAngles.y, dz = Overlay.transform.eulerAngles.z;
+        float dx = XSlider.value,
+              dy = YSlider.value,
+              dz = ZSlider.value;
         switch (Axis)
         {
             case RotationAxis.X:
@@ -35,7 +70,7 @@ public class RotationMatchSlider : MonoBehaviour
             default:
                 throw new ArgumentOutOfRangeException();
         }
-        Overlay.transform.eulerAngles = new Vector3(dx, dy, dz);
+        Overlay.transform.rotation = Quaternion.Euler(dx, dy, dz);
     }
 
     public enum RotationAxis

@@ -124,14 +124,24 @@ public class DropdownSaveLoadController : MonoBehaviour
         Debug.Log(startup ? "Loading last used settings " + Dropdown.options[Dropdown.value].text : "Loading saved settings " + Dropdown.options[Dropdown.value].text);
         PortalSettingsSaver.Current = Dropdown.options[Dropdown.value].text;
         if (!startup) PortalSettingsSaver.SaveProgramSettings();
-
+        // Disable X and Y sliders so only one call to update the overlay occurs
         XSlider.Slider.value = settings.X;
         YSlider.Slider.value = settings.Y;
         ZSlider.Slider.value = settings.Z;
 
+        RXSlider.IgnoreNextUpdate();
+        RYSlider.IgnoreNextUpdate();
+        RZSlider.IgnoreNextUpdate();
         RXSlider.Slider.value = settings.RX;
         RYSlider.Slider.value = settings.RY;
         RZSlider.Slider.value = settings.RZ;
+        RXSlider.OnSliderChanged();
+        RYSlider.OnSliderChanged();
+        RZSlider.OnSliderChanged();
+
+        if (RXSlider.InputField != null) RXSlider.InputField.text = settings.RX.ToString();
+        if (RYSlider.InputField != null) RYSlider.InputField.text = settings.RY.ToString();
+        if (RZSlider.InputField != null) RZSlider.InputField.text = settings.RZ.ToString();
 
         DeviceDropdown.SetToOption(settings.Device.ToString());
         PointDropdown.SetToOption(settings.Point.ToString());
@@ -212,7 +222,7 @@ public class DropdownSaveLoadController : MonoBehaviour
             settings.SaveFileVersion = PortalSettings.CurrentSaveVersion;
 
             settings.X = OverlayToSave.AnchorOffset.x; settings.Y = OverlayToSave.AnchorOffset.y; settings.Z = OverlayToSave.AnchorOffset.z;
-            settings.RX = OverlayToSave.transform.eulerAngles.x; settings.RY = OverlayToSave.transform.eulerAngles.y; settings.RZ = OverlayToSave.transform.eulerAngles.z;
+            settings.RX = RXSlider.Slider.value; settings.RY = RYSlider.Slider.value; settings.RZ = RZSlider.Slider.value;
 
             settings.Device = OverlayToSave.AnchorDevice;
             settings.Point = OverlayToSave.AnchorPoint;

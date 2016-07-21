@@ -5,43 +5,49 @@ using UnityEngine.UI;
 [RequireComponent(typeof(InputField))]
 public class RotationMatchInputField : MonoBehaviour
 {
+    public static InputField XInput;
+    public static InputField YInput;
+    public static InputField ZInput;
+
     public HOTK_Overlay Overlay;
     public RotationAxis Axis;
 
-    public Slider Slider;
+    public RotationMatchSlider Slider;
     public InputField InputField
     {
         get { return _inputField ?? (_inputField = GetComponent<InputField>()); }
     }
 
     private InputField _inputField;
-
-    public void OnEnable()
+    
+    public void Awake()
     {
-        if (Overlay == null) return;
         switch (Axis)
         {
             case RotationAxis.X:
-                InputField.text = Overlay.transform.eulerAngles.x.ToString();
+                XInput = InputField;
                 break;
             case RotationAxis.Y:
-                InputField.text = Overlay.transform.eulerAngles.y.ToString();
+                YInput = InputField;
                 break;
             case RotationAxis.Z:
-                InputField.text = Overlay.transform.eulerAngles.z.ToString();
+                ZInput = InputField;
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
         }
+
+        if (Slider == null) return;
+        InputField.text = Slider.Slider.value.ToString();
     }
 
     public void OnInputChanged()
     {
         float f;
         if (!float.TryParse(InputField.text, out f)) return;
-        if (Slider != null) Slider.value = f;
+        if (Slider != null) { Slider.IgnoreNextUpdate(); Slider.Slider.value = f; }
         if (Overlay == null) return;
-        float dx = Overlay.transform.eulerAngles.x, dy = Overlay.transform.eulerAngles.y, dz = Overlay.transform.eulerAngles.z;
+        float dx = int.Parse(XInput.text), dy = int.Parse(YInput.text), dz = int.Parse(ZInput.text);
         switch (Axis)
         {
             case RotationAxis.X:
@@ -56,7 +62,7 @@ public class RotationMatchInputField : MonoBehaviour
             default:
                 throw new ArgumentOutOfRangeException();
         }
-        Overlay.transform.eulerAngles = new Vector3(dx, dy, dz);
+        Overlay.transform.rotation = Quaternion.Euler(dx, dy, dz);
     }
 
     public enum RotationAxis

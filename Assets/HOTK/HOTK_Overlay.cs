@@ -47,7 +47,7 @@ public class HOTK_Overlay : MonoBehaviour
     public AttachmentPoint AnchorPoint = AttachmentPoint.Center;
     [Tooltip("Controls the offset for the Overlay.")]
     public Vector3 AnchorOffset = Vector3.zero;
-    public FramerateMode Framerate = FramerateMode._60FPS;
+    public FramerateMode Framerate = FramerateMode._30FPS;
     #endregion
 
     #region Interal Vars
@@ -82,6 +82,8 @@ public class HOTK_Overlay : MonoBehaviour
         get { return _meshRenderer ?? (_meshRenderer = GetComponent<MeshRenderer>()); }
     }
     private MeshRenderer _meshRenderer;
+
+    private bool _justUpdated;
     #endregion
     
     /// <summary>
@@ -105,9 +107,15 @@ public class HOTK_Overlay : MonoBehaviour
         CheckHighQualityChanged(ref changed);
         // Update our Overlay if anything has changed
         if (changed)
+        {
+            _justUpdated = true;
             UpdateOverlay();
+        }
         else
+        {
+            _justUpdated = false;
             UpdateTexture();
+        }
     }
 
     public void Start()
@@ -708,6 +716,7 @@ public class HOTK_Overlay : MonoBehaviour
     private void UpdateTexture(bool refresh = false)
     {
         if (!(OverlayTexture is RenderTexture) && !refresh) return; // This covers the null check for OverlayTexture
+        if (_justUpdated) return;
         if (refresh && OverlayTexture == null) return;
         var overlay = OpenVR.Overlay;
         if (overlay == null) return;
@@ -839,15 +848,17 @@ public class HOTK_Overlay : MonoBehaviour
 
     public enum FramerateMode
     {
-        _1FPS,
-        _2FPS,
-        _5FPS,
-        _10FPS,
-        _30FPS,
-        _60FPS,
-        _90FPS,
-        _120FPS,
-        AsFastAsPossible
+        _1FPS = 1,
+        _2FPS = 2,
+        _5FPS = 5,
+        _10FPS = 10,
+        _15FPS = 15,
+        _24FPS = 24,
+        _30FPS = 30,
+        _60FPS = 60,
+        _90FPS = 90,
+        _120FPS = 120,
+        AsFastAsPossible = 9999
     }
     #endregion
 }
