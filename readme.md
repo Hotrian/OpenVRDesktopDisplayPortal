@@ -9,7 +9,10 @@ See also my [OpenVRTwitchChat](https://github.com/Hotrian/OpenVRTwitchChat) prog
 **Note:** Overlays will always draw ontop of other game geometry. This is less noticable if you attach them to the controller since things rarely come between you and the controllers. Otherwise you may want to attach them to the screen, or put them on a wall behind you or up in the sky.
 
 #### Oculus Rift users:
-We're receiving reports that some Rift users find some games are incompatible with the SteamVR Overlay system. You can read more about it in [the issue posted here](https://github.com/Hotrian/OpenVRTwitchChat/issues/4). The jist of things is that some games seem to skip the SteamVR Compositor and draw directly to the Rift instead. Check the SteamVR Display Mirror and see if you can see the Overlays there. If you can see the Overlays in the Mirror but not the Rift, then that game is probably incompatible :(. Please post your findings in [the issue](https://github.com/Hotrian/OpenVRTwitchChat/issues/4).
+We're receiving reports that some Rift users find some games are incompatible with the SteamVR Overlay system. Please check the [compatibility](https://github.com/Hotrian/OpenVRDesktopDisplayPortal/wiki/Compatibility) article for a list of tested games. You can read more about it in [the issue posted here](https://github.com/Hotrian/OpenVRTwitchChat/issues/4). The jist of things is that some games seem to skip the SteamVR Compositor and draw directly to the Rift instead. Check the SteamVR Display Mirror and see if you can see the Overlays there. If you can see the Overlays in the Mirror but not the Rift, then that game is probably incompatible :(. Please post your findings in [the issue](https://github.com/Hotrian/OpenVRTwitchChat/issues/4).
+
+#### Update for Rift users:
+We have at least [one confirmation](https://www.reddit.com/r/EliteDangerous/comments/4tr3gx/you_can_now_watch_netflixyoutubemovies_in_elite/d5khcj0?context=3) that you _might_ be able to use [Revive](https://github.com/LibreVR/Revive) to trick those Rift games into drawing through SteamVR instead of Direct-To-Rift. It will be funny if this turns out to be a solution :). Please test it out if you can!
 
 ## Table of Contents
 - [Example](https://github.com/Hotrian/OpenVRDesktopDisplayPortal#example)
