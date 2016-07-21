@@ -40,8 +40,9 @@ We have at least [one confirmation](https://www.reddit.com/r/EliteDangerous/comm
 ## Demos
 Netflix in Tiltbrush:
 - ![Netflix in VR](https://thumbs.gfycat.com/TautHopefulFieldmouse-size_restricted.gif) ([Higher Quality Link](https://gfycat.com/TautHopefulFieldmouse))
-- VLC in VR [quality check](https://vid.me/x35w) on my weak R7 265. When not recording the lip sync is perfect though :)
-- VLC in VR [showing it attached to a controller](https://vid.me/ohee). This one recorded pretty laggy for some reason but still shows that these attach to your controller if desired :) Also demos FPS control.
+- More coming soon.
+
+If there are any complaints regarding the content of these demos, please [raise an issue](https://github.com/Hotrian/OpenVRDesktopDisplayPortal/issues/new) or contact one of the devs and they will be promptly removed, deleted, and replaced.
 
 ## Instructions
 - Mouseover any UI elements for tooltips.
