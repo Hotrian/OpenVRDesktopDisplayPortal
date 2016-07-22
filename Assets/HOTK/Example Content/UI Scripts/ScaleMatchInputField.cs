@@ -42,13 +42,34 @@ public class ScaleMatchInputField : MonoBehaviour
         switch (Value)
         {
             case InputValue.ScaleStart:
-                Overlay.Scale = f;
+                if (f >= 0)
+                {
+                    Overlay.Scale = f;
+                }
+                else
+                {
+                    InputField.text = Overlay.Scale.ToString();
+                }
                 break;
             case InputValue.ScaleEnd:
-                Overlay.Scale2 = f;
+                if (f >= 0)
+                {
+                    Overlay.Scale2 = f;
+                }
+                else
+                {
+                    InputField.text = Overlay.Scale2.ToString();
+                }
                 break;
             case InputValue.ScaleSpeed:
-                Overlay.ScaleSpeed = f;
+                if (f >= 0)
+                {
+                    Overlay.ScaleSpeed = f;
+                }
+                else
+                {
+                    InputField.text = Overlay.ScaleSpeed.ToString();
+                }
                 break;
             default:
                 throw new ArgumentOutOfRangeException();

@@ -42,13 +42,34 @@ public class AlphaMatchInputField : MonoBehaviour
         switch (Value)
         {
             case InputValue.AlphaStart:
-                Overlay.Alpha = f;
+                if (f >= 0)
+                {
+                    Overlay.Alpha = f;
+                }
+                else
+                {
+                    InputField.text = Overlay.Alpha.ToString();
+                }
                 break;
             case InputValue.AlphaEnd:
-                Overlay.Alpha2 = f;
+                if (f >= 0)
+                {
+                    Overlay.Alpha2 = f;
+                }
+                else
+                {
+                    InputField.text = Overlay.Alpha2.ToString();
+                }
                 break;
             case InputValue.AlphaSpeed:
-                Overlay.AlphaSpeed = f;
+                if (f >= 0)
+                {
+                    Overlay.AlphaSpeed = f;
+                }
+                else
+                {
+                    InputField.text = Overlay.AlphaSpeed.ToString();
+                }
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
