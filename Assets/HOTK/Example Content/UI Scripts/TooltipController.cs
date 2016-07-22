@@ -40,7 +40,7 @@ public class TooltipController : MonoBehaviour
 	// Update is called once per frame
 	public void Update()
 	{
-	    if (string.IsNullOrEmpty(_tooltipText.text)) return;
+	    if (_tooltipText == null || string.IsNullOrEmpty(_tooltipText.text)) return;
 	    _tooltip.transform.position = Input.mousePosition + _tooltipOffset;
 
 	}
@@ -60,6 +60,7 @@ public class TooltipController : MonoBehaviour
 
     public void SetTooltipPivot(string pivot)
     {
+        if (_tooltipRectTransform == null) return;
         switch (pivot)
         {
             case "BottomLeft":

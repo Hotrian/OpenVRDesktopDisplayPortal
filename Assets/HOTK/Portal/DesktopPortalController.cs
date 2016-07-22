@@ -6,9 +6,11 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
 using ScreenCapture;
 using UnityEngine.UI;
+using Valve.VR;
 using Color = UnityEngine.Color;
 using Debug = UnityEngine.Debug;
 using Image = UnityEngine.UI.Image;
@@ -20,8 +22,11 @@ public class DesktopPortalController : MonoBehaviour
     public Toggle DirectCaptureToggle;
     public Toggle MinimizedToggle;
 
-    public InputField OffsetXField;
-    public InputField OffsetYField;
+    public InputField OffsetLeftField;
+    public InputField OffsetTopField;
+    public InputField OffsetRightField;
+    public InputField OffsetBottomField;
+
     public InputField OffsetWidthField;
     public InputField OffsetHeightField;
 
@@ -32,7 +37,6 @@ public class DesktopPortalController : MonoBehaviour
 
     public Text FPSCounter;
     public Text ResolutionDisplay;
-
 
     Dictionary<string, IntPtr> Windows = new Dictionary<string, IntPtr>();
     List<string> Titles = new List<string>();
@@ -76,8 +80,8 @@ public class DesktopPortalController : MonoBehaviour
 
             SaveLoad.Load();
 
-            StartCoroutine("UpdateUI");
-            StartCoroutine("ReloadWindowList");
+            StartCoroutine("UpdateEvery1Second");
+            StartCoroutine("UpdateEvery10Seconds");
         }
     }
 
@@ -122,28 +126,42 @@ public class DesktopPortalController : MonoBehaviour
         }
     }
 
-    void OnDestroy()
+    public void OnDestroy()
     {
         SaveLoad.Save();
         DisplayMaterial.mainTexture = DefaultTexture;
+        CaptureScreen.DeleteCopyContexts();
     }
 
-    IEnumerator UpdateUI()
+    IEnumerator UpdateEvery1Second()
     {
         while (Application.isPlaying)
         {
             if (SelectedWindow != IntPtr.Zero)
             {
                 MinimizedToggle.isOn = !Win32Stuff.IsIconic(SelectedWindow);
+                if (!OffsetWidthField.isFocused && !OffsetHeightField.isFocused)
+                {
+                    var r = CaptureScreen.GetWindowRect(SelectedWindow);
+                    OffsetWidthField.text = r.Width.ToString();
+                    OffsetHeightField.text = r.Height.ToString();
+                }
             }
             yield return new WaitForSeconds(1f);
         }
     }
 
-    IEnumerator ReloadWindowList()
+    IEnumerator UpdateEvery10Seconds()
     {
         while (Application.isPlaying)
         {
+            var compositor = OpenVR.Compositor;
+            if (compositor != null)
+            {
+                var trackingSpace = compositor.GetTrackingSpace();
+                SteamVR_Render.instance.trackingSpace = trackingSpace;
+            }
+
             RefreshWindowList();
             yield return new WaitForSeconds(10f);
         }
@@ -151,13 +169,13 @@ public class DesktopPortalController : MonoBehaviour
 
     public void StopRefreshing()
     {
-        StopCoroutine("ReloadWindowList");
+        StopCoroutine("UpdateEvery10Seconds");
     }
 
     public void StartRefreshing()
     {
-        StopCoroutine("ReloadWindowList");
-        StartCoroutine("ReloadWindowList");
+        StopCoroutine("UpdateEvery10Seconds");
+        StartCoroutine("UpdateEvery10Seconds");
     }
 
     private void RefreshWindowList()
@@ -178,7 +196,6 @@ public class DesktopPortalController : MonoBehaviour
                     try
                     {
                         Windows.Add(copy == 0 ? title : string.Format("{0} ({1})", title, copy), w);
-
                         found = true;
                     }
                     catch (ArgumentException e)
@@ -194,6 +211,8 @@ public class DesktopPortalController : MonoBehaviour
 
         ApplicationDropdown.ClearOptions();
         ApplicationDropdown.AddOptions(Titles);
+        _reselecting = true;
+        ApplicationDropdown.value = 0;
 
         bool foundCurrent = false;
         if (!string.IsNullOrEmpty(SelectedWindowTitle))
@@ -207,11 +226,51 @@ public class DesktopPortalController : MonoBehaviour
                 break;
             }
         }
-        
+        _reselecting = false;
+
         if (!foundCurrent)
         {
-            ApplicationDropdown.captionText.text = count + " window(s) detected";
-            Debug.Log("Found " + count + " windows");
+            // Attempt to recapture by window PID
+            if (SelectedWindow != IntPtr.Zero)
+            {
+                bool found = false;
+                string name = null;
+
+                foreach (var entry in Windows.Where(entry => entry.Value == SelectedWindow))
+                {
+                    name = entry.Key;
+                    found = true;
+                    break;
+                }
+                if (found)
+                {
+                    if (!string.IsNullOrEmpty(name))
+                    {
+                        for (var i = 0; i < ApplicationDropdown.options.Count; i++)
+                        {
+                            if (ApplicationDropdown.options[i].text != name) continue;
+                            Debug.Log("Found " + SelectedWindowTitle + " by new name " + name);
+                            _reselecting = true;
+                            SelectedWindowTitle = name;
+                            ApplicationDropdown.value = i;
+                            foundCurrent = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            // Windows must be closed or otherwise lost to cyberspace
+            if (!foundCurrent)
+            {
+                SelectedWindow = IntPtr.Zero;
+                SelectedWindowFullPath = string.Empty;
+                SelectedWindowPath = string.Empty;
+                SelectedWindowEXE = string.Empty;
+                SelectedWindowSettings = null;
+
+                ApplicationDropdown.captionText.text = count + " window(s) detected";
+                Debug.Log("Found " + count + " windows");
+            }
         }
     }
 
@@ -223,7 +282,6 @@ public class DesktopPortalController : MonoBehaviour
             _reselecting = false;
             return;
         }
-        StopCoroutine("Capture");
         StopCoroutine("CaptureWindow");
         SelectedWindowTitle = ApplicationDropdown.captionText.text;
         Debug.Log("Selected " + SelectedWindowTitle);
@@ -233,11 +291,31 @@ public class DesktopPortalController : MonoBehaviour
         {
             SelectedWindow = window;
             SelectedWindowFullPath = Win32Stuff.GetFilePath(SelectedWindow);
-            int pos = SelectedWindowFullPath.LastIndexOfAny(new char[] {Path.PathSeparator, Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar}) + 1;
-            SelectedWindowPath = SelectedWindowFullPath.Substring(0, pos);
-            SelectedWindowEXE = SelectedWindowFullPath.Substring(pos);
-            SelectedWindowSettings = LoadConfig(SelectedWindowFullPath);
+            if (!string.IsNullOrEmpty(SelectedWindowFullPath))
+            {
+                int pos =
+                    SelectedWindowFullPath.LastIndexOfAny(new char[]
+                    {Path.PathSeparator, Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar}) + 1;
+                SelectedWindowPath = SelectedWindowFullPath.Substring(0, pos);
+                SelectedWindowEXE = SelectedWindowFullPath.Substring(pos);
+                SelectedWindowSettings = LoadConfig(SelectedWindowFullPath);
+            }
+            else
+            {
+                Debug.LogWarning("Failed to grab path info. Settings might not work properly.");
+                SelectedWindowFullPath = string.Empty;
+                SelectedWindowPath = string.Empty;
+                SelectedWindowEXE = string.Empty;
+                SelectedWindowSettings = LoadConfig(SelectedWindowTitle);
+            }
+            var r = CaptureScreen.GetWindowRect(SelectedWindow);
+            OffsetWidthField.text = r.Width.ToString();
+            OffsetHeightField.text = r.Height.ToString();
             StartCoroutine("CaptureWindow");
+        }
+        else
+        {
+            Debug.LogError("Failed to find Window");
         }
     }
 
@@ -253,7 +331,7 @@ public class DesktopPortalController : MonoBehaviour
                 Win32Stuff.ShowWindow(SelectedWindow, ShowWindowCommands.Minimize);
         }
     }
-
+    
     public void ToggleDirectMode()
     {
         if (SelectedWindow != IntPtr.Zero)
@@ -279,6 +357,7 @@ public class DesktopPortalController : MonoBehaviour
 
     CaptureScreen.SIZE size;
     Win32Stuff.WINDOWINFO info;
+    private bool wasDirect;
 
     IEnumerator CaptureWindow()
     {
@@ -288,10 +367,20 @@ public class DesktopPortalController : MonoBehaviour
         {
             if (SelectedWindowSettings.directMode)
             {
+                if (!wasDirect)
+                {
+                    CaptureScreen.DeleteCopyContexts();
+                    wasDirect = true;
+                }
                 bitmap = CaptureScreen.CaptureWindowDirect(SelectedWindow, SelectedWindowSettings, out size, out info);
             }
             else
             {
+                if (wasDirect)
+                {
+                    CaptureScreen.DeleteCopyContexts();
+                    wasDirect = false;
+                }
                 bitmap = CaptureScreen.CaptureWindow(SelectedWindow, SelectedWindowSettings, out size, out info);
             }
             if (bitmap == null)
@@ -301,59 +390,62 @@ public class DesktopPortalController : MonoBehaviour
                 SelectedWindowPath = string.Empty;
                 SelectedWindowEXE = string.Empty;
                 SelectedWindowSettings = null;
+                SelectedWindowTitle = null;
+                _currentWindowWidth = 0;
+                _currentWindowHeight = 0;
+                ResolutionDisplay.text = "";
+                DisplayQuad.transform.localScale = new Vector3(0f, 0f, 1f);
+                StartRefreshing();
                 break;
             }
-            else
+            bitmap.Save(stream, ImageFormat.Png);
+            stream.Seek(0, SeekOrigin.Begin);
+            texture.LoadImage(stream.ToArray());
+            if (_currentWindowWidth != size.cx || _currentWindowHeight != size.cy)
             {
-                bitmap.Save(stream, ImageFormat.Png);
-                stream.Seek(0, SeekOrigin.Begin);
-                texture.LoadImage(stream.ToArray());
-                if (_currentWindowWidth != size.cx || _currentWindowHeight != size.cy)
-                {
-                    _currentWindowWidth = size.cx;
-                    _currentWindowHeight = size.cy;
-                    ResolutionDisplay.text = string.Format("( {0} x {1} )", size.cx, size.cy);
-                    DisplayQuad.transform.localScale = new Vector3(size.cx / 100f, size.cy / 100f, 1f);
-                }
-                Overlay.RefreshTexture();
-                switch (Overlay.Framerate)
-                {
-                    case HOTK_Overlay.FramerateMode._1FPS:
-                        yield return new WaitForSeconds(FramerateFractions[0]);
-                        break;
-                    case HOTK_Overlay.FramerateMode._2FPS:
-                        yield return new WaitForSeconds(FramerateFractions[1]);
-                        break;
-                    case HOTK_Overlay.FramerateMode._5FPS:
-                        yield return new WaitForSeconds(FramerateFractions[2]);
-                        break;
-                    case HOTK_Overlay.FramerateMode._10FPS:
-                        yield return new WaitForSeconds(FramerateFractions[3]);
-                        break;
-                    case HOTK_Overlay.FramerateMode._15FPS:
-                        yield return new WaitForSeconds(FramerateFractions[4]);
-                        break;
-                    case HOTK_Overlay.FramerateMode._24FPS:
-                        yield return new WaitForSeconds(FramerateFractions[5]);
-                        break;
-                    case HOTK_Overlay.FramerateMode._30FPS:
-                        yield return new WaitForSeconds(FramerateFractions[6]);
-                        break;
-                    case HOTK_Overlay.FramerateMode._60FPS:
-                        yield return new WaitForSeconds(FramerateFractions[7]);
-                        break;
-                    case HOTK_Overlay.FramerateMode._90FPS:
-                        yield return new WaitForSeconds(FramerateFractions[8]);
-                        break;
-                    case HOTK_Overlay.FramerateMode._120FPS:
-                        yield return new WaitForSeconds(FramerateFractions[9]);
-                        break;
-                    case HOTK_Overlay.FramerateMode.AsFastAsPossible:
-                        yield return new WaitForEndOfFrame();
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
+                _currentWindowWidth = size.cx;
+                _currentWindowHeight = size.cy;
+                ResolutionDisplay.text = string.Format("( {0} x {1} )", size.cx, size.cy);
+                DisplayQuad.transform.localScale = new Vector3(size.cx / 100f, size.cy / 100f, 1f);
+            }
+            Overlay.RefreshTexture();
+            switch (Overlay.Framerate)
+            {
+                case HOTK_Overlay.FramerateMode._1FPS:
+                    yield return new WaitForSeconds(FramerateFractions[0]);
+                    break;
+                case HOTK_Overlay.FramerateMode._2FPS:
+                    yield return new WaitForSeconds(FramerateFractions[1]);
+                    break;
+                case HOTK_Overlay.FramerateMode._5FPS:
+                    yield return new WaitForSeconds(FramerateFractions[2]);
+                    break;
+                case HOTK_Overlay.FramerateMode._10FPS:
+                    yield return new WaitForSeconds(FramerateFractions[3]);
+                    break;
+                case HOTK_Overlay.FramerateMode._15FPS:
+                    yield return new WaitForSeconds(FramerateFractions[4]);
+                    break;
+                case HOTK_Overlay.FramerateMode._24FPS:
+                    yield return new WaitForSeconds(FramerateFractions[5]);
+                    break;
+                case HOTK_Overlay.FramerateMode._30FPS:
+                    yield return new WaitForSeconds(FramerateFractions[6]);
+                    break;
+                case HOTK_Overlay.FramerateMode._60FPS:
+                    yield return new WaitForSeconds(FramerateFractions[7]);
+                    break;
+                case HOTK_Overlay.FramerateMode._90FPS:
+                    yield return new WaitForSeconds(FramerateFractions[8]);
+                    break;
+                case HOTK_Overlay.FramerateMode._120FPS:
+                    yield return new WaitForSeconds(FramerateFractions[9]);
+                    break;
+                case HOTK_Overlay.FramerateMode.AsFastAsPossible:
+                    yield return new WaitForEndOfFrame();
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
         }
     }
@@ -368,36 +460,76 @@ public class DesktopPortalController : MonoBehaviour
     {
         if (SelectedWindow != IntPtr.Zero)
         {
+            RECT r;
+            int v;
             int val;
             switch (Setting)
             {
-                case "X":
-                    if (int.TryParse(OffsetXField.text, out val))
+                case "Left":
+                    if (int.TryParse(OffsetLeftField.text, out val))
                     {
-                        SelectedWindowSettings.offsetX = val;
+                        SelectedWindowSettings.offsetLeft = val;
                     }
-                    else OffsetXField.text = SelectedWindowSettings.offsetX.ToString();
+                    else OffsetLeftField.text = SelectedWindowSettings.offsetLeft.ToString();
                     break;
-                case "Y":
-                    if (int.TryParse(OffsetYField.text, out val))
+                case "Top":
+                    if (int.TryParse(OffsetTopField.text, out val))
                     {
-                        SelectedWindowSettings.offsetY = val;
+                        SelectedWindowSettings.offsetTop = val;
                     }
-                    else OffsetYField.text = SelectedWindowSettings.offsetY.ToString();
+                    else OffsetTopField.text = SelectedWindowSettings.offsetTop.ToString();
+                    break;
+                case "Right":
+                    if (int.TryParse(OffsetRightField.text, out val))
+                    {
+                        SelectedWindowSettings.offsetRight = val;
+                    }
+                    else OffsetRightField.text = SelectedWindowSettings.offsetRight.ToString();
+                    break;
+                case "Bottom":
+                    if (int.TryParse(OffsetBottomField.text, out val))
+                    {
+                        SelectedWindowSettings.offsetBottom = val;
+                    }
+                    else OffsetBottomField.text = SelectedWindowSettings.offsetBottom.ToString();
                     break;
                 case "Width":
-                    if (int.TryParse(OffsetWidthField.text, out val))
+                    r = CaptureScreen.GetWindowRect(SelectedWindow);
+                    if (int.TryParse(OffsetWidthField.text, out v))
                     {
-                        SelectedWindowSettings.offsetWidth = val;
+                        if (v > 0)
+                        {
+                            r.Width = v;
+                            SetWindowSize(r);
+                        }
+                        else
+                        {
+                            OffsetWidthField.text = r.Width.ToString();
+                        }
                     }
-                    else OffsetWidthField.text = SelectedWindowSettings.offsetWidth.ToString();
+                    else
+                    {
+                        OffsetWidthField.text = r.Width.ToString();
+                    }
                     break;
                 case "Height":
-                    if (int.TryParse(OffsetHeightField.text, out val))
+                    r = CaptureScreen.GetWindowRect(SelectedWindow);
+                    if (int.TryParse(OffsetHeightField.text, out v))
                     {
-                        SelectedWindowSettings.offsetHeight = val;
+                        if (v > 0)
+                        {
+                            r.Height = v;
+                            SetWindowSize(r);
+                        }
+                        else
+                        {
+                            OffsetHeightField.text = r.Height.ToString();
+                        }
                     }
-                    else OffsetHeightField.text = SelectedWindowSettings.offsetHeight.ToString();
+                    else
+                    {
+                        OffsetHeightField.text = r.Height.ToString();
+                    }
                     break;
                 default:
                     throw new NotImplementedException();
@@ -405,21 +537,40 @@ public class DesktopPortalController : MonoBehaviour
         }
     }
 
+    public void SetWindowSize(RECT r)
+    {
+        CaptureScreen.SetWindowRect(SelectedWindow, r, !SelectedWindowSettings.directMode);
+    }
+
     public WindowSettings LoadConfig(string name)
     {
         WindowSettings settings;
         if (!SaveLoad.savedSettings.TryGetValue(name, out settings))
         {
-            Debug.Log("Config not found.");
-            settings = new WindowSettings();
+            Debug.Log("Config [" + name + "] not found.");
+            settings = new WindowSettings {SaveFileVersion = WindowSettings.CurrentSaveVersion};
             SaveLoad.savedSettings.Add(name, settings);
         }
 
+        if (settings.SaveFileVersion == 0)
+        {
+            Debug.Log("Upgrading [" + name + "] to SaveFileVersion 1.");
+            settings.offsetLeft = settings.offsetX;
+            settings.offsetTop = settings.offsetY;
+            settings.offsetRight = settings.offsetWidth;
+            settings.offsetBottom = settings.offsetHeight;
+            settings.offsetX = 0;
+            settings.offsetY = 0;
+            settings.offsetWidth = 0;
+            settings.offsetHeight = 0;
+            settings.SaveFileVersion = 1;
+        }
+
+        OffsetLeftField.text = settings.offsetLeft.ToString();
+        OffsetTopField.text = settings.offsetTop.ToString();
+        OffsetRightField.text = settings.offsetRight.ToString();
+        OffsetBottomField.text = settings.offsetBottom.ToString();
         DirectCaptureToggle.isOn = settings.directMode;
-        OffsetXField.text = settings.offsetX.ToString();
-        OffsetYField.text = settings.offsetY.ToString();
-        OffsetWidthField.text = settings.offsetWidth.ToString();
-        OffsetHeightField.text = settings.offsetHeight.ToString();
         return settings;
     }
 }
@@ -428,8 +579,7 @@ public class DesktopPortalController : MonoBehaviour
 public static class SaveLoad
 {
     public static Dictionary<string, WindowSettings> savedSettings = new Dictionary<string, WindowSettings>();
-
-    //it's static so we can call it from anywhere
+    
     public static void Save()
     {
         BinaryFormatter bf = new BinaryFormatter();
@@ -441,13 +591,11 @@ public static class SaveLoad
 
     public static void Load()
     {
-        if (File.Exists(Application.persistentDataPath + "/savedSettings.gd"))
-        {
-            BinaryFormatter bf = new BinaryFormatter();
-            FileStream file = File.Open(Application.persistentDataPath + "/savedSettings.gd", FileMode.Open);
-            savedSettings = (Dictionary<string, WindowSettings>) bf.Deserialize(file);
-            file.Close();
-            Debug.Log("Loaded " + savedSettings.Count + " config(s).");
-        }
+        if (!File.Exists(Application.persistentDataPath + "/savedSettings.gd")) return;
+        BinaryFormatter bf = new BinaryFormatter();
+        FileStream file = File.Open(Application.persistentDataPath + "/savedSettings.gd", FileMode.Open);
+        savedSettings = (Dictionary<string, WindowSettings>) bf.Deserialize(file);
+        file.Close();
+        Debug.Log("Loaded " + savedSettings.Count + " config(s).");
     }
 }

@@ -113,6 +113,7 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
         }
     }
 
+    private bool _couldntFindControllers;
     private uint _noControllersCount;
 
     /// <summary>
@@ -236,8 +237,9 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
                 case 0:
                     if (_noControllersCount == 0) LogWarning("Couldn't Find Any Unassigned Controllers!");
                     _noControllersCount++;
-                    if (_noControllersCount >= 10)
+                    if (!_couldntFindControllers && _noControllersCount >= 10)
                     {
+                        _couldntFindControllers = true;
                         LogError("Controllers not found!");
                         LogError("Please connect the controllers and restart!");
                     }
