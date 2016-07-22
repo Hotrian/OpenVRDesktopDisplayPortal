@@ -130,7 +130,7 @@ public class DesktopPortalController : MonoBehaviour
     {
         SaveLoad.Save();
         DisplayMaterial.mainTexture = DefaultTexture;
-        CaptureScreen.DeleteCopyContexts();
+        //CaptureScreen.DeleteCopyContexts();
     }
 
     IEnumerator UpdateEvery1Second()
@@ -369,7 +369,7 @@ public class DesktopPortalController : MonoBehaviour
             {
                 if (!wasDirect)
                 {
-                    CaptureScreen.DeleteCopyContexts();
+                    //CaptureScreen.DeleteCopyContexts();
                     wasDirect = true;
                 }
                 bitmap = CaptureScreen.CaptureWindowDirect(SelectedWindow, SelectedWindowSettings, out size, out info);
@@ -378,7 +378,7 @@ public class DesktopPortalController : MonoBehaviour
             {
                 if (wasDirect)
                 {
-                    CaptureScreen.DeleteCopyContexts();
+                    //CaptureScreen.DeleteCopyContexts();
                     wasDirect = false;
                 }
                 bitmap = CaptureScreen.CaptureWindow(SelectedWindow, SelectedWindowSettings, out size, out info);
