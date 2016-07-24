@@ -26,7 +26,7 @@ We have at least [one confirmation](https://www.reddit.com/r/EliteDangerous/comm
 - [Special Thanks](https://github.com/Hotrian/OpenVRDesktopDisplayPortal#special-thanks)
 
 ## Example
-![example](http://i.imgur.com/etpVvga.png)
+![example](http://i.imgur.com/AVUvNsZ.png)
 
 ## Features
 - See your favorite Desktop application in VR! From _almost_ any SteamVR game!
@@ -45,6 +45,7 @@ Netflix in Tiltbrush:
 If there are any complaints regarding the content of these demos, please [raise an issue](https://github.com/Hotrian/OpenVRDesktopDisplayPortal/issues/new) or contact one of the devs and they will be promptly removed, deleted, and replaced.
 
 ## Instructions
+(Some of these are slightly outdated, but still relevant, new images and up to date instructions coming soon)
 - Mouseover any UI elements for tooltips.
 - The controls [on the top left](http://i.imgur.com/798RPdH.png) control which window is being mirrored into VR, as well as the framerate, whether or not "Direct Capture" is being used, and the minimize/restore state of the selected window.
 - Direct Capture targets the window before it is processed by the [DWM](https://en.wikipedia.org/wiki/Desktop_Window_Manager). Because of this, some special effects are missing such as the window border (including titlebar). The benefit is that Direct Capture is faster and can capture windows even if they are behind other windows. As far as I know, the only reason not to use Direct Capture is because some programs don't support it. If you select a window and just get a blank display try disabling Direct Capture.
