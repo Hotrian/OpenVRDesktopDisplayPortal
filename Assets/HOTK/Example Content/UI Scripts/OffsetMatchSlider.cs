@@ -7,35 +7,56 @@ public class OffsetMatchSlider : MonoBehaviour
 {
     public HOTK_Overlay Overlay;
     public OffsetValue Value;
-
-    public InputField InputField;
+    
+    public OffsetMatchInputField OffsetField;
     public Slider Slider
     {
         get { return _slider ?? (_slider = GetComponent<Slider>()); }
     }
 
+    public static OffsetMatchSlider XSlider;
+    public static OffsetMatchSlider YSlider;
+    public static OffsetMatchSlider ZSlider;
+
     private Slider _slider;
 
-    public void OnOffsetChanged()
+    public void OnEnable()
     {
-        if (InputField != null) InputField.text = Slider.value.ToString();
         if (Overlay == null) return;
-        float dx = Overlay.AnchorOffset.x, dy = Overlay.AnchorOffset.y, dz = Overlay.AnchorOffset.z;
         switch (Value)
         {
             case OffsetValue.X:
-                dx = Slider.value;
+                XSlider = this;
                 break;
             case OffsetValue.Y:
-                dy = Slider.value;
+                YSlider = this;
                 break;
             case OffsetValue.Z:
-                dz = Slider.value;
+                ZSlider = this;
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
         }
+    }
+
+    public void OnOffsetChanged()
+    {
+        if (OffsetField != null) OffsetField.SetSafeValue(Slider.value);
+        if (Overlay == null) return;
+        float dx = XSlider.Slider.value, dy = YSlider.Slider.value, dz = ZSlider.Slider.value;
         Overlay.AnchorOffset = new Vector3(dx, dy, dz);
+    }
+
+    public void SetBaseValue(float val)
+    {
+        Slider.minValue = val - 2f;
+        Slider.maxValue = val + 2f;
+        Slider.value = val;
+    }
+
+    public void DoAdjustValue(float val)
+    {
+        Slider.value = Mathf.Round((Slider.value + val) * 100f) / 100f;
     }
 
     public enum OffsetValue

@@ -11,8 +11,8 @@ public class RotationMatchSlider : MonoBehaviour
 
     public HOTK_Overlay Overlay;
     public RotationAxis Axis;
-
-    public InputField InputField;
+    
+    public RotationMatchInputField RotationField;
     public Slider Slider
     {
         get { return _slider ?? (_slider = GetComponent<Slider>()); }
@@ -38,6 +38,11 @@ public class RotationMatchSlider : MonoBehaviour
         }
     }
 
+    public void DoAdjustValue(float val)
+    {
+        Slider.value += val;
+    }
+
     private bool _ignoreNextUpdate;
     public void IgnoreNextUpdate()
     {
@@ -51,7 +56,7 @@ public class RotationMatchSlider : MonoBehaviour
             _ignoreNextUpdate = false;
             return;
         }
-        if (InputField != null) InputField.text = Slider.value.ToString();
+        if (RotationField != null) RotationField.SetSafeValue(Slider.value);
         if (Overlay == null) return;
         float dx = XSlider.value,
               dy = YSlider.value,

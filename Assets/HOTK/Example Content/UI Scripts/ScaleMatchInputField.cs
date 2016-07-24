@@ -15,6 +15,8 @@ public class ScaleMatchInputField : MonoBehaviour
 
     private InputField _inputField;
 
+    private float _lastSafeValue;
+
     public void OnEnable()
     {
         if (Overlay == null) return;
@@ -37,7 +39,11 @@ public class ScaleMatchInputField : MonoBehaviour
     public void OnScaleChanged()
     {
         float f;
-        if (!float.TryParse(InputField.text, out f)) return;
+        if (!float.TryParse(InputField.text, out f))
+        {
+            InputField.text = _lastSafeValue.ToString();
+            return;
+        }
         if (Overlay == null) return;
         switch (Value)
         {
@@ -45,30 +51,36 @@ public class ScaleMatchInputField : MonoBehaviour
                 if (f >= 0)
                 {
                     Overlay.Scale = f;
+                    _lastSafeValue = f;
                 }
                 else
                 {
                     InputField.text = Overlay.Scale.ToString();
+                    _lastSafeValue = Overlay.Scale;
                 }
                 break;
             case InputValue.ScaleEnd:
                 if (f >= 0)
                 {
                     Overlay.Scale2 = f;
+                    _lastSafeValue = f;
                 }
                 else
                 {
                     InputField.text = Overlay.Scale2.ToString();
+                    _lastSafeValue = Overlay.Scale2;
                 }
                 break;
             case InputValue.ScaleSpeed:
                 if (f >= 0)
                 {
                     Overlay.ScaleSpeed = f;
+                    _lastSafeValue = f;
                 }
                 else
                 {
                     InputField.text = Overlay.ScaleSpeed.ToString();
+                    _lastSafeValue = Overlay.ScaleSpeed;
                 }
                 break;
             default:

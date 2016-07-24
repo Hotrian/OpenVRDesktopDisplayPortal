@@ -95,6 +95,7 @@
     <Compile Include="Assets\HOTK\HOTK_TrackedDeviceManager.cs" />
     <Compile Include="Assets\HOTK\Portal\DesktopPortalController.cs" />
     <Compile Include="Assets\HOTK\Portal\PortalSettingsSaver.cs" />
+    <Compile Include="Assets\HotkeyController.cs" />
     <Compile Include="Assets\ScreenCapture\CaptureScreen.cs" />
     <Compile Include="Assets\ScreenCapture\GDIStuff.cs" />
     <Compile Include="Assets\ScreenCapture\RECT.cs" />

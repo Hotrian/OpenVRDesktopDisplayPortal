@@ -19,6 +19,8 @@ public class RotationMatchInputField : MonoBehaviour
     }
 
     private InputField _inputField;
+
+    private float _lastSafeValue;
     
     public void Awake()
     {
@@ -41,10 +43,20 @@ public class RotationMatchInputField : MonoBehaviour
         InputField.text = Slider.Slider.value.ToString();
     }
 
+    public void SetSafeValue(float val)
+    {
+        InputField.text = val.ToString();
+        _lastSafeValue = val;
+    }
+
     public void OnInputChanged()
     {
         float f;
-        if (!float.TryParse(InputField.text, out f)) return;
+        if (!float.TryParse(InputField.text, out f))
+        {
+            InputField.text = _lastSafeValue.ToString();
+            return;
+        }
         if (Slider != null) { Slider.IgnoreNextUpdate(); Slider.Slider.value = f; }
         if (Overlay == null) return;
         float dx = int.Parse(XInput.text), dy = int.Parse(YInput.text), dz = int.Parse(ZInput.text);
@@ -52,12 +64,15 @@ public class RotationMatchInputField : MonoBehaviour
         {
             case RotationAxis.X:
                 dx = f;
+                _lastSafeValue = f;
                 break;
             case RotationAxis.Y:
                 dy = f;
+                _lastSafeValue = f;
                 break;
             case RotationAxis.Z:
                 dz = f;
+                _lastSafeValue = f;
                 break;
             default:
                 throw new ArgumentOutOfRangeException();

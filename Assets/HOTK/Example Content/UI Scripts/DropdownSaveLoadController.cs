@@ -118,6 +118,7 @@ public class DropdownSaveLoadController : MonoBehaviour
 
     public void OnLoadPressed(bool startup = false) // Loads an existing save
     {
+        if (startup) HOTK_TrackedDeviceManager.Instance.FindControllers();
         CancelConfirmingDelete();
         PortalSettings settings;
         if (!PortalSettingsSaver.SavedProfiles.TryGetValue(Dropdown.options[Dropdown.value].text, out settings)) return;
@@ -125,6 +126,12 @@ public class DropdownSaveLoadController : MonoBehaviour
         PortalSettingsSaver.Current = Dropdown.options[Dropdown.value].text;
         if (!startup) PortalSettingsSaver.SaveProgramSettings();
         // Disable X and Y sliders so only one call to update the overlay occurs
+        XSlider.Slider.minValue = settings.X - 2f;
+        XSlider.Slider.maxValue = settings.X + 2f;
+        YSlider.Slider.minValue = settings.Y - 2f;
+        YSlider.Slider.maxValue = settings.Y + 2f;
+        ZSlider.Slider.minValue = settings.Z - 2f;
+        ZSlider.Slider.maxValue = settings.Z + 2f;
         XSlider.Slider.value = settings.X;
         YSlider.Slider.value = settings.Y;
         ZSlider.Slider.value = settings.Z;
@@ -139,9 +146,9 @@ public class DropdownSaveLoadController : MonoBehaviour
         RYSlider.OnSliderChanged();
         RZSlider.OnSliderChanged();
 
-        if (RXSlider.InputField != null) RXSlider.InputField.text = settings.RX.ToString();
-        if (RYSlider.InputField != null) RYSlider.InputField.text = settings.RY.ToString();
-        if (RZSlider.InputField != null) RZSlider.InputField.text = settings.RZ.ToString();
+        if (RXSlider.RotationField != null) RXSlider.RotationField.SetSafeValue(settings.RX);
+        if (RYSlider.RotationField != null) RYSlider.RotationField.SetSafeValue(settings.RY);
+        if (RZSlider.RotationField != null) RZSlider.RotationField.SetSafeValue(settings.RZ);
 
         DeviceDropdown.SetToOption(settings.Device.ToString());
         PointDropdown.SetToOption(settings.Point.ToString());

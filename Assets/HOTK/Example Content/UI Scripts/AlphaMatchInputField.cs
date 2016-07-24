@@ -15,6 +15,8 @@ public class AlphaMatchInputField : MonoBehaviour
 
     private InputField _inputField;
 
+    private float _lastSafeValue;
+
     public void OnEnable()
     {
         if (Overlay == null) return;
@@ -37,7 +39,11 @@ public class AlphaMatchInputField : MonoBehaviour
     public void OnAlphaChanged()
     {
         float f;
-        if (!float.TryParse(InputField.text, out f)) return;
+        if (!float.TryParse(InputField.text, out f))
+        {
+            InputField.text = _lastSafeValue.ToString();
+            return;
+        }
         if (Overlay == null) return;
         switch (Value)
         {
@@ -45,30 +51,36 @@ public class AlphaMatchInputField : MonoBehaviour
                 if (f >= 0)
                 {
                     Overlay.Alpha = f;
+                    _lastSafeValue = f;
                 }
                 else
                 {
                     InputField.text = Overlay.Alpha.ToString();
+                    _lastSafeValue = Overlay.Alpha;
                 }
                 break;
             case InputValue.AlphaEnd:
                 if (f >= 0)
                 {
                     Overlay.Alpha2 = f;
+                    _lastSafeValue = f;
                 }
                 else
                 {
                     InputField.text = Overlay.Alpha2.ToString();
+                    _lastSafeValue = Overlay.Alpha2;
                 }
                 break;
             case InputValue.AlphaSpeed:
                 if (f >= 0)
                 {
                     Overlay.AlphaSpeed = f;
+                    _lastSafeValue = f;
                 }
                 else
                 {
                     InputField.text = Overlay.AlphaSpeed.ToString();
+                    _lastSafeValue = Overlay.AlphaSpeed;
                 }
                 break;
             default:
