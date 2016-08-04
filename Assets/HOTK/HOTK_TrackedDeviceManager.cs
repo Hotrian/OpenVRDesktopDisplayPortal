@@ -1,10 +1,14 @@
 ﻿using System;
+using System.Linq;
 using UnityEngine;
 using Valve.VR;
 
 public class HOTK_TrackedDeviceManager : MonoBehaviour
 {
     public static Action<ETrackedControllerRole, uint> OnControllerIndexChanged; // Called any time a specific controller changes index
+    public static Action<HOTK_TrackedDevice> OnControllerTriggerDown;
+    public static Action<HOTK_TrackedDevice> OnControllerTriggerUp;
+    public static Action<HOTK_TrackedDevice> OnControllerTriggerClicked;
     public static Action OnControllerIndicesUpdated; // Called only when both controllers have been checked/assigned or are swapped
 
     public static HOTK_TrackedDeviceManager Instance
@@ -34,8 +38,10 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
         }
     }
 
+    private HOTK_TrackedDevice _leftTracker;
+    private HOTK_TrackedDevice _rightTracker;
+
     private static HOTK_TrackedDeviceManager _instance;
-    private bool AlertsEnabled = true;
 
     private uint _leftIndex = OpenVR.k_unTrackedDeviceIndexInvalid;
     private uint _rightIndex = OpenVR.k_unTrackedDeviceIndexInvalid;
@@ -51,6 +57,24 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
         FindHMD();
         FindControllers();
         UpdatePoses();
+        UpdateButtons();
+    }
+    
+    private void FindTracker(ref HOTK_TrackedDevice tracker, HOTK_TrackedDevice.EType type)
+    {
+        if (tracker != null && tracker.IsValid) return;
+        // Try to find an HOTK_TrackedDevice that is active and tracking the HMD
+        foreach (var g in FindObjectsOfType<HOTK_TrackedDevice>().Where(g => g.enabled && g.Type == type))
+        {
+            tracker = g;
+            break;
+        }
+
+        if (tracker != null) return;
+        Debug.LogWarning("Couldn't find a " + type.ToString() + " tracker. Making one up :(");
+        var go = new GameObject(type.ToString() + " Tracker", typeof(HOTK_TrackedDevice)) { hideFlags = HideFlags.HideInHierarchy }.GetComponent<HOTK_TrackedDevice>();
+        go.Type = type;
+        tracker = go;
     }
 
     private readonly TrackedDevicePose_t[] _poses = new TrackedDevicePose_t[OpenVR.k_unMaxTrackedDeviceCount];
@@ -67,6 +91,43 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
         compositor.GetLastPoses(_poses, _gamePoses);
         SteamVR_Utils.Event.Send("new_poses", _poses);
         SteamVR_Utils.Event.Send("new_poses_applied");
+    }
+
+    private bool _clickedLeft;
+    private bool _clickedRight;
+
+    private void UpdateButtons()
+    {
+        UpdateTrigger(_leftTracker, ref _clickedLeft, ETrackedControllerRole.LeftHand);
+        UpdateTrigger(_rightTracker, ref _clickedRight, ETrackedControllerRole.RightHand);
+    }
+
+    private void UpdateTrigger(HOTK_TrackedDevice dev, ref bool clicked, ETrackedControllerRole role)
+    {
+        var svr = SteamVR.instance; // Init the SteamVR drivers
+        if (svr == null) return;
+        var c = new VRControllerState_t();
+        svr.hmd.GetControllerState((uint)dev.Index, ref c);
+        if (c.rAxis1.x >= 0.99f)
+        {
+            if (!clicked)
+            {
+                clicked = true;
+                if (OnControllerTriggerDown != null)
+                    OnControllerTriggerDown(dev);
+            }
+        }
+        else
+        {
+            if (clicked)
+            {
+                clicked = false;
+                if (OnControllerTriggerClicked != null)
+                    OnControllerTriggerClicked(dev);
+                //if (OnControllerTriggerUp != null)
+                //    OnControllerTriggerUp(dev);
+            }
+        }
     }
     
     /// <summary>
@@ -127,6 +188,8 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
             LogError("OpenVR System not found.");
             return;
         }
+        FindTracker(ref _leftTracker, HOTK_TrackedDevice.EType.LeftController);
+        FindTracker(ref _rightTracker, HOTK_TrackedDevice.EType.RightController);
         if (_noControllersCount >= 10)
         {
             return;

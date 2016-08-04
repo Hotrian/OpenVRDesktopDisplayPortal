@@ -9,21 +9,20 @@ using Valve.VR;
 public class DropdownMatchEnumOptions : MonoBehaviour
 {
     public HOTK_Overlay Overlay;
-
     public EnumSelection EnumOptions;
-
     public Dropdown Dropdown
     {
         get { return _dropdown ?? (_dropdown = GetComponent<Dropdown>()); }
     }
 
     private Dropdown _dropdown;
+    private bool _ignoreNextChange; // Skip the next SetDropdownState call (used for loading so the change doesn't get called multiple times)
 
     public void OnEnable()
     {
         if (Dropdown == null) return;
         Dropdown.ClearOptions();
-        var strings = new List<string>();
+        var strings = new List<string>(); // Builds a list of strings for this dropdown
         switch (EnumOptions)
         {
             case EnumSelection.AttachmentDevice:
@@ -42,11 +41,24 @@ public class DropdownMatchEnumOptions : MonoBehaviour
                 break;
             case EnumSelection.Framerate:
                 strings.AddRange(from object e in Enum.GetValues(typeof(HOTK_Overlay.FramerateMode)) select e.ToString());
-                var stringsProcessed = strings.Select(t => t.StartsWith("_") ? t.Substring(1) : t).ToList();
+                var stringsProcessed = strings.Select(t => t.StartsWith("_") ? t.Substring(1) : t).ToList(); // Convert FPS Titles because Enum Names cannot start with numbers
                 Dropdown.AddOptions(stringsProcessed);
                 var index = strings.IndexOf(Overlay.Framerate.ToString());
                 if (index == -1) index = stringsProcessed.IndexOf(Overlay.Framerate.ToString());
                 if (index != -1) Dropdown.value = index;
+                break;
+            case EnumSelection.CaptureMode:
+                strings.AddRange(CaptureModeNames.Where((t, i) => CaptureModesEnabled[i]));
+                Dropdown.AddOptions(strings);
+                _ignoreNextChange = true;
+                if (DesktopPortalController.Instance.SelectedWindowSettings != null)
+                    Dropdown.value = strings.IndexOf(CaptureModeNames[(int)DesktopPortalController.Instance.SelectedWindowSettings.captureMode]);
+                break;
+            case EnumSelection.MouseMode:
+                strings.AddRange(MouseModeNames);
+                Dropdown.AddOptions(strings);
+                if (DesktopPortalController.Instance.SelectedWindowSettings != null)
+                    Dropdown.value = strings.IndexOf(MouseModeNames[(int)DesktopPortalController.Instance.SelectedWindowSettings.interactionMode]);
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
@@ -57,6 +69,7 @@ public class DropdownMatchEnumOptions : MonoBehaviour
     private bool SetToRightController = false;
     private bool SetToLeftController = false;
 
+    // Handles reselecting the given controller when controller indices have been swapped
     public void SwapControllers()
     {
         if (HOTK_TrackedDeviceManager.Instance.LeftIndex != OpenVR.k_unTrackedDeviceIndexInvalid && HOTK_TrackedDeviceManager.Instance.RightIndex != OpenVR.k_unTrackedDeviceIndexInvalid) return; // If both controllers are found, don't swap selected name
@@ -64,6 +77,7 @@ public class DropdownMatchEnumOptions : MonoBehaviour
         else if (Dropdown.options[Dropdown.value].text == HOTK_Overlay.AttachmentDevice.RightController.ToString()) SetToLeftController = true;
     }
 
+    // Update the device dropdown when Devices change
     private void UpdateDeviceDropdown()
     {
         var strings = new List<string>
@@ -83,6 +97,11 @@ public class DropdownMatchEnumOptions : MonoBehaviour
 
     public void SetDropdownState(string val)
     {
+        if (_ignoreNextChange)
+        {
+            _ignoreNextChange = false;
+            return;
+        }
         switch (EnumOptions)
         {
             case EnumSelection.AttachmentDevice:
@@ -95,16 +114,25 @@ public class DropdownMatchEnumOptions : MonoBehaviour
                 Overlay.AnimateOnGaze = (HOTK_Overlay.AnimationType) Enum.Parse(typeof (HOTK_Overlay.AnimationType), Dropdown.options[Dropdown.value].text);
                 break;
             case EnumSelection.Framerate:
-                var text = Dropdown.options[Dropdown.value].text == HOTK_Overlay.FramerateMode.AsFastAsPossible.ToString() ? Dropdown.options[Dropdown.value].text : "_" + Dropdown.options[Dropdown.value].text;
+                var text = Dropdown.options[Dropdown.value].text == HOTK_Overlay.FramerateMode.AsFastAsPossible.ToString() ? Dropdown.options[Dropdown.value].text : "_" + Dropdown.options[Dropdown.value].text; // Convert FPS Titles because Enum Names cannot start with numbers
                 Overlay.Framerate = (HOTK_Overlay.FramerateMode)Enum.Parse(typeof(HOTK_Overlay.FramerateMode), text);
+                break;
+            case EnumSelection.CaptureMode:
+                var index = CaptureModeNames.IndexOf(Dropdown.options[Dropdown.value].text);
+                DesktopPortalController.Instance.SelectedWindowSettings.captureMode = index == -1 ? DesktopPortalController.CaptureMode.GDIDirect : (DesktopPortalController.CaptureMode)index; // Fallback to GDI Direct if they were using a now disabled capture method
+                break;
+            case EnumSelection.MouseMode:
+                DesktopPortalController.Instance.SelectedWindowSettings.interactionMode = (DesktopPortalController.MouseInteractionMode) MouseModeNames.IndexOf(Dropdown.options[Dropdown.value].text);
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
         }
     }
 
-    public void SetToOption(string text)
+    public void SetToOption(string text, bool ignoreChange = false)
     {
+        if (ignoreChange)
+            _ignoreNextChange = true;
         for (var i = 0; i < Dropdown.options.Count; i ++)
         {
             if (Dropdown.options[i].text != text) continue;
@@ -118,6 +146,25 @@ public class DropdownMatchEnumOptions : MonoBehaviour
         AttachmentDevice,
         AttachmentPoint,
         AnimationType,
-        Framerate
+        Framerate,
+        CaptureMode,
+        MouseMode
     }
+
+    public static readonly List<string> CaptureModeNames = new List<string>
+    {
+        "GDIDirect", "GDIIndirect", "W8/W10 Replication API"
+    };
+
+    public static readonly List<bool> CaptureModesEnabled = new List<bool>()
+    {
+        true,
+        true,
+        false
+    };
+
+    public static readonly List<string> MouseModeNames = new List<string>
+    {
+        "Full Interaction", "Window On Top", "Click Interaction Only", "No Interaction"
+    };
 }

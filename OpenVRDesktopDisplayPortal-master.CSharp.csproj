@@ -61,8 +61,14 @@
     <Reference Include="UnityEditor">
       <HintPath>Library\UnityAssemblies\UnityEditor.dll</HintPath>
     </Reference>
+    <Reference Include="System.Deployment">
+      <HintPath>Assets\Plugins\System.Deployment.dll</HintPath>
+    </Reference>
     <Reference Include="System.Drawing">
       <HintPath>Assets\Plugins\System.Drawing.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Windows.Forms">
+      <HintPath>Assets\Plugins\System.Windows.Forms.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -72,6 +78,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\AutoResizeRenderTexture.cs" />
     <Compile Include="Assets\HOTK\Example Content\DesktopCameraScript.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\AlphaMatchInputField.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\ApplicationDropdownScript.cs" />
@@ -79,6 +86,7 @@
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\ButtonHideWhenNotController.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\ButtonSwapControllers.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\DisableOnEventTrigger.cs" />
+    <Compile Include="Assets\HOTK\Example Content\UI Scripts\DropdownApplicationModeController.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\DropdownHideWhenNotController.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\DropdownMatchEnumOptions.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\DropdownSaveLoadController.cs" />
@@ -95,8 +103,15 @@
     <Compile Include="Assets\HOTK\HOTK_TrackedDeviceManager.cs" />
     <Compile Include="Assets\HOTK\Portal\DesktopPortalController.cs" />
     <Compile Include="Assets\HOTK\Portal\PortalSettingsSaver.cs" />
+    <Compile Include="Assets\HOTK\Twitch\TwitchChatTester.cs" />
+    <Compile Include="Assets\HOTK\Twitch\TwitchIRC.cs" />
+    <Compile Include="Assets\HOTK\Twitch\TwitchSettingsSaver.cs" />
+    <Compile Include="Assets\HOTK\VLC\VLCPlayerController.cs" />
     <Compile Include="Assets\HotkeyController.cs" />
+    <Compile Include="Assets\MultiModeController.cs" />
+    <Compile Include="Assets\RenderTextureToCameraScript.cs" />
     <Compile Include="Assets\ScreenCapture\CaptureScreen.cs" />
+    <Compile Include="Assets\ScreenCapture\CursorInteraction.cs" />
     <Compile Include="Assets\ScreenCapture\GDIStuff.cs" />
     <Compile Include="Assets\ScreenCapture\RECT.cs" />
     <Compile Include="Assets\ScreenCapture\Win32Stuff.cs" />

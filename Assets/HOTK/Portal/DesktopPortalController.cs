@@ -17,10 +17,49 @@ using Image = UnityEngine.UI.Image;
 
 public class DesktopPortalController : MonoBehaviour
 {
-    public Texture2D DefaultTexture;
-    public Toggle HelpLabelToggle;
-    public Toggle DirectCaptureToggle;
+    public static DesktopPortalController Instance
+    {
+        get { return _instance ?? (_instance = FindObjectOfType<DesktopPortalController>()); }
+    }
+
+    private static DesktopPortalController _instance;
+
+    public Camera RenderCamera;
+
+    public RenderTexture RenderTexture
+    {
+        get { return _renderTexture ?? (_renderTexture = NewRenderTexture()); }
+    }
+
+    private RenderTexture _renderTexture;
+
+    private int _RenderTextureMarginWidth = 0;
+    private int _RenderTextureMarginHeight = 0;
+
+    private RenderTexture NewRenderTexture()
+    {
+        var r = new RenderTexture((int)DisplayQuad.transform.localScale.x + _RenderTextureMarginWidth, (int)DisplayQuad.transform.localScale.y + _RenderTextureMarginHeight, 24);
+        var previous = RenderCamera.targetTexture;
+        RenderCamera.targetTexture = r;
+        Overlay.OverlayTexture = r;
+        if (previous != null) previous.Release();
+        return r;
+    }
+
+    public RenderTexture GetNewRenderTexture(int width = 0, int height = 0)
+    {
+        _RenderTextureMarginWidth = width;
+        _RenderTextureMarginHeight = height;
+        _renderTexture = null;
+        return RenderTexture;
+    }
+
+    public Texture DefaultTexture;
+    public DropdownMatchEnumOptions CaptureModeDropdown;
     public Toggle MinimizedToggle;
+    public Image SizeLockSprite;
+    public Sprite LockSprite;
+    public Sprite UnlockSprite;
 
     public InputField OffsetLeftField;
     public InputField OffsetTopField;
@@ -35,6 +74,10 @@ public class DesktopPortalController : MonoBehaviour
     public Dropdown ApplicationDropdown;
     public GameObject DisplayQuad;
 
+    public GameObject CursorGameObject;
+
+    public Material OutlineMaterial;
+
     public Text FPSCounter;
     public Text ResolutionDisplay;
 
@@ -43,9 +86,9 @@ public class DesktopPortalController : MonoBehaviour
 
     IntPtr SelectedWindow = IntPtr.Zero;
     string SelectedWindowFullPath = string.Empty;
-    string SelectedWindowPath = string.Empty;
-    string SelectedWindowEXE = string.Empty;
-    WindowSettings SelectedWindowSettings = null;
+    //string SelectedWindowPath = string.Empty;
+    //string SelectedWindowEXE = string.Empty;
+    public WindowSettings SelectedWindowSettings = null;
 
     [HideInInspector]
     public string SelectedWindowTitle;
@@ -59,11 +102,20 @@ public class DesktopPortalController : MonoBehaviour
     private int _currentWindowWidth;
     private int _currentWindowHeight;
 
-    public void Start ()
+    private int _currentCaptureWidth;
+    private int _currentCaptureHeight;
+
+    private bool _subscribed;
+
+    public void OnEnable()
     {
-        var ins = SteamVR.instance;
+        // ReSharper disable once UnusedVariable
+        #pragma warning disable 0168
+        var ins = SteamVR.instance; // Force SteamVR Plugin to Init
+        #pragma warning restore 0168
         if (Overlay != null)
         {
+            SaveLoad.Load();
             bitmap = CaptureScreen.CaptureDesktop();
             texture = new Texture2D(bitmap.Width, bitmap.Height);
             texture.filterMode = FilterMode.Point;
@@ -72,17 +124,133 @@ public class DesktopPortalController : MonoBehaviour
             bitmap.Save(stream, ImageFormat.Png);
             stream.Seek(0, SeekOrigin.Begin);
 
-            Overlay.OverlayTexture = texture;
+            Overlay.OverlayTexture = RenderTexture;
+            DisplayQuad.GetComponent<Renderer>().material.mainTexture = texture;
+            DisplayQuad.transform.localScale = new Vector3(bitmap.Width, bitmap.Height, 1f);
 
             texture.LoadImage(stream.ToArray());
 
             RefreshWindowList();
 
-            SaveLoad.Load();
-
             StartCoroutine("UpdateEvery1Second");
             StartCoroutine("UpdateEvery10Seconds");
+            if (!_subscribed)
+            {
+                _subscribed = true;
+                HOTK_TrackedDeviceManager.OnControllerTriggerClicked += ClickApplication;
+                HOTK_TrackedDeviceManager.OnControllerTriggerDown += TestForApplication;
+                Overlay.OnControllerHitsOverlay += MoveOverApplication;
+                Overlay.OnControllerUnhitsOverlay += UnsetLastHit;
+            }
         }
+    }
+
+    private bool _didHitOverlay;
+    private bool _didHitOverlay2;
+
+    private void MoveOverApplication(HOTK_Overlay o, HOTK_TrackedDevice tracker, HOTK_Overlay.IntersectionResults result)
+    {
+        if (Overlay.AnchorDevice == HOTK_Overlay.AttachmentDevice.LeftController && tracker.Type == HOTK_TrackedDevice.EType.LeftController) return;
+        if (Overlay.AnchorDevice == HOTK_Overlay.AttachmentDevice.RightController && tracker.Type == HOTK_TrackedDevice.EType.RightController) return;
+        CancelInvoke("HideCursor");
+        if (_currentWindowWidth > 0 && _currentWindowHeight > 0)
+        {
+            var p = new Point((int) ((_currentWindowWidth + _RenderTextureMarginWidth) * result.UVs.x),
+                              (int) ((_currentWindowHeight + _RenderTextureMarginHeight) * result.UVs.y));
+            var v1 = new Vector3(-(_currentWindowWidth / 2f) + p.X - (_RenderTextureMarginWidth / 2f), (_currentWindowHeight / 2f) - p.Y + (_RenderTextureMarginHeight / 2f), -0.5f);
+            var v2 = new Vector2((_currentWindowWidth / 2f) + v1.x, (_currentWindowHeight / 2f) - v1.y);
+
+            Debug.Log("( " + v2.x + " / " + _currentWindowWidth + " ) x ( " + v2.y + " / " + _currentWindowHeight + " )");
+
+            if (v2.x > 0 && v2.y > 0 && v2.x < _currentWindowWidth && v2.y < _currentWindowHeight)
+            {
+                _didHitOverlay = true;
+                CursorInteraction.MoveOverWindow(SelectedWindow, new Point((int)v2.x, (int)v2.y));
+                ShowCursor();
+                Invoke("HideCursor", 1f);
+                CursorGameObject.transform.localPosition = v1;
+                StartCoroutine("FadeInOutline");
+            }
+            else
+            {
+                HideCursor();
+                StartCoroutine("FadeOutOutline");
+            }
+        }
+        else
+        {
+            HideCursor();
+            StartCoroutine("FadeOutOutline");
+        }
+    }
+
+    IEnumerator FadeInOutline()
+    {
+        StopCoroutine("FadeOutOutline");
+        while (OutlineMaterial.color.a < 1f)
+        {
+            OutlineMaterial.color = new Color(OutlineMaterial.color.r, OutlineMaterial.color.b, OutlineMaterial.color.g, OutlineMaterial.color.a + 0.1f);
+            yield return new WaitForSeconds(0.05f);
+        }
+    }
+
+    IEnumerator FadeOutOutline()
+    {
+        StopCoroutine("FadeInOutline");
+        while (OutlineMaterial.color.a > 0f)
+        {
+            OutlineMaterial.color = new Color(OutlineMaterial.color.r, OutlineMaterial.color.b, OutlineMaterial.color.g, OutlineMaterial.color.a - 0.1f);
+            yield return new WaitForSeconds(0.05f);
+        }
+    }
+
+    private void UnsetLastHit(HOTK_Overlay o, HOTK_TrackedDevice tracker)
+    {
+        _didHitOverlay = false;
+        _didHitOverlay2 = false;
+        StartCoroutine("FadeOutOutline");
+    }
+
+    private void ShowCursor()
+    {
+        CursorGameObject.SetActive(true);
+    }
+
+    private void HideCursor()
+    {
+        CursorGameObject.SetActive(false);
+    }
+
+    private void TestForApplication(HOTK_TrackedDevice tracker)
+    {
+        if (_didHitOverlay)
+            _didHitOverlay2 = true;
+    }
+
+    public void ClickApplication(HOTK_TrackedDevice tracker)
+    {
+        if (!_didHitOverlay2) return;
+        Debug.Log("Try Click " + tracker.Type);
+        if (SelectedWindow == IntPtr.Zero) return;
+        Debug.Log("Clicking" + tracker.Type);
+        CursorInteraction.ClickOnPoint(SelectedWindow);
+    }
+    public void ReleaseApplication(HOTK_TrackedDevice tracker)
+    {
+        Debug.Log("Try Release" + tracker.Type);
+        if (SelectedWindow == IntPtr.Zero) return;
+        CursorInteraction.ReleaseClick(SelectedWindow);
+    }
+
+    public void OnDisable()
+    {
+        StopCoroutine("CaptureWindow");
+        SelectedWindow = IntPtr.Zero;
+        SelectedWindowTitle = "";
+        Overlay.OverlayTexture = DefaultTexture;
+        if (DisplayQuad == null) return;
+        DisplayQuad.GetComponent<Renderer>().material.mainTexture = DefaultTexture;
+        DisplayQuad.transform.localScale = new Vector3(860f, 389f, 1f);
     }
 
     public void EnableFPSCounter()
@@ -143,6 +311,14 @@ public class DesktopPortalController : MonoBehaviour
                 if (!OffsetWidthField.isFocused && !OffsetHeightField.isFocused)
                 {
                     var r = CaptureScreen.GetWindowRect(SelectedWindow);
+                    if (SelectedWindowSettings.windowSizeLocked && SelectedWindowSettings.offsetWidth > 0 && SelectedWindowSettings.offsetHeight > 0)
+                    {
+                        r.Width = SelectedWindowSettings.offsetWidth;
+                        r.Height = SelectedWindowSettings.offsetHeight;
+                        SetWindowSize(r);
+                    }
+                    _currentCaptureWidth = r.Width;
+                    _currentCaptureHeight = r.Height;
                     OffsetWidthField.text = r.Width.ToString();
                     OffsetHeightField.text = r.Height.ToString();
                 }
@@ -187,26 +363,24 @@ public class DesktopPortalController : MonoBehaviour
         foreach (var w in windows)
         {
             var title = Win32Stuff.GetWindowText(w);
-            if (title.Length > 0)
+            if (title.Length <= 0) continue;
+            var copy = 0;
+            var found = false;
+            while (!found)
             {
-                var copy = 0;
-                var found = false;
-                while (!found)
+                try
                 {
-                    try
-                    {
-                        Windows.Add(copy == 0 ? title : string.Format("{0} ({1})", title, copy), w);
-                        found = true;
-                    }
-                    catch (ArgumentException e)
-                    {
-                        copy++;
-                    }
+                    Windows.Add(copy == 0 ? title : string.Format("{0} ({1})", title, copy), w);
+                    found = true;
                 }
-
-                Titles.Add(copy == 0 ? title : string.Format("{0} ({1})", title, copy));
-                count++;
+                catch (ArgumentException)
+                {
+                    copy++;
+                }
             }
+
+            Titles.Add(copy == 0 ? title : string.Format("{0} ({1})", title, copy));
+            count++;
         }
 
         ApplicationDropdown.ClearOptions();
@@ -214,7 +388,7 @@ public class DesktopPortalController : MonoBehaviour
         _reselecting = true;
         ApplicationDropdown.value = 0;
 
-        bool foundCurrent = false;
+        var foundCurrent = false;
         if (!string.IsNullOrEmpty(SelectedWindowTitle))
         {
             for (var i = 0; i < ApplicationDropdown.options.Count; i++)
@@ -264,8 +438,8 @@ public class DesktopPortalController : MonoBehaviour
             {
                 SelectedWindow = IntPtr.Zero;
                 SelectedWindowFullPath = string.Empty;
-                SelectedWindowPath = string.Empty;
-                SelectedWindowEXE = string.Empty;
+                //SelectedWindowPath = string.Empty;
+                //SelectedWindowEXE = string.Empty;
                 SelectedWindowSettings = null;
 
                 ApplicationDropdown.captionText.text = count + " window(s) detected";
@@ -293,22 +467,25 @@ public class DesktopPortalController : MonoBehaviour
             SelectedWindowFullPath = Win32Stuff.GetFilePath(SelectedWindow);
             if (!string.IsNullOrEmpty(SelectedWindowFullPath))
             {
-                int pos =
-                    SelectedWindowFullPath.LastIndexOfAny(new char[]
-                    {Path.PathSeparator, Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar}) + 1;
-                SelectedWindowPath = SelectedWindowFullPath.Substring(0, pos);
-                SelectedWindowEXE = SelectedWindowFullPath.Substring(pos);
+                //int pos = SelectedWindowFullPath.LastIndexOfAny(new char[]{Path.PathSeparator, Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar}) + 1;
+                //SelectedWindowPath = SelectedWindowFullPath.Substring(0, pos);
+                //SelectedWindowEXE = SelectedWindowFullPath.Substring(pos);
                 SelectedWindowSettings = LoadConfig(SelectedWindowFullPath);
+                CaptureModeDropdown.SetToOption(DropdownMatchEnumOptions.CaptureModeNames[(int)SelectedWindowSettings.captureMode]);
             }
             else
             {
                 Debug.LogWarning("Failed to grab path info. Settings might not work properly.");
                 SelectedWindowFullPath = string.Empty;
-                SelectedWindowPath = string.Empty;
-                SelectedWindowEXE = string.Empty;
+                //SelectedWindowPath = string.Empty;
+                //SelectedWindowEXE = string.Empty;
                 SelectedWindowSettings = LoadConfig(SelectedWindowTitle);
+                CaptureModeDropdown.SetToOption(DropdownMatchEnumOptions.CaptureModeNames[(int)SelectedWindowSettings.captureMode]);
             }
+            //Debug.Log("Begin Capture " + SelectedWindowTitle);
             var r = CaptureScreen.GetWindowRect(SelectedWindow);
+            _currentCaptureWidth = r.Width;
+            _currentCaptureHeight = r.Height;
             OffsetWidthField.text = r.Width.ToString();
             OffsetHeightField.text = r.Height.ToString();
             StartCoroutine("CaptureWindow");
@@ -331,41 +508,35 @@ public class DesktopPortalController : MonoBehaviour
                 Win32Stuff.ShowWindow(SelectedWindow, ShowWindowCommands.Minimize);
         }
     }
-    
-    public void ToggleDirectMode()
+
+    public void ToggleSizeLocked()
     {
         if (SelectedWindow != IntPtr.Zero)
         {
-            SelectedWindowSettings.directMode = DirectCaptureToggle.isOn;
+            SelectedWindowSettings.windowSizeLocked = !SelectedWindowSettings.windowSizeLocked;
+            SizeLockSprite.sprite = SelectedWindowSettings.windowSizeLocked ? LockSprite : UnlockSprite;
+            if (SelectedWindowSettings.windowSizeLocked)
+            {
+                int v;
+                if (int.TryParse(OffsetWidthField.text, out v)) { if (v > 0) { SelectedWindowSettings.offsetWidth = v;} }
+                if (int.TryParse(OffsetHeightField.text, out v)) { if (v > 0) { SelectedWindowSettings.offsetHeight = v;} }
+            }
         }
     }
 
-    // Update is called once per frame
-    /*IEnumerator CaptureDesktop()
-    {
-        Overlay.OverlayTexture = texture;
-        DisplayMaterial.mainTexture = texture;
-        while (Application.isPlaying)
-        {
-            bitmap = CaptureScreen.CaptureDesktop();
-            bitmap.Save(stream, ImageFormat.Png);
-            stream.Seek(0, SeekOrigin.Begin);
-            texture.LoadImage(stream.ToArray());
-            yield return new WaitForEndOfFrame();
-        }
-    }*/
-
     CaptureScreen.SIZE size;
+    #pragma warning disable 0414
     Win32Stuff.WINDOWINFO info;
+    #pragma warning restore 0414
     private bool wasDirect;
 
     IEnumerator CaptureWindow()
     {
-        Overlay.OverlayTexture = texture;
+        Overlay.OverlayTexture = RenderTexture;
         DisplayMaterial.mainTexture = texture;
         while (Application.isPlaying && SelectedWindow != IntPtr.Zero)
         {
-            if (SelectedWindowSettings.directMode)
+            if (SelectedWindowSettings.captureMode == CaptureMode.GDIDirect)
             {
                 if (!wasDirect)
                 {
@@ -374,7 +545,7 @@ public class DesktopPortalController : MonoBehaviour
                 }
                 bitmap = CaptureScreen.CaptureWindowDirect(SelectedWindow, SelectedWindowSettings, out size, out info);
             }
-            else
+            else if (SelectedWindowSettings.captureMode == CaptureMode.GDIIndirect)
             {
                 if (wasDirect)
                 {
@@ -387,14 +558,15 @@ public class DesktopPortalController : MonoBehaviour
             {
                 SelectedWindow = IntPtr.Zero;
                 SelectedWindowFullPath = string.Empty;
-                SelectedWindowPath = string.Empty;
-                SelectedWindowEXE = string.Empty;
+                //SelectedWindowPath = string.Empty;
+                //SelectedWindowEXE = string.Empty;
                 SelectedWindowSettings = null;
                 SelectedWindowTitle = null;
                 _currentWindowWidth = 0;
                 _currentWindowHeight = 0;
                 ResolutionDisplay.text = "";
                 DisplayQuad.transform.localScale = new Vector3(0f, 0f, 1f);
+                Overlay.ClearOverlayTexture();
                 StartRefreshing();
                 break;
             }
@@ -406,7 +578,7 @@ public class DesktopPortalController : MonoBehaviour
                 _currentWindowWidth = size.cx;
                 _currentWindowHeight = size.cy;
                 ResolutionDisplay.text = string.Format("( {0} x {1} )", size.cx, size.cy);
-                DisplayQuad.transform.localScale = new Vector3(size.cx / 100f, size.cy / 100f, 1f);
+                DisplayQuad.transform.localScale = new Vector3(size.cx, size.cy, 1f);
             }
             Overlay.RefreshTexture();
             switch (Overlay.Framerate)
@@ -500,15 +672,19 @@ public class DesktopPortalController : MonoBehaviour
                         if (v > 0)
                         {
                             r.Width = v;
+                            SelectedWindowSettings.offsetWidth = v;
+                            if (SelectedWindowSettings.offsetHeight <= 0) SelectedWindowSettings.offsetHeight = r.Height;
                             SetWindowSize(r);
                         }
                         else
                         {
+                            _currentCaptureWidth = r.Width;
                             OffsetWidthField.text = r.Width.ToString();
                         }
                     }
                     else
                     {
+                        _currentCaptureWidth = r.Width;
                         OffsetWidthField.text = r.Width.ToString();
                     }
                     break;
@@ -519,15 +695,19 @@ public class DesktopPortalController : MonoBehaviour
                         if (v > 0)
                         {
                             r.Height = v;
+                            SelectedWindowSettings.offsetHeight = v;
+                            if (SelectedWindowSettings.offsetWidth <= 0) SelectedWindowSettings.offsetWidth = r.Width;
                             SetWindowSize(r);
                         }
                         else
                         {
+                            _currentCaptureHeight = r.Height;
                             OffsetHeightField.text = r.Height.ToString();
                         }
                     }
                     else
                     {
+                        _currentCaptureHeight = r.Height;
                         OffsetHeightField.text = r.Height.ToString();
                     }
                     break;
@@ -539,7 +719,7 @@ public class DesktopPortalController : MonoBehaviour
 
     public void SetWindowSize(RECT r)
     {
-        CaptureScreen.SetWindowRect(SelectedWindow, r, !SelectedWindowSettings.directMode);
+        CaptureScreen.SetWindowRect(SelectedWindow, r, SelectedWindowSettings.captureMode == CaptureMode.GDIIndirect);
     }
 
     public WindowSettings LoadConfig(string name)
@@ -551,6 +731,10 @@ public class DesktopPortalController : MonoBehaviour
             settings = new WindowSettings {SaveFileVersion = WindowSettings.CurrentSaveVersion};
             SaveLoad.savedSettings.Add(name, settings);
         }
+        //else
+        //{
+        //    Debug.Log("Loading Config [" + name + "]. Version: " + settings.SaveFileVersion);
+        //}
 
         if (settings.SaveFileVersion == 0)
         {
@@ -566,12 +750,38 @@ public class DesktopPortalController : MonoBehaviour
             settings.SaveFileVersion = 1;
         }
 
+        if (settings.SaveFileVersion == 1)
+        {
+            Debug.Log("Upgrading [" + name + "] to SaveFileVersion 2.");
+            settings.captureMode = settings.directMode ? CaptureMode.GDIDirect : CaptureMode.GDIIndirect;
+            settings.interactionMode = MouseInteractionMode.DirectInteraction;
+            settings.directMode = false;
+            settings.windowSizeLocked = false;
+            settings.SaveFileVersion = 2;
+        }
+
         OffsetLeftField.text = settings.offsetLeft.ToString();
         OffsetTopField.text = settings.offsetTop.ToString();
         OffsetRightField.text = settings.offsetRight.ToString();
         OffsetBottomField.text = settings.offsetBottom.ToString();
-        DirectCaptureToggle.isOn = settings.directMode;
+        SizeLockSprite.sprite = settings.windowSizeLocked ? LockSprite : UnlockSprite;
+        CaptureModeDropdown.SetToOption(DropdownMatchEnumOptions.CaptureModeNames[(int)settings.captureMode], true);
         return settings;
+    }
+
+    public enum CaptureMode
+    {
+        GDIDirect = 0,
+        GDIIndirect = 1,
+        ReplicationAPI = 2,
+    }
+
+    public enum MouseInteractionMode
+    {
+        DirectInteraction = 0,   // Keep Window on top, Move Cursor
+        WindowTop = 1,           // Keep Window on top only, Send Mouse Clicks Only (No Move)
+        SendClicksOnly = 2,      // Only Send Mouse Clicks
+        Disabled = 3
     }
 }
 

@@ -246,7 +246,7 @@ public class DropdownSaveLoadController : MonoBehaviour
         if (string.IsNullOrEmpty(SaveName.text) || PortalSettingsSaver.SavedProfiles.ContainsKey(SaveName.text)) return;
         _savingNew = false;
         Debug.Log("Adding saved settings " + SaveName.text);
-        PortalSettingsSaver.SavedProfiles.Add(SaveName.text, ConvertToTwitchSettings(OverlayToSave));
+        PortalSettingsSaver.SavedProfiles.Add(SaveName.text, ConvertToPortalSettings(OverlayToSave));
         PortalSettingsSaver.SaveProfiles();
         PortalSettingsSaver.Current = SaveName.text;
         SaveName.text = "";
@@ -256,7 +256,7 @@ public class DropdownSaveLoadController : MonoBehaviour
     /// <summary>
     /// Create a new Save
     /// </summary>
-    private PortalSettings ConvertToTwitchSettings(HOTK_Overlay o) // Create a new save state
+    private PortalSettings ConvertToPortalSettings(HOTK_Overlay o) // Create a new save state
     {
         return new PortalSettings()
         {

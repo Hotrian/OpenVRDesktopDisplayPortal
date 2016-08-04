@@ -112,6 +112,9 @@ namespace ScreenCapture
         [DllImport("user32.dll")]
         private static extern bool EnumWindows(EnumWindowsProc enumProc, IntPtr lParam);
 
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern bool BringWindowToTop(IntPtr hWnd);
+
         /// <summary>
         ///     Determines the visibility state of the specified window.
         ///     <para>
@@ -185,7 +188,6 @@ namespace ScreenCapture
         ///    not be returned </param>
         public static IEnumerable<IntPtr> FindWindows(EnumWindowsProc filter)
         {
-            IntPtr found = IntPtr.Zero;
             List<IntPtr> windows = new List<IntPtr>();
 
             EnumWindows(delegate (IntPtr wnd, IntPtr param)

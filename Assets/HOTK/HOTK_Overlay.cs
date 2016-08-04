@@ -6,6 +6,7 @@ using Random = System.Random;
 
 public class HOTK_Overlay : MonoBehaviour
 {
+
     #region Custom Inspector Vars
     [NonSerialized] public bool ShowSettingsAppearance = true;
     [NonSerialized] public bool ShowSettingsInput = false;
@@ -50,6 +51,9 @@ public class HOTK_Overlay : MonoBehaviour
     public FramerateMode Framerate = FramerateMode._30FPS;
     #endregion
 
+    public Action<HOTK_Overlay, HOTK_TrackedDevice, IntersectionResults> OnControllerHitsOverlay;
+    public Action<HOTK_Overlay, HOTK_TrackedDevice> OnControllerUnhitsOverlay;
+
     #region Interal Vars
 
     public static Random rand = new Random();
@@ -72,6 +76,8 @@ public class HOTK_Overlay : MonoBehaviour
 
     private ulong _handle = OpenVR.k_ulOverlayHandleInvalid;    // caches a reference to our Overlay handle
     private HOTK_TrackedDevice _hmdTracker;                     // caches a reference to the HOTK_TrackedDevice that is tracking the HMD
+    private HOTK_TrackedDevice _leftTracker;                     // caches a reference to the HOTK_TrackedDevice that is tracking the Left Controller
+    private HOTK_TrackedDevice _rightTracker;                     // caches a reference to the HOTK_TrackedDevice that is tracking the Right Controller
     private uint _anchor;   // caches a HOTK_TrackedDevice ID for anchoring the Overlay, if applicable
     private float _alpha;
     private float _scale;
@@ -103,6 +109,8 @@ public class HOTK_Overlay : MonoBehaviour
         CheckOverlayAlphaAndScale(ref changed);
         // Check if our Overlay is being Gazed at, or has been recently and is still animating
         if (AnimateOnGaze != AnimationType.None) UpdateGaze(ref changed);
+        // Check if a controller is aiming at our Overlay
+        if (OnControllerHitsOverlay != null) UpdateControllers();
         // Check if our Overlay's HighQuality, AntiAlias, or Curved setting changed
         CheckHighQualityChanged(ref changed);
         // Update our Overlay if anything has changed
@@ -116,6 +124,40 @@ public class HOTK_Overlay : MonoBehaviour
             _justUpdated = false;
             UpdateTexture();
         }
+    }
+
+    private HOTK_TrackedDevice _lastHit;
+
+    private void UpdateControllers()
+    {
+        UpdateController(ref _leftTracker, HOTK_TrackedDevice.EType.LeftController);
+        UpdateController(ref _rightTracker, HOTK_TrackedDevice.EType.RightController);
+    }
+
+    private void UpdateController(ref HOTK_TrackedDevice tracker, HOTK_TrackedDevice.EType role)
+    {
+        FindDevice(ref tracker, role);
+        if (tracker == null || !tracker.IsValid) return;
+        if (_lastHit != null && _lastHit != tracker) return;
+        var result = new IntersectionResults();
+        var hit = ComputeIntersection(tracker.gameObject.transform.position, tracker.gameObject.transform.forward, ref result);
+        if (hit)
+        {
+            OnControllerHitsOverlay(this, tracker, result);
+            _lastHit = tracker;
+        }
+        else
+        {
+            if (_lastHit != null && OnControllerUnhitsOverlay != null) OnControllerUnhitsOverlay(this, tracker);
+            _lastHit = null;
+        }
+    }
+
+    public bool ClearOverlayTexture()
+    {
+        var overlay = OpenVR.Overlay;
+        if (overlay == null) return false;
+        return (overlay.ClearOverlayTexture(_handle) == EVROverlayError.None);
     }
 
     public void Start()
@@ -455,25 +497,21 @@ public class HOTK_Overlay : MonoBehaviour
         results.Distance = output.fDistance;
         return true;
     }
-
-    /// <summary>
-    /// Search for an HOTK_TrackedDevice that is tracking the HMD, or spawn one if required.
-    /// </summary>
-    private void FindHMD()
+    private void FindDevice(ref HOTK_TrackedDevice tracker, HOTK_TrackedDevice.EType role)
     {
-        if (_hmdTracker != null && _hmdTracker.IsValid) return;
+        if (tracker != null && tracker.IsValid) return;
         // Try to find an HOTK_TrackedDevice that is active and tracking the HMD
-        foreach (var g in FindObjectsOfType<HOTK_TrackedDevice>().Where(g => g.enabled && g.Type == HOTK_TrackedDevice.EType.HMD))
+        foreach (var g in FindObjectsOfType<HOTK_TrackedDevice>().Where(g => g.enabled && g.Type == role))
         {
-            _hmdTracker = g;
+            tracker = g;
             break;
         }
 
-        if (_hmdTracker != null) return;
-        Debug.LogWarning("Couldn't find an HMD tracker. Making one up :(");
-        var go = new GameObject("HMD Tracker", typeof(HOTK_TrackedDevice)) { hideFlags = HideFlags.HideInHierarchy }.GetComponent<HOTK_TrackedDevice>();
-        go.Type = HOTK_TrackedDevice.EType.HMD;
-        _hmdTracker = go;
+        if (tracker != null) return;
+        Debug.LogWarning("Couldn't find a " + role + " tracker. Making one up :(");
+        var go = new GameObject(role + " Tracker", typeof(HOTK_TrackedDevice)) { hideFlags = HideFlags.HideInHierarchy }.GetComponent<HOTK_TrackedDevice>();
+        go.Type = role;
+        tracker = go;
     }
 
     /// <summary>
@@ -589,7 +627,7 @@ public class HOTK_Overlay : MonoBehaviour
     /// <param name="changed"></param>
     private void UpdateGaze(ref bool changed)
     {
-        FindHMD();
+        FindDevice(ref _hmdTracker, HOTK_TrackedDevice.EType.HMD);
         var hit = false;
         if (_hmdTracker != null && _hmdTracker.IsValid)
         {
@@ -635,11 +673,11 @@ public class HOTK_Overlay : MonoBehaviour
                 uMax = (1 + UvOffset.x) * UvOffset.z, vMax = (0 + UvOffset.y) * UvOffset.w
             };
             overlay.SetOverlayTextureBounds(_handle, ref textureBounds);
-
+            
             var vecMouseScale = new HmdVector2_t
             {
-                v0 = MouseScale.x,
-                v1 = MouseScale.y
+                v0 = 1f,
+                v1 = (float)OverlayTexture.height / (float)OverlayTexture.width
             };
             overlay.SetOverlayMouseScale(_handle, ref vecMouseScale);
 
@@ -715,7 +753,7 @@ public class HOTK_Overlay : MonoBehaviour
     /// </summary>
     private void UpdateTexture(bool refresh = false)
     {
-        if (!(OverlayTexture is RenderTexture) && !refresh) return; // This covers the null check for OverlayTexture
+        if (!(OverlayTexture is RenderTexture) && !(OverlayTexture is MovieTexture) && !refresh) return; // This covers the null check for OverlayTexture
         if (_justUpdated) return;
         if (refresh && OverlayTexture == null) return;
         var overlay = OpenVR.Overlay;
@@ -728,16 +766,15 @@ public class HOTK_Overlay : MonoBehaviour
             eColorSpace = EColorSpace.Auto
         };
 
+        var vecMouseScale = new HmdVector2_t
+        {
+            v0 = 1f,
+            v1 = (float)OverlayTexture.height / (float)OverlayTexture.width
+        };
+        overlay.SetOverlayMouseScale(_handle, ref vecMouseScale);
+
         overlay.SetOverlayTexture(_handle, ref tex);
     }
-
-    /*private bool PollNextEvent(ref VREvent_t pEvent)
-    {
-        var overlay = OpenVR.Overlay;
-        if (overlay == null) return false;
-        var size = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(VREvent_t));
-        return overlay.PollNextOverlayEvent(_handle, ref pEvent, size);
-    }*/
 
     #region Structs and Enums
     public struct IntersectionResults
