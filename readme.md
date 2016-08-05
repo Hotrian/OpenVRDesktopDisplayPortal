@@ -15,18 +15,15 @@ We're receiving reports that some Rift users find some games are incompatible wi
 We have at least [one confirmation](https://www.reddit.com/r/EliteDangerous/comments/4tr3gx/you_can_now_watch_netflixyoutubemovies_in_elite/d5khcj0?context=3) that you _might_ be able to use [Revive](https://github.com/LibreVR/Revive) to trick those Rift games into drawing through SteamVR instead of Direct-To-Rift. It will be funny if this turns out to be a solution :). Please test it out if you can!
 
 ## Table of Contents
-- [Example](https://github.com/Hotrian/OpenVRDesktopDisplayPortal#example)
 - [Features](https://github.com/Hotrian/OpenVRDesktopDisplayPortal#features)
-- [Demos](https://github.com/Hotrian/OpenVRDesktopDisplayPortal#demos)
+- [Tutorials](https://github.com/Hotrian/OpenVRDesktopDisplayPortal#tutorials)
+- [Previews](https://github.com/Hotrian/OpenVRDesktopDisplayPortal#previews)
 - [Instructions](https://github.com/Hotrian/OpenVRDesktopDisplayPortal#instructions)
 - [Tested Applications](https://github.com/Hotrian/OpenVRDesktopDisplayPortal#tested-applications)
 - [Known Issues](https://github.com/Hotrian/OpenVRDesktopDisplayPortal#known-issues)
 - [Additional Notes / Tips & Tricks](https://github.com/Hotrian/OpenVRDesktopDisplayPortal#additional-notes--tips--tricks)
 - [How can I help?](https://github.com/Hotrian/OpenVRDesktopDisplayPortal#how-can-i-help)
 - [Special Thanks](https://github.com/Hotrian/OpenVRDesktopDisplayPortal#special-thanks)
-
-## Example
-![example](http://i.imgur.com/AVUvNsZ.png)
 
 ## Features
 - See your favorite Desktop application in VR! From _almost_ any SteamVR game!
@@ -37,12 +34,21 @@ We have at least [one confirmation](https://www.reddit.com/r/EliteDangerous/comm
 - Basic Save/Load Support! Saves most settings right now. Window Cropping and Capture settings are saved per application automatically; Overlay settings are saved by the profile system on the top right.
 - Multiple windows! Run the exe multiple times and configure them as desired!
 
-## Demos
-Netflix in Tiltbrush:
-- ![Netflix in VR](https://thumbs.gfycat.com/TautHopefulFieldmouse-size_restricted.gif) ([Higher Quality Link](https://gfycat.com/TautHopefulFieldmouse))
+## Tutorials
+- A short [tutorial on Youtube](https://www.youtube.com/watch?v=jjnyjf7RuMU) (Thanks [Bumble](https://www.youtube.com/channel/UCahG62_Yv1IpL2RIOCV88qQ)!)
 - More coming soon.
 
-If there are any complaints regarding the content of these demos, please [raise an issue](https://github.com/Hotrian/OpenVRDesktopDisplayPortal/issues/new) or contact one of the devs and they will be promptly removed, deleted, and replaced.
+## Previews
+Desktop Application Views:
+- [Default View](http://i.imgur.com/AVUvNsZ.png)
+
+Views from VR:
+- [Netflix in Tiltbrush](https://thumbs.gfycat.com/TautHopefulFieldmouse-size_restricted.gif) ([Higher Quality Link](https://gfycat.com/TautHopefulFieldmouse))
+
+See also the [Tutorials](https://github.com/Hotrian/OpenVRDesktopDisplayPortal#tutorials) section.
+- More coming soon.
+
+If there are any complaints regarding the content of these, please [raise an issue](https://github.com/Hotrian/OpenVRDesktopDisplayPortal/issues/new) or contact one of the devs and they will be promptly removed, deleted, and replaced.
 
 ## Instructions
 (Some of these are slightly outdated, but still relevant, new images and up to date instructions coming soon)
@@ -50,7 +56,7 @@ If there are any complaints regarding the content of these demos, please [raise 
 - The controls [on the top left](http://i.imgur.com/798RPdH.png) control which window is being mirrored into VR, as well as the framerate, whether or not "Direct Capture" is being used, and the minimize/restore state of the selected window.
 - Direct Capture targets the window before it is processed by the [DWM](https://en.wikipedia.org/wiki/Desktop_Window_Manager). Because of this, some special effects are missing such as the window border (including titlebar). The benefit is that Direct Capture is faster and can capture windows even if they are behind other windows. As far as I know, the only reason not to use Direct Capture is because some programs don't support it. If you select a window and just get a blank display try disabling Direct Capture.
 - Most applications do not draw internally when they are minimized. Because of this, you can only capture applications that are not minimized in most cases. The lower toggle button on the top left should be able to control the minimize/restore state of the selected application.
-- The little recycle icon to the right of the application dropdown refreshes the list of windows. You'll have to click this to make the dropdown update with the list of current windows.
+- The little recycle icon to the right of the application dropdown refreshes the list of windows. You'll can click this to make the dropdown update with the list of current windows, or open and close the dropdown which will refresh it.
 - Some windows can only be captured while they are on screen and dragging them off screen will cause part of their display to appear blank or stop updating.
 - The [four input boxes at the top](http://i.imgur.com/CeWuxvI.png) control the size and position of the image being captured. The full image is displayed by default, but you can adjust these values to cut out parts of the window :). Mouseover them and the tooltip will tell you which is which.
 - The controls [on the bottom left](http://i.imgur.com/DyEz9D0.png) control the Offset, Rotation, and Base Position (Base Position for controllers only). The Sliders are linked to the text boxes directly to their left. You can choose to use the sliders or the text boxes to get your overlay exactly where you want it. The base positions just make it a little quicker to attach the overlay to somewhere fancy on your controller, such as behind it or below it.
@@ -82,6 +88,6 @@ If you know how to program, we could always use help! Feel free to fork the repo
 
 (No endorsements are intended to be implied.)
 
-Thanks to [Eric Daily](http://tutsplus.com/authors/eric-daily) for the base [SaveLoad](http://gamedevelopment.tutsplus.com/tutorials/how-to-save-and-load-your-players-progress-in-unity--cms-20934) script! The license file is available [here](../master/SaveLoad-LICENSE.txt).
-
-Thanks to everyone who has tested it so far! The feedback has really helped speed things along!
+- Thanks to [Eric Daily](http://tutsplus.com/authors/eric-daily) for the base [SaveLoad](http://gamedevelopment.tutsplus.com/tutorials/how-to-save-and-load-your-players-progress-in-unity--cms-20934) script! The license file is available [here](../master/SaveLoad-LICENSE.txt).
+- Thanks to [Bumble](https://www.youtube.com/channel/UCahG62_Yv1IpL2RIOCV88qQ) this short [tutorial on Youtube](https://www.youtube.com/watch?v=jjnyjf7RuMU)!
+- Thanks to everyone who has tested it so far! The feedback has really helped speed things along!
