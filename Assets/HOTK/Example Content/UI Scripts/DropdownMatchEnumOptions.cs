@@ -39,20 +39,18 @@ public class DropdownMatchEnumOptions : MonoBehaviour
                 Dropdown.AddOptions(strings);
                 Dropdown.value = strings.IndexOf(Overlay.AnimateOnGaze.ToString());
                 break;
-            case EnumSelection.Framerate:
-                strings.AddRange(from object e in Enum.GetValues(typeof(HOTK_Overlay.FramerateMode)) select e.ToString());
-                var stringsProcessed = strings.Select(t => t.StartsWith("_") ? t.Substring(1) : t).ToList(); // Convert FPS Titles because Enum Names cannot start with numbers
-                Dropdown.AddOptions(stringsProcessed);
-                var index = strings.IndexOf(Overlay.Framerate.ToString());
-                if (index == -1) index = stringsProcessed.IndexOf(Overlay.Framerate.ToString());
-                if (index != -1) Dropdown.value = index;
-                break;
             case EnumSelection.CaptureMode:
                 strings.AddRange(CaptureModeNames.Where((t, i) => CaptureModesEnabled[i]));
                 Dropdown.AddOptions(strings);
                 _ignoreNextChange = true;
                 if (DesktopPortalController.Instance.SelectedWindowSettings != null)
                     Dropdown.value = strings.IndexOf(CaptureModeNames[(int)DesktopPortalController.Instance.SelectedWindowSettings.captureMode]);
+                break;
+            case EnumSelection.Framerate:
+                strings.AddRange(FramerateModeNames);
+                Dropdown.AddOptions(strings);
+                if (DesktopPortalController.Instance.SelectedWindowSettings != null)
+                    Dropdown.value = strings.IndexOf(FramerateModeNames[(int)DesktopPortalController.Instance.SelectedWindowSettings.framerateMode]);
                 break;
             case EnumSelection.MouseMode:
                 strings.AddRange(MouseModeNames);
@@ -114,8 +112,9 @@ public class DropdownMatchEnumOptions : MonoBehaviour
                 Overlay.AnimateOnGaze = (HOTK_Overlay.AnimationType) Enum.Parse(typeof (HOTK_Overlay.AnimationType), Dropdown.options[Dropdown.value].text);
                 break;
             case EnumSelection.Framerate:
-                var text = Dropdown.options[Dropdown.value].text == HOTK_Overlay.FramerateMode.AsFastAsPossible.ToString() ? Dropdown.options[Dropdown.value].text : "_" + Dropdown.options[Dropdown.value].text; // Convert FPS Titles because Enum Names cannot start with numbers
-                Overlay.Framerate = (HOTK_Overlay.FramerateMode)Enum.Parse(typeof(HOTK_Overlay.FramerateMode), text);
+                var fpsIndex = FramerateModeNames.IndexOf(Dropdown.options[Dropdown.value].text);
+                Overlay.Framerate = fpsIndex == -1 ? HOTK_Overlay.FramerateMode._24FPS : (HOTK_Overlay.FramerateMode)fpsIndex;
+                DesktopPortalController.Instance.SelectedWindowSettings.framerateMode = Overlay.Framerate;
                 break;
             case EnumSelection.CaptureMode:
                 var index = CaptureModeNames.IndexOf(Dropdown.options[Dropdown.value].text);
@@ -153,7 +152,7 @@ public class DropdownMatchEnumOptions : MonoBehaviour
 
     public static readonly List<string> CaptureModeNames = new List<string>
     {
-        "GDIDirect", "GDIIndirect", "W8/W10 Replication API"
+        "GDI Direct", "GDI Indirect", "W8/W10 Replication API"
     };
 
     public static readonly List<bool> CaptureModesEnabled = new List<bool>()
@@ -166,5 +165,20 @@ public class DropdownMatchEnumOptions : MonoBehaviour
     public static readonly List<string> MouseModeNames = new List<string>
     {
         "Full Interaction", "Window On Top", "Click Interaction Only", "No Interaction"
+    };
+
+    public static readonly List<string> FramerateModeNames = new List<string>
+    {
+        "1 FPS",
+        "2 FPS",
+        "5 FPS",
+        "10 FPS",
+        "15 FPS",
+        "24 FPS",
+        "30 FPS",
+        "60 FPS",
+        "90 FPS",
+        "120 FPS",
+        "Unlimited",
     };
 }

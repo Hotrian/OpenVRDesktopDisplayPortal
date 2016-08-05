@@ -9,6 +9,7 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
     public static Action<HOTK_TrackedDevice> OnControllerTriggerDown;
     public static Action<HOTK_TrackedDevice> OnControllerTriggerUp;
     public static Action<HOTK_TrackedDevice> OnControllerTriggerClicked;
+    public static Action<HOTK_TrackedDevice> OnControllerTriggerDoubleClicked;
     public static Action OnControllerIndicesUpdated; // Called only when both controllers have been checked/assigned or are swapped
 
     public static HOTK_TrackedDeviceManager Instance
@@ -95,12 +96,16 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
 
     private bool _clickedLeft;
     private bool _clickedRight;
+    private HOTK_TrackedDevice _lastClickDev;
+    private float _leftButtonDownTime;
+    private float _doubleClickTime;
 
     private void UpdateButtons()
     {
         UpdateTrigger(_leftTracker, ref _clickedLeft, ETrackedControllerRole.LeftHand);
         UpdateTrigger(_rightTracker, ref _clickedRight, ETrackedControllerRole.RightHand);
     }
+
 
     private void UpdateTrigger(HOTK_TrackedDevice dev, ref bool clicked, ETrackedControllerRole role)
     {
@@ -113,6 +118,7 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
             if (!clicked)
             {
                 clicked = true;
+                _leftButtonDownTime = Time.time;
                 if (OnControllerTriggerDown != null)
                     OnControllerTriggerDown(dev);
             }
@@ -122,10 +128,25 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
             if (clicked)
             {
                 clicked = false;
+                if (_lastClickDev == dev)
+                {
+                    if ((Time.time - _doubleClickTime) < 0.25f)
+                    {
+                        if (OnControllerTriggerDoubleClicked != null)
+                            OnControllerTriggerDoubleClicked(dev);
+                        _lastClickDev = null;
+                        return;
+                    }
+                    _doubleClickTime = Time.time;
+                }
+                else
+                {
+                    _lastClickDev = dev;
+                    _doubleClickTime = Time.time;
+                }
+                if (!((Time.time - _leftButtonDownTime) < 0.25f)) return;
                 if (OnControllerTriggerClicked != null)
                     OnControllerTriggerClicked(dev);
-                //if (OnControllerTriggerUp != null)
-                //    OnControllerTriggerUp(dev);
             }
         }
     }
@@ -176,6 +197,8 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
 
     private bool _couldntFindControllers;
     private uint _noControllersCount;
+    private bool _alreadyFoundLeft;
+    private bool _alreadyFoundRight;
 
     /// <summary>
     /// Attempt to find both controllers.
@@ -204,17 +227,41 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
         }
 
         if (_noControllersCount == 0) Log("Searching for Controllers..");
-        DoIndexAssignmentBothControllers(system.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand), system.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.RightHand));
-        CallControllersUpdated();
 
+        // Check if either controller has already been found
+        var l = system.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
+        var r = system.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.RightHand);
+        if (_leftIndex == OpenVR.k_unTrackedDeviceIndexInvalid && _rightIndex == OpenVR.k_unTrackedDeviceIndexInvalid)
+        {
+            DoIndexAssignmentBothControllers(l, r);
+            CallControllersUpdated();
+        }
+        else
+        {
+            // If either controller hasn't been assigned and it can be, assign it now
+            if (_leftIndex == OpenVR.k_unTrackedDeviceIndexInvalid && l != OpenVR.k_unTrackedDeviceIndexInvalid)
+            {
+                DoIndexAssignment(ETrackedControllerRole.LeftHand, ref _leftIndex, l);
+            }
+            else if (_rightIndex == OpenVR.k_unTrackedDeviceIndexInvalid && r != OpenVR.k_unTrackedDeviceIndexInvalid)
+            {
+                DoIndexAssignment(ETrackedControllerRole.RightHand, ref _rightIndex, r);
+            }
+
+            // If both controllers are now found, trigger the action that occurs when both controllers update
+            if (_leftIndex != OpenVR.k_unTrackedDeviceIndexInvalid && _rightIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
+                CallControllersUpdated();
+        }
+
+        // Track down the remaining controller
         if (_leftIndex != OpenVR.k_unTrackedDeviceIndexInvalid && _rightIndex != OpenVR.k_unTrackedDeviceIndexInvalid) // Both controllers are assigned!
         {
-            Log("Found Controller ( Device: {0} ): Right", _rightIndex);
-            Log("Found Controller ( Device: {0} ): Left", _leftIndex);
+            ReportControllerFound(ETrackedControllerRole.RightHand, _rightIndex);
+            ReportControllerFound(ETrackedControllerRole.LeftHand, _leftIndex);
         }
         else if (_leftIndex != OpenVR.k_unTrackedDeviceIndexInvalid && _rightIndex == OpenVR.k_unTrackedDeviceIndexInvalid) // Left controller is assigned but right is missing
         {
-            Log("Found Controller ( Device: {0} ): Left", _leftIndex);
+            ReportControllerFound(ETrackedControllerRole.LeftHand, _leftIndex);
             for (uint i = 0; i < OpenVR.k_unMaxTrackedDeviceCount; i++)
             {
                 if (i == _leftIndex || system.GetTrackedDeviceClass(i) != ETrackedDeviceClass.Controller)
@@ -222,14 +269,14 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
                     continue;
                 }
                 DoIndexAssignment(ETrackedControllerRole.RightHand, ref _rightIndex, i);
-                Log("Found Controller ( Device: {0} ): Right", _rightIndex);
+                ReportControllerFound(ETrackedControllerRole.RightHand, _rightIndex);
                 break;
             }
             CallControllersUpdated();
         }
         else if (_leftIndex == OpenVR.k_unTrackedDeviceIndexInvalid && _rightIndex != OpenVR.k_unTrackedDeviceIndexInvalid) // Right controller is assigned but left is missing
         {
-            Log("Found Controller ( Device: {0} ): Right", _rightIndex);
+            ReportControllerFound(ETrackedControllerRole.RightHand, _rightIndex);
             for (uint i = 0; i < OpenVR.k_unMaxTrackedDeviceCount; i++)
             {
                 if (i == _rightIndex || system.GetTrackedDeviceClass(i) != ETrackedDeviceClass.Controller)
@@ -237,7 +284,7 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
                     continue;
                 }
                 DoIndexAssignment(ETrackedControllerRole.LeftHand, ref _leftIndex, i);
-                Log("Found Controller ( Device: {0} ): Left", _leftIndex);
+                ReportControllerFound(ETrackedControllerRole.LeftHand, _leftIndex);
                 break;
             }
             CallControllersUpdated();
@@ -257,15 +304,15 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
                 switch (system.GetControllerRoleForTrackedDeviceIndex(i))
                 {
                     case ETrackedControllerRole.LeftHand:
-                        Log("Found Controller ( Device: {0} ): Left", _leftIndex);
+                        ReportControllerFound(ETrackedControllerRole.LeftHand, _leftIndex);
                         DoIndexAssignment(ETrackedControllerRole.LeftHand, ref _leftIndex, i);
                         break;
                     case ETrackedControllerRole.RightHand:
-                        Log("Found Controller ( Device: {0} ): Right", _rightIndex);
+                        ReportControllerFound(ETrackedControllerRole.RightHand, _rightIndex);
                         DoIndexAssignment(ETrackedControllerRole.RightHand, ref _rightIndex, i);
                         break;
                     case ETrackedControllerRole.Invalid:
-                        Log("Found Controller ( Device: {0} ): Unassigned", i);
+                        ReportControllerFound(ETrackedControllerRole.Invalid, i);
                         if (foundUnassigned <= 1)
                             slots[foundUnassigned++] = i;
                         break;
@@ -286,14 +333,22 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
                     if (_leftIndex == OpenVR.k_unTrackedDeviceIndexInvalid &&
                        _rightIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
                     {
-                        LogWarning("Only Found One Unassigned Controller, and Right was already assigned! Assigning To Left!");
-                        DoIndexAssignment(ETrackedControllerRole.LeftHand, ref _leftIndex, slots[0]);
+                        if (slots[0] != _leftIndex)
+                        {
+                            LogWarning("Only Found One Unassigned Controller, and Right was already assigned! Assigning To Left!");
+                            DoIndexAssignment(ETrackedControllerRole.LeftHand, ref _leftIndex, slots[0]);
+                            _alreadyFoundLeft = true;
+                        }
                         _noControllersCount = 10;
                     }
                     else
                     {
-                        LogWarning("Only Found One Unassigned Controller! Assigning To Right!");
-                        DoIndexAssignment(ETrackedControllerRole.RightHand, ref _rightIndex, slots[0]);
+                        if (slots[0] != _rightIndex)
+                        {
+                            LogWarning("Only Found One Unassigned Controller! Assigning To Right!");
+                            DoIndexAssignment(ETrackedControllerRole.RightHand, ref _rightIndex, slots[0]);
+                            _alreadyFoundRight = true;
+                        }
                         _noControllersCount = 10;
                     }
                     break;
@@ -311,6 +366,24 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
                     throw new ArgumentOutOfRangeException();
             }
             CallControllersUpdated();
+        }
+    }
+
+    private void ReportControllerFound(ETrackedControllerRole role, uint index)
+    {
+        switch (role)
+        {
+            case ETrackedControllerRole.LeftHand:
+                if (!_alreadyFoundLeft) Log("Found Controller ( Device: {0} ): Left", index);
+                _alreadyFoundLeft = true;
+                break;
+            case ETrackedControllerRole.RightHand:
+                if (!_alreadyFoundRight) Log("Found Controller ( Device: {0} ): Right", index);
+                _alreadyFoundRight = true;
+                break;
+            case ETrackedControllerRole.Invalid:
+                Log("Found Controller ( Device: {0} ): Unassigned", index);
+                break;
         }
     }
 

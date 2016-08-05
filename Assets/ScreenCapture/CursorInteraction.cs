@@ -48,7 +48,7 @@ public class CursorInteraction
 #pragma warning restore 649
 
     // Click a foreground window
-    /*public static void ClickOnPoint(IntPtr wndHandle, Point clientPoint)
+    /*public static void ClickOnPointAtCursor(IntPtr wndHandle, Point clientPoint)
     {
         var oldPos = Cursor.Position;
 
@@ -84,18 +84,50 @@ public class CursorInteraction
         Cursor.Position = oldPos;
     }*/
 
-    // Click any window
-
     private static bool _clicking;
 
-    public static void ClickOnPoint(IntPtr wndHandle)
+    // Click the cursor where it is
+    public static void ClickOnPointAtCursor(IntPtr wndHandle, bool doubleClick = false)
     {
+        // Calculate current cursor pos
         var clientPoint = new Point(Cursor.Position.X, Cursor.Position.Y);
         ScreenToClient(wndHandle, ref clientPoint);
-        SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONDOWN, (UIntPtr) 1, (IntPtr)((clientPoint.Y << 16) | clientPoint.X));
-        SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONUP, UIntPtr.Zero, (IntPtr)((clientPoint.Y << 16) | clientPoint.X));
+        IntPtr lParam = (IntPtr)((clientPoint.Y << 16) | clientPoint.X);
+        // Click Mouse
+        if (doubleClick)
+        {
+            SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONDBLCLK, (UIntPtr)1, lParam);
+            SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONUP, UIntPtr.Zero, lParam);
+        }
+        else
+        {
+            SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONDOWN, (UIntPtr)1, lParam);
+            SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONUP, UIntPtr.Zero, lParam);
+        }
         _clicking = true;
     }
+
+    // Click on a window even if it's in the background
+    public static void ClickOnPoint(IntPtr wndHandle, Point clientPoint, bool doubleClick = false)
+    {
+        UnityEngine.Debug.Log(clientPoint.X + " / " + clientPoint.Y);
+        var oldPos = Cursor.Position;
+        IntPtr lParam = (IntPtr)((clientPoint.Y << 16) | clientPoint.X);
+        ClientToScreen(wndHandle, ref clientPoint);
+        Cursor.Position = new Point(clientPoint.X, clientPoint.Y);
+        if (doubleClick)
+        {
+            SendMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONDBLCLK, (IntPtr)1, lParam);
+            SendMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONUP, IntPtr.Zero, lParam);
+        }
+        else
+        {
+            SendMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONDOWN, (IntPtr)1, lParam);
+            SendMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONUP, IntPtr.Zero, lParam);
+        }
+        Cursor.Position = oldPos;
+    }
+    // Release click - not currently used
     public static void ReleaseClick(IntPtr wndHandle)
     {
         var clientPoint = new Point(Cursor.Position.X, Cursor.Position.Y);
@@ -106,6 +138,7 @@ public class CursorInteraction
 
     private static IntPtr lastHandle;
     private static Point lastPoint;
+    // Move the cursor to a given point over a window
     public static void MoveOverWindow(IntPtr wndHandle, Point clientPoint)
     {
         if (lastPoint.X == clientPoint.X && lastPoint.Y == clientPoint.Y &&

@@ -56,6 +56,8 @@ public class DesktopPortalController : MonoBehaviour
 
     public Texture DefaultTexture;
     public DropdownMatchEnumOptions CaptureModeDropdown;
+    public DropdownMatchEnumOptions FramerateModeDropdown;
+    public DropdownMatchEnumOptions InteractionModeDropdown;
     public Toggle MinimizedToggle;
     public Image SizeLockSprite;
     public Sprite LockSprite;
@@ -75,6 +77,17 @@ public class DesktopPortalController : MonoBehaviour
     public GameObject DisplayQuad;
 
     public GameObject CursorGameObject;
+
+    public SpriteRenderer CursorRenderer // Cache and return the SpriteRenderer for the Cursor if we can
+    {
+        get
+        {
+            return _cursorRenderer ??
+                   (_cursorRenderer =
+                       (CursorGameObject == null ? null : CursorGameObject.GetComponent<SpriteRenderer>()));
+        }
+    }
+    private SpriteRenderer _cursorRenderer;
 
     public Material OutlineMaterial;
 
@@ -137,7 +150,8 @@ public class DesktopPortalController : MonoBehaviour
             if (!_subscribed)
             {
                 _subscribed = true;
-                HOTK_TrackedDeviceManager.OnControllerTriggerClicked += ClickApplication;
+                HOTK_TrackedDeviceManager.OnControllerTriggerClicked += SingleClickApplication;
+                HOTK_TrackedDeviceManager.OnControllerTriggerDoubleClicked += DoubleClickApplication;
                 HOTK_TrackedDeviceManager.OnControllerTriggerDown += TestForApplication;
                 Overlay.OnControllerHitsOverlay += MoveOverApplication;
                 Overlay.OnControllerUnhitsOverlay += UnsetLastHit;
@@ -147,9 +161,15 @@ public class DesktopPortalController : MonoBehaviour
 
     private bool _didHitOverlay;
     private bool _didHitOverlay2;
+    private int _localWindowPosX;
+    private int _localWindowPosY;
+    private int _lastWindowPosX;
+    private int _lastWindowPosY;
 
     private void MoveOverApplication(HOTK_Overlay o, HOTK_TrackedDevice tracker, HOTK_Overlay.IntersectionResults result)
     {
+        if (SelectedWindow == IntPtr.Zero) return;
+        if (SelectedWindowSettings.interactionMode == MouseInteractionMode.Disabled) return;
         if (Overlay.AnchorDevice == HOTK_Overlay.AttachmentDevice.LeftController && tracker.Type == HOTK_TrackedDevice.EType.LeftController) return;
         if (Overlay.AnchorDevice == HOTK_Overlay.AttachmentDevice.RightController && tracker.Type == HOTK_TrackedDevice.EType.RightController) return;
         CancelInvoke("HideCursor");
@@ -158,22 +178,34 @@ public class DesktopPortalController : MonoBehaviour
             var p = new Point((int) ((_currentWindowWidth + _RenderTextureMarginWidth) * result.UVs.x),
                               (int) ((_currentWindowHeight + _RenderTextureMarginHeight) * result.UVs.y));
             var v1 = new Vector3(-(_currentWindowWidth / 2f) + p.X - (_RenderTextureMarginWidth / 2f), (_currentWindowHeight / 2f) - p.Y + (_RenderTextureMarginHeight / 2f), -0.5f);
-            var v2 = new Vector2((_currentWindowWidth / 2f) + v1.x, (_currentWindowHeight / 2f) - v1.y);
+            var v2 = new Vector2((_currentWindowWidth / 2f) + v1.x + SelectedWindowSettings.offsetLeft, (_currentWindowHeight / 2f) - v1.y + SelectedWindowSettings.offsetTop);
 
-            Debug.Log("( " + v2.x + " / " + _currentWindowWidth + " ) x ( " + v2.y + " / " + _currentWindowHeight + " )");
+            if ((int) v2.x == _lastWindowPosX && (int) v2.y == _lastWindowPosY) return;
+            _lastWindowPosX = (int)v2.x;
+            _lastWindowPosY = (int)v2.y;
+            //Debug.Log("( " + v2.x + " / " + _currentWindowWidth + " ) x ( " + v2.y + " / " + _currentWindowHeight + " )");
 
-            if (v2.x > 0 && v2.y > 0 && v2.x < _currentWindowWidth && v2.y < _currentWindowHeight)
+            if (v2.x > 0 && v2.y > 0 && v2.x < _currentWindowWidth + SelectedWindowSettings.offsetLeft && v2.y < _currentWindowHeight + SelectedWindowSettings.offsetTop)
             {
                 _didHitOverlay = true;
-                CursorInteraction.MoveOverWindow(SelectedWindow, new Point((int)v2.x, (int)v2.y));
-                ShowCursor();
-                Invoke("HideCursor", 1f);
+                if (SelectedWindowSettings.interactionMode == MouseInteractionMode.DirectInteraction ||
+                    SelectedWindowSettings.interactionMode == MouseInteractionMode.WindowTop)
+                    Win32Stuff.BringWindowToTop(SelectedWindow);
+
+                if (SelectedWindowSettings.interactionMode == MouseInteractionMode.DirectInteraction)
+                {
+                    CursorInteraction.MoveOverWindow(SelectedWindow, new Point((int) v2.x, (int) v2.y));
+                }else
+                {
+                    _localWindowPosX = (int)v2.x;
+                    _localWindowPosY = (int)v2.y;
+                }
+                
                 CursorGameObject.transform.localPosition = v1;
                 StartCoroutine("FadeInOutline");
             }
             else
             {
-                HideCursor();
                 StartCoroutine("FadeOutOutline");
             }
         }
@@ -187,10 +219,12 @@ public class DesktopPortalController : MonoBehaviour
     IEnumerator FadeInOutline()
     {
         StopCoroutine("FadeOutOutline");
+        ShowCursor();
         while (OutlineMaterial.color.a < 1f)
         {
             OutlineMaterial.color = new Color(OutlineMaterial.color.r, OutlineMaterial.color.b, OutlineMaterial.color.g, OutlineMaterial.color.a + 0.1f);
-            yield return new WaitForSeconds(0.05f);
+            if (CursorRenderer != null) CursorRenderer.color = new Color(CursorRenderer.color.r, CursorRenderer.color.b, CursorRenderer.color.g, OutlineMaterial.color.a);
+            yield return new WaitForSeconds(0.025f);
         }
     }
 
@@ -200,12 +234,18 @@ public class DesktopPortalController : MonoBehaviour
         while (OutlineMaterial.color.a > 0f)
         {
             OutlineMaterial.color = new Color(OutlineMaterial.color.r, OutlineMaterial.color.b, OutlineMaterial.color.g, OutlineMaterial.color.a - 0.1f);
-            yield return new WaitForSeconds(0.05f);
+            if (CursorRenderer != null) CursorRenderer.color = new Color(CursorRenderer.color.r, CursorRenderer.color.b, CursorRenderer.color.g, OutlineMaterial.color.a);
+            yield return new WaitForSeconds(0.025f);
         }
+        HideCursor();
     }
 
     private void UnsetLastHit(HOTK_Overlay o, HOTK_TrackedDevice tracker)
     {
+        _lastWindowPosX = -1;
+        _lastWindowPosY = -1;
+        _localWindowPosX = -1;
+        _localWindowPosY = -1;
         _didHitOverlay = false;
         _didHitOverlay2 = false;
         StartCoroutine("FadeOutOutline");
@@ -227,14 +267,40 @@ public class DesktopPortalController : MonoBehaviour
             _didHitOverlay2 = true;
     }
 
-    public void ClickApplication(HOTK_TrackedDevice tracker)
+    private void ClickApplication(HOTK_TrackedDevice tracker, bool doubleClick)
     {
-        if (!_didHitOverlay2) return;
-        Debug.Log("Try Click " + tracker.Type);
         if (SelectedWindow == IntPtr.Zero) return;
-        Debug.Log("Clicking" + tracker.Type);
-        CursorInteraction.ClickOnPoint(SelectedWindow);
+        if (SelectedWindowSettings.interactionMode == MouseInteractionMode.Disabled) return;
+        if (!_didHitOverlay2) return;
+        //Debug.Log("Try Click " + tracker.Type);
+        if (SelectedWindow == IntPtr.Zero) return;
+        //Debug.Log("Clicking" + tracker.Type);
+        switch (SelectedWindowSettings.interactionMode)
+        {
+            case MouseInteractionMode.DirectInteraction:
+                CursorInteraction.ClickOnPointAtCursor(SelectedWindow, doubleClick);
+                break;
+            case MouseInteractionMode.WindowTop:
+            case MouseInteractionMode.SendClicksOnly:
+                if (_localWindowPosX > -1 && _localWindowPosY > -1)
+                    CursorInteraction.ClickOnPoint(SelectedWindow, new Point(_localWindowPosX, _localWindowPosY), doubleClick);
+                else
+                    Debug.LogWarning("X or Y missing");
+                break;
+        }
     }
+
+    private void SingleClickApplication(HOTK_TrackedDevice tracker)
+    {
+        Debug.Log("Single Click");
+        ClickApplication(tracker, false);
+    }
+    private void DoubleClickApplication(HOTK_TrackedDevice tracker)
+    {
+        Debug.Log("Double Click");
+        ClickApplication(tracker, true);
+    }
+
     public void ReleaseApplication(HOTK_TrackedDevice tracker)
     {
         Debug.Log("Try Release" + tracker.Type);
@@ -271,7 +337,7 @@ public class DesktopPortalController : MonoBehaviour
                 {
                     FPSTimer.Reset();
                     FPSCounter.text = "FPS: " + _FPSCount;
-                    var val = Overlay.Framerate != HOTK_Overlay.FramerateMode.AsFastAsPossible ? (int)Overlay.Framerate : -1;
+                    var val = Overlay.Framerate != HOTK_Overlay.FramerateMode.AsFastAsPossible ? HOTK_Overlay.FramerateValues[(int)Overlay.Framerate] : -1;
                     if (val != -1)
                     {
                         if (_FPSCount < val)
@@ -759,6 +825,12 @@ public class DesktopPortalController : MonoBehaviour
             settings.windowSizeLocked = false;
             settings.SaveFileVersion = 2;
         }
+        if (settings.SaveFileVersion == 2)
+        {
+            Debug.Log("Upgrading [" + name + "] to SaveFileVersion 3.");
+            settings.framerateMode = HOTK_Overlay.FramerateMode._24FPS; // Compatibility because these values changed significantly. Default to 24FPS.
+            settings.SaveFileVersion = 3;
+        }
 
         OffsetLeftField.text = settings.offsetLeft.ToString();
         OffsetTopField.text = settings.offsetTop.ToString();
@@ -766,6 +838,8 @@ public class DesktopPortalController : MonoBehaviour
         OffsetBottomField.text = settings.offsetBottom.ToString();
         SizeLockSprite.sprite = settings.windowSizeLocked ? LockSprite : UnlockSprite;
         CaptureModeDropdown.SetToOption(DropdownMatchEnumOptions.CaptureModeNames[(int)settings.captureMode], true);
+        FramerateModeDropdown.SetToOption(DropdownMatchEnumOptions.FramerateModeNames[(int)settings.framerateMode], true);
+        InteractionModeDropdown.SetToOption(DropdownMatchEnumOptions.MouseModeNames[(int)settings.interactionMode], true);
         return settings;
     }
 

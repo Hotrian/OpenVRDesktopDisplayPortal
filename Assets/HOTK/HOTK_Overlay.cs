@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using Valve.VR;
@@ -51,8 +52,8 @@ public class HOTK_Overlay : MonoBehaviour
     public FramerateMode Framerate = FramerateMode._30FPS;
     #endregion
 
-    public Action<HOTK_Overlay, HOTK_TrackedDevice, IntersectionResults> OnControllerHitsOverlay;
-    public Action<HOTK_Overlay, HOTK_TrackedDevice> OnControllerUnhitsOverlay;
+    public Action<HOTK_Overlay, HOTK_TrackedDevice, IntersectionResults> OnControllerHitsOverlay; // Occurs when either controller aims at this overlay
+    public Action<HOTK_Overlay, HOTK_TrackedDevice> OnControllerUnhitsOverlay; // Occurs when the currently aiming controller stops aiming at this overlay
 
     #region Interal Vars
 
@@ -143,12 +144,13 @@ public class HOTK_Overlay : MonoBehaviour
         var hit = ComputeIntersection(tracker.gameObject.transform.position, tracker.gameObject.transform.forward, ref result);
         if (hit)
         {
+            //Debug.Log(result.Normal);
             OnControllerHitsOverlay(this, tracker, result);
             _lastHit = tracker;
         }
         else
         {
-            if (_lastHit != null && OnControllerUnhitsOverlay != null) OnControllerUnhitsOverlay(this, tracker);
+            if (_lastHit != null && OnControllerUnhitsOverlay != null) OnControllerUnhitsOverlay(this, _lastHit);
             _lastHit = null;
         }
     }
@@ -885,17 +887,33 @@ public class HOTK_Overlay : MonoBehaviour
 
     public enum FramerateMode
     {
-        _1FPS = 1,
-        _2FPS = 2,
-        _5FPS = 5,
-        _10FPS = 10,
-        _15FPS = 15,
-        _24FPS = 24,
-        _30FPS = 30,
-        _60FPS = 60,
-        _90FPS = 90,
-        _120FPS = 120,
-        AsFastAsPossible = 9999
+        _1FPS = 0,
+        _2FPS = 1,
+        _5FPS = 2,
+        _10FPS = 3,
+        _15FPS = 4,
+        _24FPS = 5,
+        _30FPS = 6,
+        _60FPS = 7,
+        _90FPS = 8,
+        _120FPS = 9,
+        AsFastAsPossible = 10
     }
+
+    public static readonly List<int> FramerateValues = new List<int>()
+    {
+        1,
+        2,
+        5,
+        10,
+        15,
+        24,
+        30,
+        60,
+        90,
+        120,
+        9999
+    };
+
     #endregion
 }
