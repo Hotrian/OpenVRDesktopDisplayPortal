@@ -78,7 +78,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\AutoResizeRenderTexture.cs" />
     <Compile Include="Assets\HOTK\Example Content\DesktopCameraScript.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\AlphaMatchInputField.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\ApplicationDropdownScript.cs" />
@@ -101,6 +100,8 @@
     <Compile Include="Assets\HOTK\HOTK_Overlay.cs" />
     <Compile Include="Assets\HOTK\HOTK_TrackedDevice.cs" />
     <Compile Include="Assets\HOTK\HOTK_TrackedDeviceManager.cs" />
+    <Compile Include="Assets\HOTK\Portal\AutoResizeCameraForRenderTexture.cs" />
+    <Compile Include="Assets\HOTK\Portal\AutoResizeRenderTexture.cs" />
     <Compile Include="Assets\HOTK\Portal\DesktopPortalController.cs" />
     <Compile Include="Assets\HOTK\Portal\PortalSettingsSaver.cs" />
     <Compile Include="Assets\HOTK\Twitch\TwitchChatTester.cs" />
@@ -109,7 +110,6 @@
     <Compile Include="Assets\HOTK\VLC\VLCPlayerController.cs" />
     <Compile Include="Assets\HotkeyController.cs" />
     <Compile Include="Assets\MultiModeController.cs" />
-    <Compile Include="Assets\RenderTextureToCameraScript.cs" />
     <Compile Include="Assets\ScreenCapture\CaptureScreen.cs" />
     <Compile Include="Assets\ScreenCapture\CursorInteraction.cs" />
     <Compile Include="Assets\ScreenCapture\GDIStuff.cs" />

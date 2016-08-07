@@ -54,6 +54,8 @@ public class HOTK_Overlay : MonoBehaviour
 
     public Action<HOTK_Overlay, HOTK_TrackedDevice, IntersectionResults> OnControllerHitsOverlay; // Occurs when either controller aims at this overlay
     public Action<HOTK_Overlay, HOTK_TrackedDevice> OnControllerUnhitsOverlay; // Occurs when the currently aiming controller stops aiming at this overlay
+    public Action<HOTK_Overlay, HOTK_TrackedDevice, IntersectionResults> OnControllerTouchesOverlay;
+    public Action<HOTK_Overlay, HOTK_TrackedDevice> OnControllerStopsTouchingOverlay;
 
     #region Interal Vars
 
@@ -91,7 +93,13 @@ public class HOTK_Overlay : MonoBehaviour
     private MeshRenderer _meshRenderer;
 
     private bool _justUpdated;
+    private bool _doUpdate;
     #endregion
+
+    public void DoUpdate()
+    {
+        _doUpdate = true;
+    }
     
     /// <summary>
     /// Check if anything has changed with the Overlay, and update the OpenVR system as necessary.
@@ -111,13 +119,14 @@ public class HOTK_Overlay : MonoBehaviour
         // Check if our Overlay is being Gazed at, or has been recently and is still animating
         if (AnimateOnGaze != AnimationType.None) UpdateGaze(ref changed);
         // Check if a controller is aiming at our Overlay
-        if (OnControllerHitsOverlay != null) UpdateControllers();
+        UpdateControllers();
         // Check if our Overlay's HighQuality, AntiAlias, or Curved setting changed
         CheckHighQualityChanged(ref changed);
         // Update our Overlay if anything has changed
-        if (changed)
+        if (changed || _doUpdate)
         {
             _justUpdated = true;
+            _doUpdate = false;
             UpdateOverlay();
         }
         else
@@ -127,15 +136,23 @@ public class HOTK_Overlay : MonoBehaviour
         }
     }
 
-    private HOTK_TrackedDevice _lastHit;
 
     private void UpdateControllers()
     {
-        UpdateController(ref _leftTracker, HOTK_TrackedDevice.EType.LeftController);
-        UpdateController(ref _rightTracker, HOTK_TrackedDevice.EType.RightController);
+        if (OnControllerHitsOverlay != null)
+        {
+            TestControllerAimsAtOverlay(ref _leftTracker, HOTK_TrackedDevice.EType.LeftController);
+            TestControllerAimsAtOverlay(ref _rightTracker, HOTK_TrackedDevice.EType.RightController);
+        }
+        if (OnControllerTouchesOverlay != null)
+        {
+            TestControllerTouchesOverlay(ref _leftTracker, HOTK_TrackedDevice.EType.LeftController);
+            TestControllerTouchesOverlay(ref _rightTracker, HOTK_TrackedDevice.EType.RightController);
+        }
     }
 
-    private void UpdateController(ref HOTK_TrackedDevice tracker, HOTK_TrackedDevice.EType role)
+    private HOTK_TrackedDevice _lastHit;
+    private void TestControllerAimsAtOverlay(ref HOTK_TrackedDevice tracker, HOTK_TrackedDevice.EType role)
     {
         FindDevice(ref tracker, role);
         if (tracker == null || !tracker.IsValid) return;
@@ -144,7 +161,6 @@ public class HOTK_Overlay : MonoBehaviour
         var hit = ComputeIntersection(tracker.gameObject.transform.position, tracker.gameObject.transform.forward, ref result);
         if (hit)
         {
-            //Debug.Log(result.Normal);
             OnControllerHitsOverlay(this, tracker, result);
             _lastHit = tracker;
         }
@@ -152,6 +168,26 @@ public class HOTK_Overlay : MonoBehaviour
         {
             if (_lastHit != null && OnControllerUnhitsOverlay != null) OnControllerUnhitsOverlay(this, _lastHit);
             _lastHit = null;
+        }
+    }
+
+    private HOTK_TrackedDevice _lastTouched;
+    private void TestControllerTouchesOverlay(ref HOTK_TrackedDevice tracker, HOTK_TrackedDevice.EType role)
+    {
+        FindDevice(ref tracker, role);
+        if (tracker == null || !tracker.IsValid) return;
+        if (_lastTouched != null && _lastTouched != tracker) return;
+        var result = new IntersectionResults();
+        var hit = ComputeIntersection(tracker.gameObject.transform.position - (tracker.gameObject.transform.forward * 0.1f), tracker.gameObject.transform.forward, ref result);
+        if (hit && result.Distance < 0.15f)
+        {
+            OnControllerTouchesOverlay(this, tracker, result);
+            _lastTouched = tracker;
+        }
+        else
+        {
+            if (_lastTouched != null && OnControllerStopsTouchingOverlay != null) OnControllerStopsTouchingOverlay(this, _lastTouched);
+            _lastTouched = null;
         }
     }
 
@@ -638,6 +674,11 @@ public class HOTK_Overlay : MonoBehaviour
             //Debug.Log("Hit! " + gameObject.name);
         }
         HandleAnimateOnGaze(hit, ref changed);
+    }
+
+    public float GetCurrentScale()
+    {
+        return (AnimateOnGaze == AnimationType.Scale || AnimateOnGaze == AnimationType.AlphaAndScale ? _scale : Scale);
     }
 
     /// <summary>

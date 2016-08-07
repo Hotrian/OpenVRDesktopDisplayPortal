@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 
 [RequireComponent(typeof(Camera))]
-public class RenderTextureToCameraScript : MonoBehaviour
+public class AutoResizeCameraForRenderTexture : MonoBehaviour
 {
     public Camera Camera
     {

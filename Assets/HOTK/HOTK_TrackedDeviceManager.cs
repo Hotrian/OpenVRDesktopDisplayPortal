@@ -102,25 +102,27 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
 
     private void UpdateButtons()
     {
-        UpdateTrigger(_leftTracker, ref _clickedLeft, ETrackedControllerRole.LeftHand);
-        UpdateTrigger(_rightTracker, ref _clickedRight, ETrackedControllerRole.RightHand);
+        UpdateInput(_leftTracker, ref _clickedLeft, ETrackedControllerRole.LeftHand);
+        UpdateInput(_rightTracker, ref _clickedRight, ETrackedControllerRole.RightHand);
     }
 
 
-    private void UpdateTrigger(HOTK_TrackedDevice dev, ref bool clicked, ETrackedControllerRole role)
+    private void UpdateInput(HOTK_TrackedDevice dev, ref bool clicked, ETrackedControllerRole role)
     {
-        var svr = SteamVR.instance; // Init the SteamVR drivers
+        if (dev == null || !dev.IsValid) return;
+        var svr = SteamVR.instance;
         if (svr == null) return;
         var c = new VRControllerState_t();
         svr.hmd.GetControllerState((uint)dev.Index, ref c);
+        // c.rAxis0 is Trackpad
+        // c.rAxis1 is Trigger
         if (c.rAxis1.x >= 0.99f)
         {
             if (!clicked)
             {
                 clicked = true;
                 _leftButtonDownTime = Time.time;
-                if (OnControllerTriggerDown != null)
-                    OnControllerTriggerDown(dev);
+                if (OnControllerTriggerDown != null) OnControllerTriggerDown(dev);
             }
         }
         else
@@ -128,12 +130,13 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
             if (clicked)
             {
                 clicked = false;
+                if (OnControllerTriggerUp != null) OnControllerTriggerUp(dev);
+
                 if (_lastClickDev == dev)
                 {
                     if ((Time.time - _doubleClickTime) < 0.25f)
                     {
-                        if (OnControllerTriggerDoubleClicked != null)
-                            OnControllerTriggerDoubleClicked(dev);
+                        if (OnControllerTriggerDoubleClicked != null) OnControllerTriggerDoubleClicked(dev);
                         _lastClickDev = null;
                         return;
                     }
@@ -145,8 +148,7 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
                     _doubleClickTime = Time.time;
                 }
                 if (!((Time.time - _leftButtonDownTime) < 0.25f)) return;
-                if (OnControllerTriggerClicked != null)
-                    OnControllerTriggerClicked(dev);
+                if (OnControllerTriggerClicked != null) OnControllerTriggerClicked(dev);
             }
         }
     }
@@ -187,7 +189,7 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
         _noControllersCount = 0;
     }
 
-    private void CheckForControllers()
+    public void CheckForControllers()
     {
         if (_noControllersCount >= 10)
         {

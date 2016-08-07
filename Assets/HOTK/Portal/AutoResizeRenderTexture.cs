@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class AutoResizeRenderTexture : MonoBehaviour
 {
-    public RenderTextureToCameraScript script;
+    public AutoResizeCameraForRenderTexture script;
     public GameObject OutlineQuad;
 
     private float _width;

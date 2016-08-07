@@ -76,6 +76,14 @@ public class DesktopPortalController : MonoBehaviour
     public Dropdown ApplicationDropdown;
     public GameObject DisplayQuad;
 
+    public OffsetMatchInputField OffsetX;
+    public OffsetMatchInputField OffsetY;
+    public OffsetMatchInputField OffsetZ;
+
+    public RotationMatchSlider OffsetRX;
+    public RotationMatchSlider OffsetRY;
+    public RotationMatchSlider OffsetRZ;
+
     public GameObject CursorGameObject;
 
     public SpriteRenderer CursorRenderer // Cache and return the SpriteRenderer for the Cursor if we can
@@ -141,6 +149,8 @@ public class DesktopPortalController : MonoBehaviour
             DisplayQuad.GetComponent<Renderer>().material.mainTexture = texture;
             DisplayQuad.transform.localScale = new Vector3(bitmap.Width, bitmap.Height, 1f);
 
+            OutlineMaterial.color = new Color(OutlineMaterial.color.r, OutlineMaterial.color.g, OutlineMaterial.color.b, 0f); // Hide Outline on start
+
             texture.LoadImage(stream.ToArray());
 
             RefreshWindowList();
@@ -152,12 +162,20 @@ public class DesktopPortalController : MonoBehaviour
                 _subscribed = true;
                 HOTK_TrackedDeviceManager.OnControllerTriggerClicked += SingleClickApplication;
                 HOTK_TrackedDeviceManager.OnControllerTriggerDoubleClicked += DoubleClickApplication;
-                HOTK_TrackedDeviceManager.OnControllerTriggerDown += TestForApplication;
-                Overlay.OnControllerHitsOverlay += MoveOverApplication;
+                HOTK_TrackedDeviceManager.OnControllerTriggerDown += TriggerDown;
+                HOTK_TrackedDeviceManager.OnControllerTriggerUp += TriggerUp;
+                Overlay.OnControllerHitsOverlay += AimAtApplication;
                 Overlay.OnControllerUnhitsOverlay += UnsetLastHit;
+                Overlay.OnControllerTouchesOverlay += TouchOverlay;
+                Overlay.OnControllerStopsTouchingOverlay += UnTouchOverlay;
             }
         }
     }
+
+    private bool _touchingOverlay;
+    private bool _grabbingOverlay;
+    private HOTK_TrackedDevice _grabbingTracker;
+    private Transform _lastOverlayParent;
 
     private bool _didHitOverlay;
     private bool _didHitOverlay2;
@@ -166,13 +184,45 @@ public class DesktopPortalController : MonoBehaviour
     private int _lastWindowPosX;
     private int _lastWindowPosY;
 
-    private void MoveOverApplication(HOTK_Overlay o, HOTK_TrackedDevice tracker, HOTK_Overlay.IntersectionResults result)
+    private void TouchOverlay(HOTK_Overlay o, HOTK_TrackedDevice tracker, HOTK_Overlay.IntersectionResults result)
+    {
+        if (SelectedWindow == IntPtr.Zero) return;
+        if (Overlay.AnchorDevice == HOTK_Overlay.AttachmentDevice.LeftController && tracker.Type == HOTK_TrackedDevice.EType.LeftController) return;
+        if (Overlay.AnchorDevice == HOTK_Overlay.AttachmentDevice.RightController && tracker.Type == HOTK_TrackedDevice.EType.RightController) return;
+        if (Overlay.AnchorDevice != HOTK_Overlay.AttachmentDevice.World) return;
+        if (_grabbingOverlay) return;
+        // Hide the cursor from when we were just aiming
+        HideCursor();
+        _didHitOverlay = false;
+        _touchingOverlay = true;
+        StartCoroutine("GoToGreen");
+        StartCoroutine("FadeInOutline");
+    }
+    private void UnTouchOverlay(HOTK_Overlay o, HOTK_TrackedDevice tracker)
+    {
+        if (_grabbingOverlay) return;
+        _touchingOverlay = false;
+        if (!_didHitOverlay) StartCoroutine("FadeOutOutline");
+    }
+
+    private IEnumerator GoToGreen()
+    {
+        var t = 0f;
+        while ((_touchingOverlay || _grabbingOverlay) && t < 1f)
+        {
+            t += 0.25f;
+            OutlineMaterial.color = Color.Lerp(OutlineMaterial.color, new Color(0f, 1f, 0f, OutlineMaterial.color.a), t);
+            yield return new WaitForSeconds(0.025f);
+        }
+    }
+
+    private void AimAtApplication(HOTK_Overlay o, HOTK_TrackedDevice tracker, HOTK_Overlay.IntersectionResults result)
     {
         if (SelectedWindow == IntPtr.Zero) return;
         if (SelectedWindowSettings.interactionMode == MouseInteractionMode.Disabled) return;
         if (Overlay.AnchorDevice == HOTK_Overlay.AttachmentDevice.LeftController && tracker.Type == HOTK_TrackedDevice.EType.LeftController) return;
         if (Overlay.AnchorDevice == HOTK_Overlay.AttachmentDevice.RightController && tracker.Type == HOTK_TrackedDevice.EType.RightController) return;
-        CancelInvoke("HideCursor");
+        if (_touchingOverlay || _grabbingOverlay) return;
         if (_currentWindowWidth > 0 && _currentWindowHeight > 0)
         {
             var p = new Point((int) ((_currentWindowWidth + _RenderTextureMarginWidth) * result.UVs.x),
@@ -202,6 +252,8 @@ public class DesktopPortalController : MonoBehaviour
                 }
                 
                 CursorGameObject.transform.localPosition = v1;
+                StopCoroutine("GoToGreen");
+                OutlineMaterial.color = new Color(1f, 0f, 0f, OutlineMaterial.color.a);
                 StartCoroutine("FadeInOutline");
             }
             else
@@ -219,11 +271,11 @@ public class DesktopPortalController : MonoBehaviour
     IEnumerator FadeInOutline()
     {
         StopCoroutine("FadeOutOutline");
-        ShowCursor();
+        if (!_touchingOverlay && !_grabbingOverlay) ShowCursor();
         while (OutlineMaterial.color.a < 1f)
         {
-            OutlineMaterial.color = new Color(OutlineMaterial.color.r, OutlineMaterial.color.b, OutlineMaterial.color.g, OutlineMaterial.color.a + 0.1f);
-            if (CursorRenderer != null) CursorRenderer.color = new Color(CursorRenderer.color.r, CursorRenderer.color.b, CursorRenderer.color.g, OutlineMaterial.color.a);
+            OutlineMaterial.color = new Color(OutlineMaterial.color.r, OutlineMaterial.color.g, OutlineMaterial.color.b, OutlineMaterial.color.a + 0.1f);
+            if (CursorRenderer != null) CursorRenderer.color = new Color(CursorRenderer.color.r, CursorRenderer.color.g, CursorRenderer.color.b, OutlineMaterial.color.a);
             yield return new WaitForSeconds(0.025f);
         }
     }
@@ -233,8 +285,8 @@ public class DesktopPortalController : MonoBehaviour
         StopCoroutine("FadeInOutline");
         while (OutlineMaterial.color.a > 0f)
         {
-            OutlineMaterial.color = new Color(OutlineMaterial.color.r, OutlineMaterial.color.b, OutlineMaterial.color.g, OutlineMaterial.color.a - 0.1f);
-            if (CursorRenderer != null) CursorRenderer.color = new Color(CursorRenderer.color.r, CursorRenderer.color.b, CursorRenderer.color.g, OutlineMaterial.color.a);
+            OutlineMaterial.color = new Color(OutlineMaterial.color.r, OutlineMaterial.color.g, OutlineMaterial.color.b, OutlineMaterial.color.a - 0.1f);
+            if (CursorRenderer != null) CursorRenderer.color = new Color(CursorRenderer.color.r, CursorRenderer.color.g, CursorRenderer.color.b, OutlineMaterial.color.a);
             yield return new WaitForSeconds(0.025f);
         }
         HideCursor();
@@ -248,7 +300,7 @@ public class DesktopPortalController : MonoBehaviour
         _localWindowPosY = -1;
         _didHitOverlay = false;
         _didHitOverlay2 = false;
-        StartCoroutine("FadeOutOutline");
+        if (!_touchingOverlay) StartCoroutine("FadeOutOutline");
     }
 
     private void ShowCursor()
@@ -261,12 +313,59 @@ public class DesktopPortalController : MonoBehaviour
         CursorGameObject.SetActive(false);
     }
 
-    private void TestForApplication(HOTK_TrackedDevice tracker)
+    // Test if we were aiminag at the overlay when the click action started
+    private void TriggerDown(HOTK_TrackedDevice tracker)
     {
-        if (_didHitOverlay)
-            _didHitOverlay2 = true;
+        if (_touchingOverlay)
+        {
+            _grabbingTracker = tracker;
+            _grabbingOverlay = true;
+            Overlay.gameObject.transform.position = Overlay.AnchorOffset;
+            _lastOverlayParent = Overlay.gameObject.transform.parent;
+            Overlay.gameObject.transform.parent = _grabbingTracker.gameObject.transform;
+        }
+        else
+        {
+            if (_didHitOverlay)
+                _didHitOverlay2 = true;
+        }
     }
 
+    // Test if we were aiminag at the overlay when the click action started
+    private void TriggerUp(HOTK_TrackedDevice tracker)
+    {
+        if (_grabbingOverlay)
+        {
+            _grabbingOverlay = false;
+            _grabbingTracker = null;
+            _touchingOverlay = false;
+            Overlay.gameObject.transform.parent = _lastOverlayParent;
+            _lastOverlayParent = null;
+
+            OffsetX.InputField.text = Overlay.gameObject.transform.position.x.ToString();
+            OffsetY.InputField.text = Overlay.gameObject.transform.position.y.ToString();
+            OffsetZ.InputField.text = Overlay.gameObject.transform.position.z.ToString();
+            OffsetX.OnOffsetChanged();
+            OffsetY.OnOffsetChanged();
+            OffsetZ.OnOffsetChanged();
+            var dx = Overlay.gameObject.transform.rotation.eulerAngles.x;
+            var dy = Overlay.gameObject.transform.rotation.eulerAngles.y;
+            var dz = Overlay.gameObject.transform.rotation.eulerAngles.z;
+            OffsetRX.Slider.value = dx;
+            OffsetRY.Slider.value = dy;
+            OffsetRZ.Slider.value = dz;
+
+
+            if (!_didHitOverlay) StartCoroutine("FadeOutOutline");
+        }
+        else
+        {
+            if (_didHitOverlay)
+                _didHitOverlay2 = true;
+        }
+    }
+
+    // Click the application
     private void ClickApplication(HOTK_TrackedDevice tracker, bool doubleClick)
     {
         if (SelectedWindow == IntPtr.Zero) return;
@@ -292,20 +391,11 @@ public class DesktopPortalController : MonoBehaviour
 
     private void SingleClickApplication(HOTK_TrackedDevice tracker)
     {
-        Debug.Log("Single Click");
         ClickApplication(tracker, false);
     }
     private void DoubleClickApplication(HOTK_TrackedDevice tracker)
     {
-        Debug.Log("Double Click");
         ClickApplication(tracker, true);
-    }
-
-    public void ReleaseApplication(HOTK_TrackedDevice tracker)
-    {
-        Debug.Log("Try Release" + tracker.Type);
-        if (SelectedWindow == IntPtr.Zero) return;
-        CursorInteraction.ReleaseClick(SelectedWindow);
     }
 
     public void OnDisable()
@@ -357,6 +447,10 @@ public class DesktopPortalController : MonoBehaviour
                 FPSTimer.Start();
             }
             _FPSCount++;
+        }
+        if (_grabbingOverlay)
+        {
+            Overlay.AnchorOffset = Overlay.gameObject.transform.position;
         }
     }
 
