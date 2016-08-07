@@ -321,6 +321,7 @@ public class DesktopPortalController : MonoBehaviour
             _grabbingTracker = tracker;
             _grabbingOverlay = true;
             Overlay.gameObject.transform.position = Overlay.AnchorOffset;
+            Overlay.AnchorOffset = Vector3.zero;
             _lastOverlayParent = Overlay.gameObject.transform.parent;
             Overlay.gameObject.transform.parent = _grabbingTracker.gameObject.transform;
         }
