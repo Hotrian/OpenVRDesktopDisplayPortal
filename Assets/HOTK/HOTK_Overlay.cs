@@ -56,6 +56,8 @@ public class HOTK_Overlay : MonoBehaviour
     public Action<HOTK_Overlay, HOTK_TrackedDevice> OnControllerUnhitsOverlay; // Occurs when the currently aiming controller stops aiming at this overlay
     public Action<HOTK_Overlay, HOTK_TrackedDevice, IntersectionResults> OnControllerTouchesOverlay;
     public Action<HOTK_Overlay, HOTK_TrackedDevice> OnControllerStopsTouchingOverlay;
+    public Action<HOTK_Overlay, AttachmentDevice> OnOverlayAnchorChanges;
+    public Action<HOTK_Overlay, Quaternion> OnOverlayAnchorRotationChanges;
 
     #region Interal Vars
 
@@ -84,6 +86,16 @@ public class HOTK_Overlay : MonoBehaviour
     private uint _anchor;   // caches a HOTK_TrackedDevice ID for anchoring the Overlay, if applicable
     private float _alpha;
     private float _scale;
+
+    private GameObject RotationTracker
+    {
+        get
+        {
+            CheckForRotationTracker();
+            return _rotationTracker;
+        }
+    }
+    private GameObject _rotationTracker;
 
     // Caches our MeshRenderer, if applicable
     private MeshRenderer MeshRenderer
@@ -136,6 +148,15 @@ public class HOTK_Overlay : MonoBehaviour
         }
     }
 
+    private void CheckForRotationTracker()
+    {
+        if (_rotationTracker != null) return;
+        _rotationTracker = new GameObject("Overlay Rotation Tracker");// {hideFlags = HideFlags.HideInHierarchy};
+        _rotationTracker.transform.parent = transform.parent;
+        var com = _rotationTracker.AddComponent<MatchRotationScript>();
+        com.Target = this;
+        _rotationTracker.SetActive(true);
+    }
 
     private void UpdateControllers()
     {
@@ -158,7 +179,7 @@ public class HOTK_Overlay : MonoBehaviour
         if (tracker == null || !tracker.IsValid) return;
         if (_lastHit != null && _lastHit != tracker) return;
         var result = new IntersectionResults();
-        var hit = ComputeIntersection(tracker.gameObject.transform.position, tracker.gameObject.transform.forward, ref result);
+        var hit = !(Vector3.Angle(tracker.transform.forward, _rotationTracker.transform.forward) > 90f) && ComputeIntersection(tracker.gameObject.transform.position, tracker.gameObject.transform.forward, ref result);
         if (hit)
         {
             OnControllerHitsOverlay(this, tracker, result);
@@ -178,7 +199,7 @@ public class HOTK_Overlay : MonoBehaviour
         if (tracker == null || !tracker.IsValid) return;
         if (_lastTouched != null && _lastTouched != tracker) return;
         var result = new IntersectionResults();
-        var hit = ComputeIntersection(tracker.gameObject.transform.position - (tracker.gameObject.transform.forward * 0.1f), tracker.gameObject.transform.forward, ref result);
+        var hit = !(Vector3.Angle(tracker.transform.forward, _rotationTracker.transform.forward) > 90f) && ComputeIntersection(tracker.gameObject.transform.position - (tracker.gameObject.transform.forward * 0.1f), tracker.gameObject.transform.forward, ref result);
         if (hit && result.Distance < 0.15f)
         {
             OnControllerTouchesOverlay(this, tracker, result);
@@ -234,6 +255,7 @@ public class HOTK_Overlay : MonoBehaviour
         _objectRotation = Quaternion.identity;
         _objectPosition = Vector3.zero;
         var error = overlay.CreateOverlay(Key + gameObject.GetInstanceID(), gameObject.name, ref _handle);
+        CheckForRotationTracker();
         if (error == EVROverlayError.None) return;
         Debug.Log(error.ToString());
         enabled = false;
@@ -283,7 +305,10 @@ public class HOTK_Overlay : MonoBehaviour
     {
         // Update Overlay Anchor position
         GetOverlayPosition();
-        
+
+        if (_anchorDevice != device && OnOverlayAnchorChanges != null)
+            OnOverlayAnchorChanges(this, device);
+
         // Update cached values
         _anchorDevice = device;
         AnchorDevice = device;
@@ -292,6 +317,9 @@ public class HOTK_Overlay : MonoBehaviour
         _anchorOffset = offset;
         AnchorOffset = offset;
         Scale = scale;
+
+        if (OnOverlayAnchorRotationChanges != null)
+            OnOverlayAnchorRotationChanges(this, Quaternion.identity);
 
         // Attach Overlay
         switch (device)
@@ -406,6 +434,8 @@ public class HOTK_Overlay : MonoBehaviour
         }
         OverlayReference.transform.localPosition = pos;
         _anchorRotation = rot;
+        if (OnOverlayAnchorRotationChanges != null)
+            OnOverlayAnchorRotationChanges(this, rot);
         var changed = false;
         CheckOverlayRotationChanged(ref changed, true); // Force rotational update
     }
@@ -669,6 +699,7 @@ public class HOTK_Overlay : MonoBehaviour
         var hit = false;
         if (_hmdTracker != null && _hmdTracker.IsValid)
         {
+            if (Vector3.Angle(_hmdTracker.transform.forward, _rotationTracker.transform.forward) > 90f) return;
             var result = new IntersectionResults();
             hit = ComputeIntersection(_hmdTracker.gameObject.transform.position, _hmdTracker.gameObject.transform.forward, ref result);
             //Debug.Log("Hit! " + gameObject.name);

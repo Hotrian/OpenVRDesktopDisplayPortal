@@ -17,6 +17,26 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
         get { return _instance ?? (_instance = new GameObject("HOTK_TrackedDeviceManager", typeof(HOTK_TrackedDeviceManager)) {hideFlags = HideFlags.HideInHierarchy}.GetComponent<HOTK_TrackedDeviceManager>()); }
     }
 
+    public HOTK_TrackedDevice LeftTracker
+    {
+        get
+        {
+            if (_leftTracker == null)
+                FindTracker(ref _leftTracker, HOTK_TrackedDevice.EType.LeftController);
+            return _leftTracker;
+        }
+    }
+
+    public HOTK_TrackedDevice RightTracker
+    {
+        get
+        {
+            if (_rightTracker == null)
+                FindTracker(ref _rightTracker, HOTK_TrackedDevice.EType.RightController);
+            return _rightTracker;
+        }
+    }
+
     public uint LeftIndex
     {
         get
