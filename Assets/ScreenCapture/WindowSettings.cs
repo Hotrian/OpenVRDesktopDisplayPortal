@@ -5,7 +5,7 @@ public class WindowSettings
 
     public uint SaveFileVersion = 0;
     public bool directMode = true; // SaveFile Version 1 Compat
-    public DesktopPortalController.CaptureMode captureMode = DesktopPortalController.CaptureMode.GDIDirect;
+    public DesktopPortalController.CaptureMode captureMode = DesktopPortalController.CaptureMode.GdiDirect;
     public DesktopPortalController.MouseInteractionMode interactionMode = DesktopPortalController.MouseInteractionMode.DirectInteraction;
     public HOTK_Overlay.FramerateMode framerateMode = HOTK_Overlay.FramerateMode._24FPS;
     public bool windowSizeLocked = false;

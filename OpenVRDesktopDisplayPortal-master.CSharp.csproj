@@ -109,6 +109,7 @@
     <Compile Include="Assets\HOTK\Twitch\TwitchSettingsSaver.cs" />
     <Compile Include="Assets\HOTK\VLC\VLCPlayerController.cs" />
     <Compile Include="Assets\HotkeyController.cs" />
+    <Compile Include="Assets\MatchRotationScript.cs" />
     <Compile Include="Assets\MultiModeController.cs" />
     <Compile Include="Assets\ScreenCapture\CaptureScreen.cs" />
     <Compile Include="Assets\ScreenCapture\CursorInteraction.cs" />

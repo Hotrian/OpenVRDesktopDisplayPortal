@@ -10,6 +10,9 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
     public static Action<HOTK_TrackedDevice> OnControllerTriggerUp;
     public static Action<HOTK_TrackedDevice> OnControllerTriggerClicked;
     public static Action<HOTK_TrackedDevice> OnControllerTriggerDoubleClicked;
+    public static Action<HOTK_TrackedDevice> OnControllerTouchpadDown;
+    public static Action<HOTK_TrackedDevice> OnControllerTouchpadUp;
+    public static Action<HOTK_TrackedDevice> OnControllerTouchpadClicked;
     public static Action OnControllerIndicesUpdated; // Called only when both controllers have been checked/assigned or are swapped
 
     public static HOTK_TrackedDeviceManager Instance
@@ -115,19 +118,26 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
     }
 
     private bool _clickedLeft;
+    private float _leftButtonDownTimeLeft;
+    private float _leftDoubleClickTimeLeft;
+    private float _touchpadDownTimeLeft;
+    private bool _touchpadClickedLeft;
+
     private bool _clickedRight;
-    private HOTK_TrackedDevice _lastClickDev;
-    private float _leftButtonDownTime;
-    private float _doubleClickTime;
+    private float _leftButtonDownTimeRight;
+    private float _leftDoubleClickTimeRight;
+    private float _touchpadDownTimeRight;
+    private bool _touchpadClickedRight;
 
     private void UpdateButtons()
     {
-        UpdateInput(_leftTracker, ref _clickedLeft, ETrackedControllerRole.LeftHand);
-        UpdateInput(_rightTracker, ref _clickedRight, ETrackedControllerRole.RightHand);
+        UpdateInput(_leftTracker, ref _clickedLeft, ref _leftButtonDownTimeLeft, ref _leftDoubleClickTimeLeft, ref _touchpadClickedLeft, ref _touchpadDownTimeLeft, ETrackedControllerRole.LeftHand);
+        UpdateInput(_rightTracker, ref _clickedRight, ref _leftButtonDownTimeRight, ref _leftDoubleClickTimeRight, ref _touchpadClickedRight, ref _touchpadDownTimeRight, ETrackedControllerRole.RightHand);
     }
 
+    private bool GetPress(VRControllerState_t state, EVRButtonId buttonId) { return (state.ulButtonPressed & (1ul << (int)buttonId)) != 0; }
 
-    private void UpdateInput(HOTK_TrackedDevice dev, ref bool clicked, ETrackedControllerRole role)
+    private void UpdateInput(HOTK_TrackedDevice dev, ref bool clicked, ref float clickTime, ref float doubleClickTime, ref bool touchpad, ref float touchpadTime, ETrackedControllerRole role)
     {
         if (dev == null || !dev.IsValid) return;
         var svr = SteamVR.instance;
@@ -136,12 +146,14 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
         svr.hmd.GetControllerState((uint)dev.Index, ref c);
         // c.rAxis0 is Trackpad
         // c.rAxis1 is Trigger
+
+        // Trigger check
         if (c.rAxis1.x >= 0.99f)
         {
             if (!clicked)
             {
                 clicked = true;
-                _leftButtonDownTime = Time.time;
+                clickTime = Time.time;
                 if (OnControllerTriggerDown != null) OnControllerTriggerDown(dev);
             }
         }
@@ -151,24 +163,37 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
             {
                 clicked = false;
                 if (OnControllerTriggerUp != null) OnControllerTriggerUp(dev);
+                
+                if ((Time.time - doubleClickTime) < 0.25f)
+                {
+                    if (OnControllerTriggerDoubleClicked != null) OnControllerTriggerDoubleClicked(dev);
+                    return;
+                }
+                doubleClickTime = Time.time;
 
-                if (_lastClickDev == dev)
-                {
-                    if ((Time.time - _doubleClickTime) < 0.25f)
-                    {
-                        if (OnControllerTriggerDoubleClicked != null) OnControllerTriggerDoubleClicked(dev);
-                        _lastClickDev = null;
-                        return;
-                    }
-                    _doubleClickTime = Time.time;
-                }
-                else
-                {
-                    _lastClickDev = dev;
-                    _doubleClickTime = Time.time;
-                }
-                if (!((Time.time - _leftButtonDownTime) < 0.25f)) return;
+                if (!((Time.time - clickTime) < 0.25f)) return;
                 if (OnControllerTriggerClicked != null) OnControllerTriggerClicked(dev);
+            }
+        }
+
+        // Touchpad Check
+        if (GetPress(c, EVRButtonId.k_EButton_SteamVR_Touchpad))
+        {
+            if (!touchpad)
+            {
+                touchpad = true;
+                touchpadTime = Time.time;
+                if (OnControllerTouchpadDown != null) OnControllerTouchpadDown(dev);
+            }
+        }
+        else
+        {
+            if (touchpad)
+            {
+                touchpad = false;
+                if (OnControllerTouchpadUp != null) OnControllerTouchpadUp(dev);
+                if (!((Time.time - touchpadTime) < 0.25f)) return;
+                if (OnControllerTouchpadClicked != null) OnControllerTouchpadClicked(dev);
             }
         }
     }

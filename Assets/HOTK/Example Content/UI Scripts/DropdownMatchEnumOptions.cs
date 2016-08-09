@@ -118,7 +118,7 @@ public class DropdownMatchEnumOptions : MonoBehaviour
                 break;
             case EnumSelection.CaptureMode:
                 var index = CaptureModeNames.IndexOf(Dropdown.options[Dropdown.value].text);
-                DesktopPortalController.Instance.SelectedWindowSettings.captureMode = index == -1 ? DesktopPortalController.CaptureMode.GDIDirect : (DesktopPortalController.CaptureMode)index; // Fallback to GDI Direct if they were using a now disabled capture method
+                DesktopPortalController.Instance.SelectedWindowSettings.captureMode = index == -1 ? DesktopPortalController.CaptureMode.GdiDirect : (DesktopPortalController.CaptureMode)index; // Fallback to GDI Direct if they were using a now disabled capture method
                 break;
             case EnumSelection.MouseMode:
                 DesktopPortalController.Instance.SelectedWindowSettings.interactionMode = (DesktopPortalController.MouseInteractionMode) MouseModeNames.IndexOf(Dropdown.options[Dropdown.value].text);

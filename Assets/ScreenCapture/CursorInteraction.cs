@@ -87,52 +87,67 @@ public class CursorInteraction
     private static bool _clicking;
 
     // Click the cursor where it is
-    public static void ClickOnPointAtCursor(IntPtr wndHandle, bool doubleClick = false)
+    public static void ClickOnPointAtCursor(IntPtr wndHandle, SimulationMode mode = SimulationMode.LeftClick)
     {
         // Calculate current cursor pos
         var clientPoint = new Point(Cursor.Position.X, Cursor.Position.Y);
         ScreenToClient(wndHandle, ref clientPoint);
         IntPtr lParam = (IntPtr)((clientPoint.Y << 16) | clientPoint.X);
         // Click Mouse
-        if (doubleClick)
+        switch (mode)
         {
-            SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONDBLCLK, (UIntPtr)1, lParam);
-            SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONUP, UIntPtr.Zero, lParam);
-        }
-        else
-        {
-            SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONDOWN, (UIntPtr)1, lParam);
-            SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONUP, UIntPtr.Zero, lParam);
+            case SimulationMode.LeftClick:
+                SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONDOWN, (UIntPtr)1, lParam);
+                SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONUP, UIntPtr.Zero, lParam);
+                break;
+            case SimulationMode.RightClick:
+                SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_RBUTTONDOWN, (UIntPtr)2, lParam);
+                SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_RBUTTONUP, UIntPtr.Zero, lParam);
+                break;
+            case SimulationMode.DoubleClick:
+                SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONDBLCLK, (UIntPtr)1, lParam);
+                SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONUP, UIntPtr.Zero, lParam);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException("mode", mode, null);
         }
         _clicking = true;
     }
 
     // Click on a window even if it's in the background
-    public static void ClickOnPoint(IntPtr wndHandle, Point clientPoint, bool doubleClick = false)
+    public static void ClickOnPoint(IntPtr wndHandle, Point clientPoint, SimulationMode mode = SimulationMode.LeftClick)
     {
-        UnityEngine.Debug.Log(clientPoint.X + " / " + clientPoint.Y);
+        //UnityEngine.Debug.Log(clientPoint.X + " / " + clientPoint.Y);
         var oldPos = Cursor.Position;
-        IntPtr lParam = (IntPtr)((clientPoint.Y << 16) | clientPoint.X);
+        IntPtr lParam = (IntPtr) ((clientPoint.Y << 16) | clientPoint.X);
         ClientToScreen(wndHandle, ref clientPoint);
         Cursor.Position = new Point(clientPoint.X, clientPoint.Y);
-        if (doubleClick)
+        switch (mode)
         {
-            SendMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONDBLCLK, (IntPtr)1, lParam);
-            SendMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONUP, IntPtr.Zero, lParam);
-        }
-        else
-        {
-            SendMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONDOWN, (IntPtr)1, lParam);
-            SendMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONUP, IntPtr.Zero, lParam);
+            case SimulationMode.LeftClick:
+                SendMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONDOWN, (IntPtr)1, lParam);
+                SendMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONUP, IntPtr.Zero, lParam);
+                break;
+            case SimulationMode.RightClick:
+                SendMessage(wndHandle, (uint)MouseEvents.WM_RBUTTONDOWN, (IntPtr)2, lParam);
+                SendMessage(wndHandle, (uint)MouseEvents.WM_RBUTTONUP, IntPtr.Zero, lParam);
+                break;
+            case SimulationMode.DoubleClick:
+                SendMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONDBLCLK, (IntPtr)1, lParam);
+                SendMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONUP, IntPtr.Zero, lParam);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException("mode", mode, null);
         }
         Cursor.Position = oldPos;
     }
+
     // Release click - not currently used
     public static void ReleaseClick(IntPtr wndHandle)
     {
         var clientPoint = new Point(Cursor.Position.X, Cursor.Position.Y);
         ScreenToClient(wndHandle, ref clientPoint);
-        SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONUP, UIntPtr.Zero, (IntPtr)((clientPoint.Y << 16) | clientPoint.X));
+        SendNotifyMessage(wndHandle, (uint) MouseEvents.WM_LBUTTONUP, UIntPtr.Zero, (IntPtr) ((clientPoint.Y << 16) | clientPoint.X));
         _clicking = false;
     }
 
@@ -141,14 +156,20 @@ public class CursorInteraction
     // Move the cursor to a given point over a window
     public static void MoveOverWindow(IntPtr wndHandle, Point clientPoint)
     {
-        if (lastPoint.X == clientPoint.X && lastPoint.Y == clientPoint.Y &&
-            lastHandle != IntPtr.Zero && lastHandle == wndHandle) return;
+        if (lastPoint.X == clientPoint.X && lastPoint.Y == clientPoint.Y && lastHandle != IntPtr.Zero && lastHandle == wndHandle) return;
         lastHandle = wndHandle;
         lastPoint = clientPoint;
-        IntPtr lParam = (IntPtr)((clientPoint.Y << 16) | clientPoint.X);
+        IntPtr lParam = (IntPtr) ((clientPoint.Y << 16) | clientPoint.X);
         ClientToScreen(wndHandle, ref clientPoint);
         Cursor.Position = new Point(clientPoint.X, clientPoint.Y);
-        SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_MOUSEMOVE, _clicking ? (UIntPtr)1 : UIntPtr.Zero, lParam);
+        SendNotifyMessage(wndHandle, (uint) MouseEvents.WM_MOUSEMOVE, _clicking ? (UIntPtr) 1 : UIntPtr.Zero, lParam);
+    }
+
+    public enum SimulationMode
+    {
+        LeftClick,
+        RightClick,
+        DoubleClick
     }
 
     private enum MouseEvents
