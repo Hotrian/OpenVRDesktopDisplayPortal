@@ -24,37 +24,47 @@ public class DesktopPortalController : MonoBehaviour
     {
         get { return _instance ?? (_instance = FindObjectOfType<DesktopPortalController>()); }
     }
-    public Camera RenderCamera;
-    public Texture DefaultTexture;
-    public DropdownMatchEnumOptions CaptureModeDropdown;
-    public DropdownMatchEnumOptions FramerateModeDropdown;
-    public DropdownMatchEnumOptions InteractionModeDropdown;
-    public Toggle MinimizedToggle;
+    public Camera RenderCamera; // A Render Camera used to capture the texture drawn to the overlay
+    public Texture DefaultTexture; // Texture drawn to the overlay when there is nothing else to draw
+    public DropdownMatchEnumOptions CaptureModeDropdown; // A Dropdown used to select the current Capture Mode
+    public DropdownMatchEnumOptions FramerateModeDropdown; // A Dropdown used to select the current Capture Framerate
+    public DropdownMatchEnumOptions InteractionModeDropdown; // A Dropdown used to select the current Interaction Mode
+
+    // Used to control resolution lock
     public Image SizeLockSprite;
     public Sprite LockSprite;
     public Sprite UnlockSprite;
-    public Material OutlineMaterial;
-    public InputField OffsetLeftField;
+
+    public Material OutlineMaterial; // Material used for the outline
+
+    // Input Fields used to control cropping and window size
+    public InputField OffsetLeftField; 
     public InputField OffsetTopField;
     public InputField OffsetRightField;
     public InputField OffsetBottomField;
     public InputField OffsetWidthField;
     public InputField OffsetHeightField;
-    public HOTK_Overlay Overlay;
-    public Material DisplayMaterial;
-    public Dropdown ApplicationDropdown;
-    public GameObject DisplayQuad;
+
+    public HOTK_Overlay Overlay; // The Overlay we are manipulating
+    public Material DisplayMaterial; // The Material we are drawing to
+    public Dropdown ApplicationDropdown; // A Dropdown used to select the Target Application
+    public GameObject DisplayQuad; // A Quad used to show the output in the Desktop Window, which is captured by the Render Camera
+
+    // Used to map Position Sliders
     public OffsetMatchInputField OffsetX;
     public OffsetMatchInputField OffsetY;
     public OffsetMatchInputField OffsetZ;
+
+    // Used to map Rotation Sliders
     public RotationMatchSlider OffsetRx;
     public RotationMatchSlider OffsetRy;
     public RotationMatchSlider OffsetRz;
-    public RenderTexture RenderTexture
+
+    public RenderTexture RenderTexture // A Render Texture used to copy the DisplayQuad into VR with an Outline
     {
         get { return _renderTexture ?? (_renderTexture = NewRenderTexture()); }
     }
-    public GameObject CursorGameObject;
+    public GameObject CursorGameObject; // A GameObject which displays our Cursor Sprite
     public SpriteRenderer CursorRenderer // Cache and return the SpriteRenderer for the Cursor if we can
     {
         get
@@ -64,15 +74,15 @@ public class DesktopPortalController : MonoBehaviour
                        (CursorGameObject == null ? null : CursorGameObject.GetComponent<SpriteRenderer>()));
         }
     }
-    public GameObject OverlayOffsetTracker
+    public GameObject OverlayOffsetTracker // Cache and return a GameObject used to track the relative position of the Overlay when grabbing
     {
-        get { return _overlayOffsetTracker ?? (_overlayOffsetTracker = new GameObject("Overlay Offset Tracker")); }
+        get { return _overlayOffsetTracker ?? (_overlayOffsetTracker = new GameObject("Overlay Offset Tracker") {hideFlags = HideFlags.HideInHierarchy}); }
     }
-    public Text FpsCounter;
-    public Text ResolutionDisplay;
-    //string SelectedWindowPath = string.Empty;
-    //string SelectedWindowEXE = string.Empty;
-    public WindowSettings SelectedWindowSettings;
+    public Text FpsCounter; // A Text that shows the current FPS
+    public Text ResolutionDisplay; // A Text that shows the current Resolution
+    public ScaleMatchInputField ScaleField;
+    public ScaleMatchInputField Scale2Field;
+    public WindowSettings SelectedWindowSettings; // The WindowSettings of the current Target Application
     [HideInInspector]
     public string SelectedWindowTitle;
     #endregion
@@ -115,13 +125,16 @@ public class DesktopPortalController : MonoBehaviour
     private int _lastWindowPosY;
     private int _fpsCount;
     private bool _reselecting;
-
     private CaptureScreen.SIZE _size;
     #pragma warning disable 0414
     private Win32Stuff.WINDOWINFO _info;
     #pragma warning restore 0414
     private bool _wasDirect;
 
+    private HOTK_TrackedDevice _scalingOverlay;
+    private float _scalingBaseScale;
+    private float _scalingBaseDistance;
+    private bool _scalingScale2;
     // Cache these fractions so they aren't constantly recalculated
     private static readonly float[] FramerateFractions = {
         1f, 1f/2f, 1f/5f, 1f/10f, 1/15f, 1/24f, 1f/30f, 1f/60f, 1f/90f, 1f/120f
@@ -214,7 +227,10 @@ public class DesktopPortalController : MonoBehaviour
         }
         if (_scalingOverlay != null)
         {
-            Overlay.Scale = _scalingBaseScale + (Vector3.Distance(_grabbingOverlay.transform.position, _scalingOverlay.transform.position) - _scalingBaseDistance);
+            var scale = _scalingBaseScale + (Vector3.Distance(_grabbingOverlay.transform.position, _scalingOverlay.transform.position) - _scalingBaseDistance);
+            if (_scalingScale2) Overlay.Scale2 = scale;
+            else Overlay.Scale = scale;
+
         }else if (_grabbingOverlay != null)
         {
             Overlay.AnchorOffset = _grabbingOverlay.transform.position + _grabbingOffset;
@@ -230,6 +246,9 @@ public class DesktopPortalController : MonoBehaviour
     #endregion
 
     #region Controller Interaction
+    /// <summary>
+    /// Occurs when a controller comes into contact with an Overlay
+    /// </summary>
     private void TouchOverlay(HOTK_Overlay o, HOTK_TrackedDevice tracker, HOTK_Overlay.IntersectionResults result)
     {
         if (_selectedWindow == IntPtr.Zero) return;
@@ -244,12 +263,18 @@ public class DesktopPortalController : MonoBehaviour
         StartCoroutine("GoToGreen");
         StartCoroutine("FadeInOutline");
     }
+    /// <summary>
+    /// Occurs when a controller stops touching an Overlay
+    /// </summary>
     private void UnTouchOverlay(HOTK_Overlay o, HOTK_TrackedDevice tracker)
     {
         if (_grabbingOverlay != null) return;
         _touchingOverlay = null;
         if (!_didHitOverlay) StartCoroutine("FadeOutOutline");
     }
+    /// <summary>
+    /// Occurs when a controller is aiming at an Overlay
+    /// </summary>
     private void AimAtApplication(HOTK_Overlay o, HOTK_TrackedDevice tracker, HOTK_Overlay.IntersectionResults result)
     {
         if (_selectedWindow == IntPtr.Zero) return;
@@ -302,6 +327,9 @@ public class DesktopPortalController : MonoBehaviour
             StartCoroutine("FadeOutOutline");
         }
     }
+    /// <summary>
+    /// Occurs when a controller stops aiming at an Overlay
+    /// </summary>
     private void UnsetLastHit(HOTK_Overlay o, HOTK_TrackedDevice tracker)
     {
         if (tracker != _aimingAtOverlay) return;
@@ -324,10 +352,9 @@ public class DesktopPortalController : MonoBehaviour
         CursorGameObject.SetActive(false);
     }
 
-    private HOTK_TrackedDevice _scalingOverlay;
-    private float _scalingBaseScale;
-    private float _scalingBaseDistance;
-
+    /// <summary>
+    /// Occurs when a trigger has been pressed
+    /// </summary>
     private void TriggerDown(HOTK_TrackedDevice tracker)
     {
         if (_touchingOverlay != null)
@@ -341,10 +368,12 @@ public class DesktopPortalController : MonoBehaviour
                 OverlayOffsetTracker.transform.localPosition = _grabbingOffset;
                 OverlayOffsetTracker.transform.rotation = _grabbingOverlay.transform.rotation;
             }
-            else
+            else if (_scalingOverlay == null)
             {
                 _scalingOverlay = tracker;
-                _scalingBaseScale = Overlay.Scale;
+                _scalingScale2 = Overlay.IsBeingGazed;
+                Overlay.LockGaze(_scalingScale2); // Lock the Gaze Detection on the Overlay to it's current state
+                _scalingBaseScale = _scalingScale2 ? Overlay.Scale2 : Overlay.Scale;
                 _scalingBaseDistance = Vector3.Distance(_grabbingOverlay.transform.position, _scalingOverlay.transform.position);
                 StartCoroutine("GoToBlue");
             }
@@ -358,20 +387,10 @@ public class DesktopPortalController : MonoBehaviour
             }
         }
     }
-
-    private void TouchpadDown(HOTK_TrackedDevice tracker)
-    {
-        if (_touchingOverlay == null)
-        {
-            if (tracker == _aimingAtOverlay)
-            {
-                if (_didHitOverlay) // Test if we were aiminag at the overlay when the click action started
-                    _isHittingOverlay = true;
-            }
-        }
-    }
-
-    // Test if we were aiminag at the overlay when the click action started
+    /// <summary>
+    /// Occurs when a trigger stops being pressed
+    /// </summary>
+    /// <param name="tracker"></param>
     private void TriggerUp(HOTK_TrackedDevice tracker)
     {
         if (_scalingOverlay != null)
@@ -379,9 +398,16 @@ public class DesktopPortalController : MonoBehaviour
             _scalingOverlay = null;
             _scalingBaseScale = 0f;
             _scalingBaseDistance = 0f;
-            //if (_grabbingOverlay == null) return;
-            //_grabbingOffset = Overlay.AnchorOffset - _grabbingOverlay.transform.position;
-            //OverlayOffsetTracker.transform.localPosition = _grabbingOffset;
+            Overlay.UnlockGaze();
+            if (_scalingScale2)
+            {
+                _scalingScale2 = false;
+                Scale2Field.InputField.text = Overlay.Scale2.ToString(CultureInfo.InvariantCulture);
+            }
+            else
+            {
+                ScaleField.InputField.text = Overlay.Scale.ToString(CultureInfo.InvariantCulture);
+            }
             StartCoroutine("GoToGreen");
         }
         else if (_grabbingOverlay != null)
@@ -403,12 +429,25 @@ public class DesktopPortalController : MonoBehaviour
             OffsetRx.Slider.value = dx;
             OffsetRy.Slider.value = dy;
             OffsetRz.Slider.value = dz;
-            
+
             if (!_didHitOverlay) StartCoroutine("FadeOutOutline");
         }
     }
-
-    // Click the application
+    /// <summary>
+    /// Occurs when a touchpad has been pressed down
+    /// </summary>
+    private void TouchpadDown(HOTK_TrackedDevice tracker)
+    {
+        if (_touchingOverlay == null)
+        {
+            if (tracker == _aimingAtOverlay)
+            {
+                if (_didHitOverlay) // Test if we were aiminag at the overlay when the click action started
+                    _isHittingOverlay = true;
+            }
+        }
+    }
+    
     // ReSharper disable once UnusedParameter.Local
     private void ClickApplication(HOTK_TrackedDevice tracker, CursorInteraction.SimulationMode mode)
     {
@@ -438,21 +477,27 @@ public class DesktopPortalController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Occurs when a trigger has been clicked (pressed and released rapidly)
+    /// </summary>
     private void SingleClickApplication(HOTK_TrackedDevice tracker)
     {
         ClickApplication(tracker, CursorInteraction.SimulationMode.LeftClick);
     }
-
+    /// <summary>
+    /// Occurs when a trigger has been double clicked (pressed and released rapidly, twice in a row)
+    /// </summary>
     private void DoubleClickApplication(HOTK_TrackedDevice tracker)
     {
         ClickApplication(tracker, CursorInteraction.SimulationMode.DoubleClick);
     }
-
+    /// <summary>
+    /// Occurs when a touchpad has been clicked (pressed and released rapidly)
+    /// </summary>
     private void RightClickApplication(HOTK_TrackedDevice tracker)
     {
         ClickApplication(tracker, CursorInteraction.SimulationMode.RightClick);
     }
-
     #endregion
 
     #region Coroutines
@@ -509,7 +554,6 @@ public class DesktopPortalController : MonoBehaviour
         {
             if (_selectedWindow != IntPtr.Zero)
             {
-                MinimizedToggle.isOn = !Win32Stuff.IsIconic(_selectedWindow);
                 if (!OffsetWidthField.isFocused && !OffsetHeightField.isFocused)
                 {
                     var r = CaptureScreen.GetWindowRect(_selectedWindow);
@@ -528,7 +572,6 @@ public class DesktopPortalController : MonoBehaviour
             yield return new WaitForSeconds(1f);
         }
     }
-
     private IEnumerator UpdateEvery10Seconds()
     {
         while (Application.isPlaying)
@@ -632,11 +675,12 @@ public class DesktopPortalController : MonoBehaviour
             }
         }
     }
-
     // ReSharper restore UnusedMember.Local
-
     #endregion
 
+    /// <summary>
+    /// Generates a new RenderTexture and assigns it
+    /// </summary>
     private RenderTexture NewRenderTexture()
     {
         var r = new RenderTexture((int) DisplayQuad.transform.localScale.x + _renderTextureMarginWidth, (int) DisplayQuad.transform.localScale.y + _renderTextureMarginHeight, 24);
@@ -646,7 +690,9 @@ public class DesktopPortalController : MonoBehaviour
         if (previous != null) previous.Release();
         return r;
     }
-
+    /// <summary>
+    /// Automatically replaces the existing RenderTexture with an appropriately sized one using the Getter/Setter
+    /// </summary>
     public RenderTexture GetNewRenderTexture(int width = 0, int height = 0)
     {
         _renderTextureMarginWidth = width;
@@ -656,7 +702,6 @@ public class DesktopPortalController : MonoBehaviour
     }
 
     #region UI Methods
-
     public void EnableFpsCounter()
     {
         FpsCounter.gameObject.SetActive(true);
@@ -668,13 +713,15 @@ public class DesktopPortalController : MonoBehaviour
     {
         StopCoroutine("UpdateEvery10Seconds");
     }
-
     public void StartRefreshing()
     {
         StopCoroutine("UpdateEvery10Seconds");
         StartCoroutine("UpdateEvery10Seconds");
     }
 
+    /// <summary>
+    /// Refreshes the Window List with a list of the current windows
+    /// </summary>
     private void RefreshWindowList()
     {
         var windows = Win32Stuff.FindWindowsWithSize();
@@ -723,50 +770,44 @@ public class DesktopPortalController : MonoBehaviour
         }
         _reselecting = false;
 
-        if (!foundCurrent)
+        if (foundCurrent) return;
+        // Attempt to recapture by window PID
+        if (_selectedWindow != IntPtr.Zero)
         {
-            // Attempt to recapture by window PID
-            if (_selectedWindow != IntPtr.Zero)
-            {
-                bool found = false;
-                string windowName = null;
+            var found = false;
+            string windowName = null;
 
-                foreach (var entry in _windows.Where(entry => entry.Value == _selectedWindow))
+            foreach (var entry in _windows.Where(entry => entry.Value == _selectedWindow))
+            {
+                windowName = entry.Key;
+                found = true;
+                break;
+            }
+            if (found)
+            {
+                if (!string.IsNullOrEmpty(windowName))
                 {
-                    windowName = entry.Key;
-                    found = true;
-                    break;
-                }
-                if (found)
-                {
-                    if (!string.IsNullOrEmpty(windowName))
+                    for (var i = 0; i < ApplicationDropdown.options.Count; i++)
                     {
-                        for (var i = 0; i < ApplicationDropdown.options.Count; i++)
-                        {
-                            if (ApplicationDropdown.options[i].text != windowName) continue;
-                            Debug.Log("Found " + SelectedWindowTitle + " by new name " + windowName);
-                            _reselecting = true;
-                            SelectedWindowTitle = windowName;
-                            ApplicationDropdown.value = i;
-                            foundCurrent = true;
-                            break;
-                        }
+                        if (ApplicationDropdown.options[i].text != windowName) continue;
+                        Debug.Log("Found " + SelectedWindowTitle + " by new name " + windowName);
+                        _reselecting = true;
+                        SelectedWindowTitle = windowName;
+                        ApplicationDropdown.value = i;
+                        foundCurrent = true;
+                        break;
                     }
                 }
             }
-            // Windows must be closed or otherwise lost to cyberspace
-            if (!foundCurrent)
-            {
-                _selectedWindow = IntPtr.Zero;
-                _selectedWindowFullPath = string.Empty;
-                //SelectedWindowPath = string.Empty;
-                //SelectedWindowEXE = string.Empty;
-                SelectedWindowSettings = null;
-
-                ApplicationDropdown.captionText.text = count + " window(s) detected";
-                Debug.Log("Found " + count + " windows");
-            }
         }
+        // Windows must be closed or otherwise lost to cyberspace
+        if (foundCurrent) return;
+        _selectedWindow = IntPtr.Zero;
+        _selectedWindowFullPath = string.Empty;
+        SelectedWindowSettings = null;
+
+        ApplicationDropdown.captionText.text = count + " window(s) detected";
+        Debug.Log("Found " + count + " windows");
     }
 
     public void OptionChanged()
@@ -808,12 +849,6 @@ public class DesktopPortalController : MonoBehaviour
         {
             Debug.LogError("Failed to find Window");
         }
-    }
-
-    public void ToggleMinimized()
-    {
-        if (_selectedWindow == IntPtr.Zero) return;
-        Win32Stuff.ShowWindow(_selectedWindow, MinimizedToggle.isOn ? ShowWindowCommands.Restore : ShowWindowCommands.Minimize);
     }
 
     public void ToggleSizeLocked()
@@ -940,10 +975,6 @@ public class DesktopPortalController : MonoBehaviour
             settings = new WindowSettings {SaveFileVersion = WindowSettings.CurrentSaveVersion};
             SaveLoad.SavedSettings.Add(configName, settings);
         }
-        //else
-        //{
-        //    Debug.Log("Loading Config [" + name + "]. Version: " + settings.SaveFileVersion);
-        //}
 
         if (settings.SaveFileVersion == 0)
         {

@@ -60,12 +60,12 @@ public class HOTK_Overlay : MonoBehaviour
     public Action<HOTK_Overlay, Quaternion> OnOverlayAnchorRotationChanges;
 
     #region Interal Vars
-
     public static Random rand = new Random();
     public static HOTK_Overlay HighQualityOverlay;  // Only one Overlay can be HQ at a time
     public static string Key { get { return "unity:" + Application.companyName + "." + Application.productName + "." + rand.Next(); } }
     public static GameObject ZeroReference;         // Used to get a reference to the world 0, 0, 0 point
     public GameObject OverlayReference;             // Used to get a reference for the Overlay's transform
+    public bool IsBeingGazed;
     
     private Texture _overlayTexture;                    // These are used to cache values and check for changes
     private Vector4 _uvOffset = Vector4.zero;
@@ -87,6 +87,9 @@ public class HOTK_Overlay : MonoBehaviour
     private float _alpha;
     private float _scale;
 
+    private bool _lockGaze; // If true, _lockedGaze will be used instead of actually testing for gaze
+    private bool _lockedGaze; // If _lockGaze, this value is forced instead of testing for gaze
+
     private GameObject RotationTracker
     {
         get
@@ -107,6 +110,16 @@ public class HOTK_Overlay : MonoBehaviour
     private bool _justUpdated;
     private bool _doUpdate;
     #endregion
+
+    public void LockGaze(bool lockedOn)
+    {
+        _lockGaze = true;
+        _lockedGaze = lockedOn;
+    }
+    public void UnlockGaze()
+    {
+        _lockGaze = false;
+    }
 
     public void DoUpdate()
     {
@@ -696,14 +709,14 @@ public class HOTK_Overlay : MonoBehaviour
     private void UpdateGaze(ref bool changed)
     {
         FindDevice(ref _hmdTracker, HOTK_TrackedDevice.EType.HMD);
-        var hit = false;
-        if (_hmdTracker != null && _hmdTracker.IsValid)
+        var hit = _lockGaze && _lockedGaze;
+        if (!_lockGaze && _hmdTracker != null && _hmdTracker.IsValid)
         {
             if (Vector3.Angle(_hmdTracker.transform.forward, _rotationTracker.transform.forward) > 90f) return;
             var result = new IntersectionResults();
             hit = ComputeIntersection(_hmdTracker.gameObject.transform.position, _hmdTracker.gameObject.transform.forward, ref result);
-            //Debug.Log("Hit! " + gameObject.name);
         }
+        IsBeingGazed = hit;
         HandleAnimateOnGaze(hit, ref changed);
     }
 
