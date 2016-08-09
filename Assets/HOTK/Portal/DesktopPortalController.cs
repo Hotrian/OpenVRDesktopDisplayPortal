@@ -226,7 +226,6 @@ public class DesktopPortalController : MonoBehaviour
     {
         SaveLoad.Save();
         DisplayMaterial.mainTexture = DefaultTexture;
-        //CaptureScreen.DeleteCopyContexts();
     }
     #endregion
 
@@ -268,7 +267,6 @@ public class DesktopPortalController : MonoBehaviour
             if ((int) v2.x == _lastWindowPosX && (int) v2.y == _lastWindowPosY) return;
             _lastWindowPosX = (int)v2.x;
             _lastWindowPosY = (int)v2.y;
-            //Debug.Log("( " + v2.x + " / " + _currentWindowWidth + " ) x ( " + v2.y + " / " + _currentWindowHeight + " )");
 
             if (v2.x > 0 && v2.y > 0 && v2.x < _currentWindowWidth + SelectedWindowSettings.offsetLeft && v2.y < _currentWindowHeight + SelectedWindowSettings.offsetTop)
             {
@@ -289,6 +287,7 @@ public class DesktopPortalController : MonoBehaviour
                 
                 CursorGameObject.transform.localPosition = v1;
                 StopCoroutine("GoToGreen");
+                StopCoroutine("GoToBlue");
                 OutlineMaterial.color = new Color(1f, 0f, 0f, OutlineMaterial.color.a);
                 StartCoroutine("FadeInOutline");
             }
@@ -347,6 +346,7 @@ public class DesktopPortalController : MonoBehaviour
                 _scalingOverlay = tracker;
                 _scalingBaseScale = Overlay.Scale;
                 _scalingBaseDistance = Vector3.Distance(_grabbingOverlay.transform.position, _scalingOverlay.transform.position);
+                StartCoroutine("GoToBlue");
             }
         }
         else
@@ -382,7 +382,9 @@ public class DesktopPortalController : MonoBehaviour
             //if (_grabbingOverlay == null) return;
             //_grabbingOffset = Overlay.AnchorOffset - _grabbingOverlay.transform.position;
             //OverlayOffsetTracker.transform.localPosition = _grabbingOffset;
-        }else if (_grabbingOverlay != null)
+            StartCoroutine("GoToGreen");
+        }
+        else if (_grabbingOverlay != null)
         {
             _grabbingOverlay = null;
             _touchingOverlay = null;
@@ -454,10 +456,10 @@ public class DesktopPortalController : MonoBehaviour
     #endregion
 
     #region Coroutines
-
     // ReSharper disable UnusedMember.Local
     private IEnumerator GoToGreen()
     {
+        StopCoroutine("GoToBlue");
         var t = 0f;
         while ((_touchingOverlay != null || _grabbingOverlay != null) && t < 1f)
         {
@@ -466,14 +468,14 @@ public class DesktopPortalController : MonoBehaviour
             yield return new WaitForSeconds(0.025f);
         }
     }
-
     private IEnumerator GoToBlue()
     {
+        StopCoroutine("GoToGreen");
         var t = 0f;
         while ((_touchingOverlay != null || _grabbingOverlay != null) && t < 1f)
         {
             t += 0.25f;
-            OutlineMaterial.color = Color.Lerp(OutlineMaterial.color, new Color(0f, 1f, 0f, OutlineMaterial.color.a), t);
+            OutlineMaterial.color = Color.Lerp(OutlineMaterial.color, new Color(0f, 0f, 1f, OutlineMaterial.color.a), t);
             yield return new WaitForSeconds(0.025f);
         }
     }
@@ -489,7 +491,6 @@ public class DesktopPortalController : MonoBehaviour
             yield return new WaitForSeconds(0.025f);
         }
     }
-
     private IEnumerator FadeOutOutline()
     {
         StopCoroutine("FadeInOutline");
