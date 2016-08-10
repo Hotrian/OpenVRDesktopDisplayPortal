@@ -6,6 +6,9 @@ public class HotkeyController : MonoBehaviour
 {
     public InputField NewSaveInputField;
 
+    public HOTK_Overlay Overlay;
+    public GameObject DisabledText;
+
     public Button XNegButton;
     public Button XPosButton;
     public Button YNegButton;
@@ -19,6 +22,7 @@ public class HotkeyController : MonoBehaviour
     public Button RYPosButton;
     public Button RZNegButton;
     public Button RZPosButton;
+
     void Update ()
     {
         if (!NewSaveInputField.isFocused)
@@ -71,6 +75,12 @@ public class HotkeyController : MonoBehaviour
             else if (Input.GetKeyDown(KeyCode.V))
             {
                 RZPosButton.onClick.Invoke();
+            }
+
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                Overlay.gameObject.SetActive(!Overlay.gameObject.activeSelf);
+                DisabledText.SetActive(!Overlay.gameObject.activeSelf);
             }
         }
     }

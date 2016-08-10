@@ -206,6 +206,8 @@ public class DesktopPortalController : MonoBehaviour
     private static readonly float[] FramerateFractions = {
         1f, 1f/2f, 1f/5f, 1f/10f, 1/15f, 1/24f, 1f/30f, 1f/60f, 1f/90f, 1f/120f
     };
+
+    private bool _started;
     #endregion
 
     #region Unity Methods
@@ -214,14 +216,15 @@ public class DesktopPortalController : MonoBehaviour
         Debug.Log("Connected to: " + SteamVR.instance.hmd_TrackingSystemName); // Force SteamVR Plugin to Init
         if (Overlay == null) return;
         SaveLoad.Load();
+        Overlay.OverlayTexture = RenderTexture;
+        _started = true;
         _bitmap = CaptureScreen.CaptureDesktop();
-        _texture = new Texture2D(_bitmap.Width, _bitmap.Height) {filterMode = FilterMode.Point};
+        _texture = new Texture2D(_bitmap.Width, _bitmap.Height) { filterMode = FilterMode.Point };
 
         _stream = new MemoryStream();
         _bitmap.Save(_stream, ImageFormat.Png);
         _stream.Seek(0, SeekOrigin.Begin);
 
-        Overlay.OverlayTexture = RenderTexture;
         DisplayQuad.GetComponent<Renderer>().material.mainTexture = _texture;
         DisplayQuad.transform.localScale = new Vector3(_bitmap.Width, _bitmap.Height, 1f);
 
@@ -233,6 +236,12 @@ public class DesktopPortalController : MonoBehaviour
 
         StartCoroutine("UpdateEvery1Second");
         StartCoroutine("UpdateEvery10Seconds");
+
+        if (_selectedWindow != IntPtr.Zero)
+        {
+            _currentWindowWidth = 0; // Tricks the system into recalculating the size of the Overlay before capturing.
+            StartCoroutine("CaptureWindow");
+        }
         if (!_subscribed)
         {
             _subscribed = true;
@@ -251,9 +260,10 @@ public class DesktopPortalController : MonoBehaviour
 
     public void OnDisable()
     {
+        SaveLoad.Save();
         StopCoroutine("CaptureWindow");
-        _selectedWindow = IntPtr.Zero;
-        SelectedWindowTitle = "";
+        //_selectedWindow = IntPtr.Zero;
+        //SelectedWindowTitle = "";
         Overlay.OverlayTexture = DefaultTexture;
         if (DisplayQuad == null) return;
         DisplayQuad.GetComponent<Renderer>().material.mainTexture = DefaultTexture;
@@ -318,13 +328,13 @@ public class DesktopPortalController : MonoBehaviour
     /// </summary>
     private void TouchOverlay(HOTK_Overlay o, HOTK_TrackedDevice tracker, HOTK_Overlay.IntersectionResults result)
     {
+        if (!Overlay.gameObject.activeSelf) return;
         if (_selectedWindow == IntPtr.Zero) return;
         if (Overlay.AnchorDevice == HOTK_Overlay.AttachmentDevice.LeftController && tracker.Type == HOTK_TrackedDevice.EType.LeftController) return;
         if (Overlay.AnchorDevice == HOTK_Overlay.AttachmentDevice.RightController && tracker.Type == HOTK_TrackedDevice.EType.RightController) return;
         if (Overlay.AnchorDevice != HOTK_Overlay.AttachmentDevice.World) return;
         if (_grabbingOverlay != null) return;
         // Hide the cursor from when we were just aiming
-        HideCursor();
         _didHitOverlay = false;
         _touchingOverlay = tracker;
         StartCoroutine("GoToTouchColor");
@@ -343,6 +353,7 @@ public class DesktopPortalController : MonoBehaviour
     /// </summary>
     private void AimAtApplication(HOTK_Overlay o, HOTK_TrackedDevice tracker, HOTK_Overlay.IntersectionResults result)
     {
+        if (!Overlay.gameObject.activeSelf) return;
         if (_selectedWindow == IntPtr.Zero) return;
         if (SelectedWindowSettings.interactionMode == MouseInteractionMode.Disabled) return;
         if (Overlay.AnchorDevice == HOTK_Overlay.AttachmentDevice.LeftController && tracker.Type == HOTK_TrackedDevice.EType.LeftController) return;
@@ -388,7 +399,6 @@ public class DesktopPortalController : MonoBehaviour
         }
         else
         {
-            HideCursor();
             StartCoroutine("GoToDefaultColor");
         }
     }
@@ -473,30 +483,38 @@ public class DesktopPortalController : MonoBehaviour
             {
                 ScaleField.InputField.text = Overlay.Scale.ToString(CultureInfo.InvariantCulture);
             }
-            StartCoroutine("GoToTouchColor");
+            if (tracker == _grabbingOverlay)
+            {
+                DetachOverlayGrab();
+            }else StartCoroutine("GoToTouchColor");
         }
         else if (_grabbingOverlay != null)
         {
-            _grabbingOverlay = null;
-            _touchingOverlay = null;
-            Overlay.gameObject.transform.parent = _lastOverlayParent;
-            _lastOverlayParent = null;
-
-            OffsetX.InputField.text = Overlay.AnchorOffset.x.ToString(CultureInfo.InvariantCulture);
-            OffsetY.InputField.text = Overlay.AnchorOffset.y.ToString(CultureInfo.InvariantCulture);
-            OffsetZ.InputField.text = Overlay.AnchorOffset.z.ToString(CultureInfo.InvariantCulture);
-            OffsetX.OnOffsetChanged();
-            OffsetY.OnOffsetChanged();
-            OffsetZ.OnOffsetChanged();
-            var dx = Overlay.gameObject.transform.rotation.eulerAngles.x;
-            var dy = Overlay.gameObject.transform.rotation.eulerAngles.y;
-            var dz = Overlay.gameObject.transform.rotation.eulerAngles.z;
-            OffsetRx.Slider.value = dx;
-            OffsetRy.Slider.value = dy;
-            OffsetRz.Slider.value = dz;
-
-            if (!_didHitOverlay) StartCoroutine("GoToDefaultColor");
+            DetachOverlayGrab();
         }
+    }
+
+    private void DetachOverlayGrab()
+    {
+        _grabbingOverlay = null;
+        _touchingOverlay = null;
+        Overlay.gameObject.transform.parent = _lastOverlayParent;
+        _lastOverlayParent = null;
+
+        OffsetX.InputField.text = Overlay.AnchorOffset.x.ToString(CultureInfo.InvariantCulture);
+        OffsetY.InputField.text = Overlay.AnchorOffset.y.ToString(CultureInfo.InvariantCulture);
+        OffsetZ.InputField.text = Overlay.AnchorOffset.z.ToString(CultureInfo.InvariantCulture);
+        OffsetX.OnOffsetChanged();
+        OffsetY.OnOffsetChanged();
+        OffsetZ.OnOffsetChanged();
+        var dx = Overlay.gameObject.transform.rotation.eulerAngles.x;
+        var dy = Overlay.gameObject.transform.rotation.eulerAngles.y;
+        var dz = Overlay.gameObject.transform.rotation.eulerAngles.z;
+        OffsetRx.Slider.value = dx;
+        OffsetRy.Slider.value = dy;
+        OffsetRz.Slider.value = dz;
+
+        if (!_didHitOverlay) StartCoroutine("GoToDefaultColor");
     }
     /// <summary>
     /// Occurs when a touchpad has been pressed down
@@ -632,7 +650,7 @@ public class DesktopPortalController : MonoBehaviour
     {
         StopCoroutine("FadeOutCursor");
         var t = CursorRenderer.color.a;
-        CursorGameObject.SetActive(true);
+        ShowCursor();
         while (t < 1f)
         {
             t += 0.25f;
@@ -650,7 +668,7 @@ public class DesktopPortalController : MonoBehaviour
             if (CursorRenderer != null) CursorRenderer.color = new Color(CursorRenderer.color.r, CursorRenderer.color.g, CursorRenderer.color.b, t);
             yield return new WaitForSeconds(0.025f);
         }
-        CursorGameObject.SetActive(false);
+        HideCursor();
     }
 
     private IEnumerator UpdateEvery1Second()
@@ -842,10 +860,12 @@ public class DesktopPortalController : MonoBehaviour
 
     public void StopRefreshing()
     {
+        if (!Overlay.gameObject.activeSelf) return;
         StopCoroutine("UpdateEvery10Seconds");
     }
     public void StartRefreshing()
     {
+        if (!Overlay.gameObject.activeSelf) return;
         StopCoroutine("UpdateEvery10Seconds");
         StartCoroutine("UpdateEvery10Seconds");
     }
@@ -974,6 +994,7 @@ public class DesktopPortalController : MonoBehaviour
             _currentCaptureHeight = r.Height;
             OffsetWidthField.text = r.Width.ToString();
             OffsetHeightField.text = r.Height.ToString();
+            if (!Overlay.gameObject.activeSelf) return;
             StartCoroutine("CaptureWindow");
         }
         else
@@ -987,22 +1008,25 @@ public class DesktopPortalController : MonoBehaviour
         if (_selectedWindow == IntPtr.Zero) return;
         SelectedWindowSettings.windowSizeLocked = !SelectedWindowSettings.windowSizeLocked;
         SizeLockSprite.sprite = SelectedWindowSettings.windowSizeLocked ? LockSprite : UnlockSprite;
-        if (!SelectedWindowSettings.windowSizeLocked) return;
-        int v;
-        if (int.TryParse(OffsetWidthField.text, out v))
+        if (SelectedWindowSettings.windowSizeLocked)
         {
-            if (v > 0)
+            int v;
+            if (int.TryParse(OffsetWidthField.text, out v))
             {
-                SelectedWindowSettings.offsetWidth = v;
+                if (v > 0)
+                {
+                    SelectedWindowSettings.offsetWidth = v;
+                }
+            }
+            if (int.TryParse(OffsetHeightField.text, out v))
+            {
+                if (v > 0)
+                {
+                    SelectedWindowSettings.offsetHeight = v;
+                }
             }
         }
-        if (int.TryParse(OffsetHeightField.text, out v))
-        {
-            if (v > 0)
-            {
-                SelectedWindowSettings.offsetHeight = v;
-            }
-        }
+        SaveLoad.Save();
     }
 
     public void WindowSettingConfirmed(string setting)

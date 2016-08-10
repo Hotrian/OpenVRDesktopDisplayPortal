@@ -712,9 +712,12 @@ public class HOTK_Overlay : MonoBehaviour
         var hit = _lockGaze && _lockedGaze;
         if (!_lockGaze && _hmdTracker != null && _hmdTracker.IsValid)
         {
-            if (Vector3.Angle(_hmdTracker.transform.forward, _rotationTracker.transform.forward) > 90f) return;
-            var result = new IntersectionResults();
-            hit = ComputeIntersection(_hmdTracker.gameObject.transform.position, _hmdTracker.gameObject.transform.forward, ref result);
+            if (Vector3.Angle(_hmdTracker.transform.forward, _rotationTracker.transform.forward) <= 90f)
+            {
+                var result = new IntersectionResults();
+                hit = ComputeIntersection(_hmdTracker.gameObject.transform.position,
+                    _hmdTracker.gameObject.transform.forward, ref result);
+            }
         }
         IsBeingGazed = hit;
         HandleAnimateOnGaze(hit, ref changed);
