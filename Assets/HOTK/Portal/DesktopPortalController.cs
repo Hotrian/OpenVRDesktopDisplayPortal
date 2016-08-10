@@ -566,6 +566,7 @@ public class DesktopPortalController : MonoBehaviour
         StopCoroutine("GoToAimingColor");
         StopCoroutine("GoToScalingColor");
         _currentMode = OutlineColor.Default;
+        StartCoroutine("FadeOutCursor");
         var t = 0f;
         while (t < 1f)
         {
@@ -580,6 +581,7 @@ public class DesktopPortalController : MonoBehaviour
         StopCoroutine("GoToTouchColor");
         StopCoroutine("GoToScalingColor");
         _currentMode = OutlineColor.Aimed;
+        StartCoroutine("FadeInCursor");
         var t = 0f;
         while (t < 1f)
         {
@@ -594,6 +596,7 @@ public class DesktopPortalController : MonoBehaviour
         StopCoroutine("GoToAimingColor");
         StopCoroutine("GoToScalingColor");
         _currentMode = OutlineColor.Touching;
+        StartCoroutine("FadeOutCursor");
         var t = 0f;
         while (t < 1f)
         {
@@ -608,6 +611,7 @@ public class DesktopPortalController : MonoBehaviour
         StopCoroutine("GoToAimingColor");
         StopCoroutine("GoToTouchColor");
         _currentMode = OutlineColor.Scaling;
+        StartCoroutine("FadeOutCursor");
         var t = 0f;
         while (t < 1f)
         {
@@ -615,6 +619,31 @@ public class DesktopPortalController : MonoBehaviour
             OutlineMaterial.color = Color.Lerp(OutlineMaterial.color, OutlineColorScaling, t);
             yield return new WaitForSeconds(0.025f);
         }
+    }
+
+    private IEnumerator FadeInCursor()
+    {
+        StopCoroutine("FadeOutCursor");
+        var t = CursorRenderer.color.a;
+        CursorGameObject.SetActive(true);
+        while (t < 1f)
+        {
+            t += 0.25f;
+            if (CursorRenderer != null) CursorRenderer.color = new Color(CursorRenderer.color.r, CursorRenderer.color.g, CursorRenderer.color.b, t);
+            yield return new WaitForSeconds(0.025f);
+        }
+    }
+    private IEnumerator FadeOutCursor()
+    {
+        StopCoroutine("FadeInCursor");
+        var t = CursorRenderer.color.a;
+        while (t > 0)
+        {
+            t -= 0.25f;
+            if (CursorRenderer != null) CursorRenderer.color = new Color(CursorRenderer.color.r, CursorRenderer.color.g, CursorRenderer.color.b, t);
+            yield return new WaitForSeconds(0.025f);
+        }
+        CursorGameObject.SetActive(false);
     }
 
     private IEnumerator UpdateEvery1Second()
