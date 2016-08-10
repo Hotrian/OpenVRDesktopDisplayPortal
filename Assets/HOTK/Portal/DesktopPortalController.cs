@@ -376,7 +376,7 @@ public class DesktopPortalController : MonoBehaviour
                 _didHitOverlay = true;
                 if (SelectedWindowSettings.interactionMode == MouseInteractionMode.DirectInteraction ||
                     SelectedWindowSettings.interactionMode == MouseInteractionMode.WindowTop)
-                    Win32Stuff.BringWindowToTop(_selectedWindow);
+                    Win32Stuff.SetForegroundWindow(_selectedWindow);
 
                 if (SelectedWindowSettings.interactionMode == MouseInteractionMode.DirectInteraction)
                 {

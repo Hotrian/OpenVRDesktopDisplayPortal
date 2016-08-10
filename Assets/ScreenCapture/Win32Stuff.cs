@@ -115,6 +115,11 @@ namespace ScreenCapture
         [DllImport("user32.dll", SetLastError = true)]
         public static extern bool BringWindowToTop(IntPtr hWnd);
 
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool SetForegroundWindow(IntPtr hWnd);
+
+
         /// <summary>
         ///     Determines the visibility state of the specified window.
         ///     <para>
