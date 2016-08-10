@@ -16,6 +16,14 @@ We're receiving reports that some Rift users find some games are incompatible wi
 #### Update for Rift users:
 We have at least [one confirmation](https://www.reddit.com/r/EliteDangerous/comments/4tr3gx/you_can_now_watch_netflixyoutubemovies_in_elite/d5khcj0?context=3) that you _might_ be able to use [Revive](https://github.com/LibreVR/Revive) to trick those Rift games into drawing through SteamVR instead of Direct-To-Rift. It will be funny if this turns out to be a solution :). Please test it out if you can!
 
+#### If you can't find the Overlay:
+- Some games do not support Overlays. Check the [compatibiltiy article](https://github.com/Hotrian/OpenVRDesktopDisplayPortal/wiki/Compatibility) for more information.
+- Firstly, you can switch anchor devices using the Dropdown in the very bottom Left. It should say "World", "Screen", "LeftController", or "RightController" which will tell you what device it is anchored to and where you should be looking. If it has identified the wrong controller as left/right, you can click the "Swap Controllers" button to right the labels.
+- World Overlays should spawn at the world center, facing forwards in your play area. Try circling the room and looking on the floor in the middle of the room. Try switching to another device, if it cannot be found.
+- Screen Overlays should spawn at 0x, 0y, 1z. At 0z the Overlay is directly in the middle of your HMD and thus not forward enough to be seen. Try adjusting the position to 0x, 0y, 1z and see if you can find it, or try one of the other devices.
+- Controller Overlays should spawn attached to your controller. Try checking the back of your controller or looking below it or above it. The Overlay might be hiding out of sight on one of the back sides of the controller. If it cannot be found, again, try one of the other devices.
+- If you have tried each of these steps and the Overlay just can't be found, open an [issue](https://github.com/Hotrian/OpenVRDesktopDisplayPortal/issues) and we'll try to resolve it. If you don't have and don't want to make a GitHub account, message me on Reddit.
+
 ## Table of Contents
 - [Features](https://github.com/Hotrian/OpenVRDesktopDisplayPortal#features)
 - [Tutorials](https://github.com/Hotrian/OpenVRDesktopDisplayPortal#tutorials)
