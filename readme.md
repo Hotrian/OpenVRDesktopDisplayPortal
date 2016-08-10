@@ -52,6 +52,8 @@ If there are any complaints regarding the content of these, please [raise an iss
 
 ## Instructions
 (Some of these are slightly outdated, but still relevant, new images and up to date instructions coming soon)
+
+(These instructions have not been updated for Controller Integration, please see the [v1.0.5 release notes](https://github.com/Hotrian/OpenVRDesktopDisplayPortal/releases/tag/v1.0.5-alpha) for instructions)
 - Mouseover any UI elements for tooltips.
 - The controls [on the top left](http://i.imgur.com/798RPdH.png) control which window is being mirrored into VR, as well as the framerate, whether or not "Direct Capture" is being used, and the minimize/restore state of the selected window.
 - Direct Capture targets the window before it is processed by the [DWM](https://en.wikipedia.org/wiki/Desktop_Window_Manager). Because of this, some special effects are missing such as the window border (including titlebar). The benefit is that Direct Capture is faster and can capture windows even if they are behind other windows. As far as I know, the only reason not to use Direct Capture is because some programs don't support it. If you select a window and just get a blank display try disabling Direct Capture.
