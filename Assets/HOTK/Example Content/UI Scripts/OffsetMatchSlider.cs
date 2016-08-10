@@ -14,36 +14,14 @@ public class OffsetMatchSlider : MonoBehaviour
         get { return _slider ?? (_slider = GetComponent<Slider>()); }
     }
 
-    public static OffsetMatchSlider XSlider;
-    public static OffsetMatchSlider YSlider;
-    public static OffsetMatchSlider ZSlider;
-
     private Slider _slider;
-
-    public void OnEnable()
-    {
-        if (Overlay == null) return;
-        switch (Value)
-        {
-            case OffsetValue.X:
-                XSlider = this;
-                break;
-            case OffsetValue.Y:
-                YSlider = this;
-                break;
-            case OffsetValue.Z:
-                ZSlider = this;
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
-        }
-    }
-
     public void OnOffsetChanged()
     {
         if (OffsetField != null) OffsetField.SetSafeValue(Slider.value);
         if (Overlay == null) return;
-        float dx = XSlider.Slider.value, dy = YSlider.Slider.value, dz = ZSlider.Slider.value;
+        float dx = DesktopPortalController.Instance.XSlider.Slider.value,
+              dy = DesktopPortalController.Instance.YSlider.Slider.value,
+              dz = DesktopPortalController.Instance.ZSlider.Slider.value;
         Overlay.AnchorOffset = new Vector3(dx, dy, dz);
     }
 

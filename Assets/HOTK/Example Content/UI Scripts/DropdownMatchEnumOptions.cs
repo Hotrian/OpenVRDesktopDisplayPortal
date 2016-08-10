@@ -104,6 +104,7 @@ public class DropdownMatchEnumOptions : MonoBehaviour
         {
             case EnumSelection.AttachmentDevice:
                 Overlay.AnchorDevice = (HOTK_Overlay.AttachmentDevice) Enum.Parse(typeof (HOTK_Overlay.AttachmentDevice), Dropdown.options[Dropdown.value].text);
+                DesktopPortalController.Instance.CheckOverlayOffsetPerformed();
                 break;
             case EnumSelection.AttachmentPoint:
                 Overlay.AnchorPoint = (HOTK_Overlay.AttachmentPoint) Enum.Parse(typeof (HOTK_Overlay.AttachmentPoint), Dropdown.options[Dropdown.value].text);

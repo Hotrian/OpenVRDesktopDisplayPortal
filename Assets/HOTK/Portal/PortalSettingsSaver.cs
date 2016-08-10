@@ -14,7 +14,7 @@ public class ProgramSettings
 [System.Serializable]
 public class PortalSettings
 {
-    public const uint CurrentSaveVersion = 1;
+    public const uint CurrentSaveVersion = 2;
 
     public uint SaveFileVersion;
     
@@ -26,6 +26,25 @@ public class PortalSettings
 
     public float AlphaStart, AlphaEnd, AlphaSpeed;
     public float ScaleStart, ScaleEnd, ScaleSpeed;
+
+    public bool ScreenOffsetPerformed;
+
+    public float OutlineDefaultR;
+    public float OutlineDefaultG;
+    public float OutlineDefaultB;
+    public float OutlineDefaultA;
+    public float OutlineAimingR;
+    public float OutlineAimingG;
+    public float OutlineAimingB;
+    public float OutlineAimingA;
+    public float OutlineTouchingR;
+    public float OutlineTouchingG;
+    public float OutlineTouchingB;
+    public float OutlineTouchingA;
+    public float OutlineScalingR;
+    public float OutlineScalingG;
+    public float OutlineScalingB;
+    public float OutlineScalingA;
 }
 
 public static class PortalSettingsSaver
@@ -46,7 +65,7 @@ public static class PortalSettingsSaver
         switch (mode)
         {
             case 1: // Legacy Savefile compatibility
-                Debug.Log("Upgrading Legacy Profile Save Data.");
+                Debug.Log("Upgrading Legacy Profile Save Data."); // I don't think this is used anymore?
                 break;
             case 2:
                 Debug.Log("Profile deleted.");

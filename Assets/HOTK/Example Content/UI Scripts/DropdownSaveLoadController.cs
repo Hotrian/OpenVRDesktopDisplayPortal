@@ -39,6 +39,8 @@ public class DropdownSaveLoadController : MonoBehaviour
     public Button SaveNewButton;
     public Button CancelNewButton;
 
+    public HSVPickerPortalScript ColorPicker;
+
     public Dropdown Dropdown
     {
         get { return _dropdown ?? (_dropdown = GetComponent<Dropdown>()); }
@@ -125,7 +127,23 @@ public class DropdownSaveLoadController : MonoBehaviour
         Debug.Log(startup ? "Loading last used settings " + Dropdown.options[Dropdown.value].text : "Loading saved settings " + Dropdown.options[Dropdown.value].text);
         PortalSettingsSaver.Current = Dropdown.options[Dropdown.value].text;
         if (!startup) PortalSettingsSaver.SaveProgramSettings();
-        // Disable X and Y sliders so only one call to update the overlay occurs
+
+        if (settings.SaveFileVersion < 2)
+        {
+            if (settings.Device == HOTK_Overlay.AttachmentDevice.Screen || settings.Device == HOTK_Overlay.AttachmentDevice.World)
+                settings.Z += 1;
+            if (settings.Device == HOTK_Overlay.AttachmentDevice.Screen)
+                settings.ScreenOffsetPerformed = true;
+
+            settings.OutlineDefaultR =  0f; settings.OutlineDefaultG =  0f; settings.OutlineDefaultB =  0f; settings.OutlineDefaultA = 0f;
+            settings.OutlineAimingR =   1f; settings.OutlineAimingG =   0f; settings.OutlineAimingB =   0f; settings.OutlineAimingA = 1f;
+            settings.OutlineTouchingR = 0f; settings.OutlineTouchingG = 1f; settings.OutlineTouchingB = 0f; settings.OutlineTouchingA = 1f;
+            settings.OutlineScalingR =  0f; settings.OutlineScalingG =  0f; settings.OutlineScalingB =  1f; settings.OutlineScalingA = 1f;
+            settings.SaveFileVersion = 2;
+        }
+        DesktopPortalController.Instance.ScreenOffsetPerformed = settings.ScreenOffsetPerformed;
+
+        // Recenter XYZ Sliders
         XSlider.Slider.minValue = settings.X - 2f;
         XSlider.Slider.maxValue = settings.X + 2f;
         YSlider.Slider.minValue = settings.Y - 2f;
@@ -135,7 +153,7 @@ public class DropdownSaveLoadController : MonoBehaviour
         XSlider.Slider.value = settings.X;
         YSlider.Slider.value = settings.Y;
         ZSlider.Slider.value = settings.Z;
-
+        // Disable Rotation sliders so only one call to update the overlay occurs
         RXSlider.IgnoreNextUpdate();
         RYSlider.IgnoreNextUpdate();
         RZSlider.IgnoreNextUpdate();
@@ -167,6 +185,13 @@ public class DropdownSaveLoadController : MonoBehaviour
         ScaleStartField.onEndEdit.Invoke("");
         ScaleEndField.onEndEdit.Invoke("");
         ScaleSpeedField.onEndEdit.Invoke("");
+
+        DesktopPortalController.Instance.OutlineColorDefault =  new Color(settings.OutlineDefaultR,     settings.OutlineDefaultG,   settings.OutlineDefaultB,   settings.OutlineDefaultA);
+        DesktopPortalController.Instance.OutlineColorAiming =   new Color(settings.OutlineAimingR,      settings.OutlineAimingG,    settings.OutlineAimingB,    settings.OutlineAimingA);
+        DesktopPortalController.Instance.OutlineColorTouching = new Color(settings.OutlineTouchingR,    settings.OutlineTouchingG,  settings.OutlineTouchingB,  settings.OutlineTouchingA);
+        DesktopPortalController.Instance.OutlineColorScaling =  new Color(settings.OutlineScalingR,     settings.OutlineScalingG,   settings.OutlineScalingB,   settings.OutlineScalingA);
+
+        ColorPicker.LoadButtonColors();
     }
 
     private bool _confirmingDelete;
@@ -235,8 +260,32 @@ public class DropdownSaveLoadController : MonoBehaviour
             settings.Point = OverlayToSave.AnchorPoint;
             settings.Animation = OverlayToSave.AnimateOnGaze;
 
-            settings.AlphaStart = OverlayToSave.Alpha; settings.AlphaEnd = OverlayToSave.Alpha2; settings.AlphaSpeed = OverlayToSave.AlphaSpeed;
-            settings.ScaleStart = OverlayToSave.Scale; settings.ScaleEnd = OverlayToSave.Scale2; settings.ScaleSpeed = OverlayToSave.ScaleSpeed;
+            settings.AlphaStart = OverlayToSave.Alpha;
+            settings.AlphaEnd = OverlayToSave.Alpha2;
+            settings.AlphaSpeed = OverlayToSave.AlphaSpeed;
+            settings.ScaleStart = OverlayToSave.Scale;
+            settings.ScaleEnd = OverlayToSave.Scale2;
+            settings.ScaleSpeed = OverlayToSave.ScaleSpeed;
+
+            settings.ScreenOffsetPerformed = DesktopPortalController.Instance.ScreenOffsetPerformed;
+
+            settings.OutlineDefaultR = DesktopPortalController.Instance.OutlineColorDefault.r;
+            settings.OutlineDefaultG = DesktopPortalController.Instance.OutlineColorDefault.g;
+            settings.OutlineDefaultB = DesktopPortalController.Instance.OutlineColorDefault.b;
+            settings.OutlineDefaultA = DesktopPortalController.Instance.OutlineColorDefault.a;
+            settings.OutlineAimingR = DesktopPortalController.Instance.OutlineColorAiming.r;
+            settings.OutlineAimingG = DesktopPortalController.Instance.OutlineColorAiming.g;
+            settings.OutlineAimingB = DesktopPortalController.Instance.OutlineColorAiming.b;
+            settings.OutlineAimingA = DesktopPortalController.Instance.OutlineColorAiming.a;
+            settings.OutlineTouchingR = DesktopPortalController.Instance.OutlineColorTouching.r;
+            settings.OutlineTouchingG = DesktopPortalController.Instance.OutlineColorTouching.g;
+            settings.OutlineTouchingB = DesktopPortalController.Instance.OutlineColorTouching.b;
+            settings.OutlineTouchingA = DesktopPortalController.Instance.OutlineColorTouching.a;
+            settings.OutlineScalingR = DesktopPortalController.Instance.OutlineColorScaling.r;
+            settings.OutlineScalingG = DesktopPortalController.Instance.OutlineColorScaling.g;
+            settings.OutlineScalingB = DesktopPortalController.Instance.OutlineColorScaling.b;
+            settings.OutlineScalingA = DesktopPortalController.Instance.OutlineColorScaling.a;
+
             PortalSettingsSaver.SaveProfiles();
         }
     }
@@ -279,6 +328,25 @@ public class DropdownSaveLoadController : MonoBehaviour
             ScaleStart = o.Scale,
             ScaleEnd = o.Scale2,
             ScaleSpeed = o.ScaleSpeed,
+
+            ScreenOffsetPerformed = DesktopPortalController.Instance.ScreenOffsetPerformed,
+
+            OutlineDefaultR = DesktopPortalController.Instance.OutlineColorDefault.r,
+            OutlineDefaultG = DesktopPortalController.Instance.OutlineColorDefault.g,
+            OutlineDefaultB = DesktopPortalController.Instance.OutlineColorDefault.b,
+            OutlineDefaultA = DesktopPortalController.Instance.OutlineColorDefault.a,
+            OutlineAimingR = DesktopPortalController.Instance.OutlineColorAiming.r,
+            OutlineAimingG = DesktopPortalController.Instance.OutlineColorAiming.g,
+            OutlineAimingB = DesktopPortalController.Instance.OutlineColorAiming.b,
+            OutlineAimingA = DesktopPortalController.Instance.OutlineColorAiming.a,
+            OutlineTouchingR = DesktopPortalController.Instance.OutlineColorTouching.r,
+            OutlineTouchingG = DesktopPortalController.Instance.OutlineColorTouching.g,
+            OutlineTouchingB = DesktopPortalController.Instance.OutlineColorTouching.b,
+            OutlineTouchingA = DesktopPortalController.Instance.OutlineColorTouching.a,
+            OutlineScalingR = DesktopPortalController.Instance.OutlineColorScaling.r,
+            OutlineScalingG = DesktopPortalController.Instance.OutlineColorScaling.g,
+            OutlineScalingB = DesktopPortalController.Instance.OutlineColorScaling.b,
+            OutlineScalingA = DesktopPortalController.Instance.OutlineColorScaling.a,
         };
     }
 

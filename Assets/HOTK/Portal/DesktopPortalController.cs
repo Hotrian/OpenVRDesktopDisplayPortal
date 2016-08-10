@@ -78,11 +78,12 @@ public class DesktopPortalController : MonoBehaviour
     {
         get { return _overlayOffsetTracker ?? (_overlayOffsetTracker = new GameObject("Overlay Offset Tracker") {hideFlags = HideFlags.HideInHierarchy}); }
     }
+    [HideInInspector]
+    public bool ScreenOffsetPerformed;
     public Text FpsCounter; // A Text that shows the current FPS
     public Text ResolutionDisplay; // A Text that shows the current Resolution
     public ScaleMatchInputField ScaleField;
     public ScaleMatchInputField Scale2Field;
-    public WindowSettings SelectedWindowSettings; // The WindowSettings of the current Target Application
     [HideInInspector]
     public string SelectedWindowTitle;
 
@@ -99,13 +100,13 @@ public class DesktopPortalController : MonoBehaviour
             }
         }
     }
-    public Color OutlineColorAimed
+    public Color OutlineColorAiming
     {
-        get { return _outlineColorAimed; }
+        get { return _outlineColorAiming; }
         set
         {
-            _outlineColorAimed = value;
-            if (_currentMode == OutlineColor.Aimed)
+            _outlineColorAiming = value;
+            if (_currentMode == OutlineColor.Aiming)
             {
                 StopCoroutine("GoToAimingColor");
                 StartCoroutine("GoToAimingColor");
@@ -139,6 +140,12 @@ public class DesktopPortalController : MonoBehaviour
         }
     }
 
+    public InputField ZInputField;
+
+    public OffsetMatchSlider XSlider;
+    public OffsetMatchSlider YSlider;
+    public OffsetMatchSlider ZSlider;
+    public WindowSettings SelectedWindowSettings; // The WindowSettings of the current Target Application
     #endregion
     #region Private Variables
     // Getter / Setter vars
@@ -191,7 +198,7 @@ public class DesktopPortalController : MonoBehaviour
     private bool _scalingScale2;
 
     private Color _outlineColorDefault = new Color(0f, 0f, 0f, 0f);
-    private Color _outlineColorAimed = Color.red;
+    private Color _outlineColorAiming = Color.red;
     private Color _outlineColorTouching = Color.green;
     private Color _outlineColorScaling = Color.blue;
     private OutlineColor _currentMode = OutlineColor.Default;
@@ -580,13 +587,13 @@ public class DesktopPortalController : MonoBehaviour
         StopCoroutine("GoToDefaultColor");
         StopCoroutine("GoToTouchColor");
         StopCoroutine("GoToScalingColor");
-        _currentMode = OutlineColor.Aimed;
+        _currentMode = OutlineColor.Aiming;
         StartCoroutine("FadeInCursor");
         var t = 0f;
         while (t < 1f)
         {
             t += 0.25f;
-            OutlineMaterial.color = Color.Lerp(OutlineMaterial.color, OutlineColorAimed, t);
+            OutlineMaterial.color = Color.Lerp(OutlineMaterial.color, OutlineColorAiming, t);
             yield return new WaitForSeconds(0.025f);
         }
     }
@@ -797,6 +804,32 @@ public class DesktopPortalController : MonoBehaviour
         _renderTextureMarginHeight = height;
         _renderTexture = null;
         return RenderTexture;
+    }
+
+    public void CheckOverlayOffsetPerformed()
+    {
+        if (Overlay.AnchorDevice == HOTK_Overlay.AttachmentDevice.Screen)
+        {
+            if (ScreenOffsetPerformed) return;
+            ScreenOffsetPerformed = true;
+            var v = Overlay.AnchorOffset.z + 1;
+            ZSlider.Slider.minValue = v - 2;
+            ZSlider.Slider.maxValue = v + 2;
+            ZSlider.Slider.value = v;
+            ZSlider.OnOffsetChanged();
+            ZInputField.text = v.ToString(CultureInfo.InvariantCulture);
+        }
+        else
+        {
+            if (!ScreenOffsetPerformed) return;
+            ScreenOffsetPerformed = false;
+            var v = Overlay.AnchorOffset.z - 1;
+            ZSlider.Slider.minValue = v - 2;
+            ZSlider.Slider.maxValue = v + 2;
+            ZSlider.Slider.value = v;
+            ZSlider.OnOffsetChanged();
+            ZInputField.text = v.ToString(CultureInfo.InvariantCulture);
+        }
     }
 
     #region UI Methods
@@ -1121,8 +1154,8 @@ public class DesktopPortalController : MonoBehaviour
         {
             case OutlineColor.Default:
                 return OutlineColorDefault;
-            case OutlineColor.Aimed:
-                return OutlineColorAimed;
+            case OutlineColor.Aiming:
+                return OutlineColorAiming;
             case OutlineColor.Touching:
                 return OutlineColorTouching;
             case OutlineColor.Scaling:
@@ -1138,8 +1171,8 @@ public class DesktopPortalController : MonoBehaviour
             case OutlineColor.Default:
                 OutlineColorDefault = color;
                 break;
-            case OutlineColor.Aimed:
-                OutlineColorAimed = color;
+            case OutlineColor.Aiming:
+                OutlineColorAiming = color;
                 break;
             case OutlineColor.Touching:
                 OutlineColorTouching = color;
@@ -1174,7 +1207,7 @@ public class DesktopPortalController : MonoBehaviour
     public enum OutlineColor
     {
         Default = 0,
-        Aimed = 1,
+        Aiming = 1,
         Touching = 2,
         Scaling,
     }

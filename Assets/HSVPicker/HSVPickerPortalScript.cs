@@ -31,7 +31,7 @@ public class HSVPickerPortalScript : MonoBehaviour
     public void OnEnable()
     {
         SetButtonColors(DefaultButton, DefaultButtonImage, DesktopPortalController.Instance.OutlineColorDefault);
-        SetButtonColors(AimedButton, AimedButtonImage, DesktopPortalController.Instance.OutlineColorAimed);
+        SetButtonColors(AimedButton, AimedButtonImage, DesktopPortalController.Instance.OutlineColorAiming);
         SetButtonColors(TouchingButton, TouchingButtonImage, DesktopPortalController.Instance.OutlineColorTouching);
         SetButtonColors(ScalingButton, ScalingButtonImage, DesktopPortalController.Instance.OutlineColorScaling);
     }
@@ -57,7 +57,7 @@ public class HSVPickerPortalScript : MonoBehaviour
             case DesktopPortalController.OutlineColor.Default:
                 SetButtonColors(DefaultButton, DefaultButtonImage, Picker.CurrentColor);
                 break;
-            case DesktopPortalController.OutlineColor.Aimed:
+            case DesktopPortalController.OutlineColor.Aiming:
                 SetButtonColors(AimedButton, AimedButtonImage, Picker.CurrentColor);
                 break;
             case DesktopPortalController.OutlineColor.Touching:
@@ -71,6 +71,14 @@ public class HSVPickerPortalScript : MonoBehaviour
         }
         DesktopPortalController.Instance.SetOutlineColor(Mode, Picker.CurrentColor);
         ClosePanel();
+    }
+
+    public void LoadButtonColors()
+    {
+        SetButtonColors(DefaultButton, DefaultButtonImage, DesktopPortalController.Instance.OutlineColorDefault);
+        SetButtonColors(AimedButton, AimedButtonImage, DesktopPortalController.Instance.OutlineColorAiming);
+        SetButtonColors(TouchingButton, TouchingButtonImage, DesktopPortalController.Instance.OutlineColorTouching);
+        SetButtonColors(ScalingButton, ScalingButtonImage, DesktopPortalController.Instance.OutlineColorScaling);
     }
 
     private static void SetButtonColors(Button button, Image fill, Color color)
