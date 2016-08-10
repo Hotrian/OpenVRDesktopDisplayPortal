@@ -85,6 +85,60 @@ public class DesktopPortalController : MonoBehaviour
     public WindowSettings SelectedWindowSettings; // The WindowSettings of the current Target Application
     [HideInInspector]
     public string SelectedWindowTitle;
+
+    public Color OutlineColorDefault
+    {
+        get { return _outlineColorDefault; }
+        set
+        {
+            _outlineColorDefault = value;
+            if (_currentMode == OutlineColor.Default)
+            {
+                StopCoroutine("GoToDefaultColor");
+                StartCoroutine("GoToDefaultColor");
+            }
+        }
+    }
+    public Color OutlineColorAimed
+    {
+        get { return _outlineColorAimed; }
+        set
+        {
+            _outlineColorAimed = value;
+            if (_currentMode == OutlineColor.Aimed)
+            {
+                StopCoroutine("GoToAimingColor");
+                StartCoroutine("GoToAimingColor");
+            }
+        }
+    }
+    public Color OutlineColorTouching
+    {
+        get { return _outlineColorTouching; }
+        set
+        {
+            _outlineColorTouching = value;
+            if (_currentMode == OutlineColor.Touching)
+            {
+                StopCoroutine("GoToTouchingColor");
+                StartCoroutine("GoToTouchingColor");
+            }
+        }
+    }
+    public Color OutlineColorScaling
+    {
+        get { return _outlineColorScaling; }
+        set
+        {
+            _outlineColorScaling = value;
+            if (_currentMode == OutlineColor.Scaling)
+            {
+                StopCoroutine("GoToScalingColor");
+                StartCoroutine("GoToScalingColor");
+            }
+        }
+    }
+
     #endregion
     #region Private Variables
     // Getter / Setter vars
@@ -135,6 +189,12 @@ public class DesktopPortalController : MonoBehaviour
     private float _scalingBaseScale;
     private float _scalingBaseDistance;
     private bool _scalingScale2;
+
+    private Color _outlineColorDefault = new Color(0f, 0f, 0f, 0f);
+    private Color _outlineColorAimed = Color.red;
+    private Color _outlineColorTouching = Color.green;
+    private Color _outlineColorScaling = Color.blue;
+    private OutlineColor _currentMode = OutlineColor.Default;
     // Cache these fractions so they aren't constantly recalculated
     private static readonly float[] FramerateFractions = {
         1f, 1f/2f, 1f/5f, 1f/10f, 1/15f, 1/24f, 1f/30f, 1f/60f, 1f/90f, 1f/120f
@@ -260,8 +320,7 @@ public class DesktopPortalController : MonoBehaviour
         HideCursor();
         _didHitOverlay = false;
         _touchingOverlay = tracker;
-        StartCoroutine("GoToGreen");
-        StartCoroutine("FadeInOutline");
+        StartCoroutine("GoToTouchColor");
     }
     /// <summary>
     /// Occurs when a controller stops touching an Overlay
@@ -270,7 +329,7 @@ public class DesktopPortalController : MonoBehaviour
     {
         if (_grabbingOverlay != null) return;
         _touchingOverlay = null;
-        if (!_didHitOverlay) StartCoroutine("FadeOutOutline");
+        if (!_didHitOverlay) StartCoroutine("GoToDefaultColor");
     }
     /// <summary>
     /// Occurs when a controller is aiming at an Overlay
@@ -311,20 +370,19 @@ public class DesktopPortalController : MonoBehaviour
                 }
                 
                 CursorGameObject.transform.localPosition = v1;
-                StopCoroutine("GoToGreen");
-                StopCoroutine("GoToBlue");
-                OutlineMaterial.color = new Color(1f, 0f, 0f, OutlineMaterial.color.a);
-                StartCoroutine("FadeInOutline");
+                StopCoroutine("GoToTouchColor");
+                StopCoroutine("GoToScalingColor");
+                StartCoroutine("GoToAimingColor");
             }
             else
             {
-                StartCoroutine("FadeOutOutline");
+                StartCoroutine("GoToDefaultColor");
             }
         }
         else
         {
             HideCursor();
-            StartCoroutine("FadeOutOutline");
+            StartCoroutine("GoToDefaultColor");
         }
     }
     /// <summary>
@@ -340,7 +398,7 @@ public class DesktopPortalController : MonoBehaviour
         _didHitOverlay = false;
         _isHittingOverlay = false;
         _aimingAtOverlay = null;
-        if (_touchingOverlay == null) StartCoroutine("FadeOutOutline");
+        if (_touchingOverlay == null) StartCoroutine("GoToDefaultColor");
     }
 
     private void ShowCursor()
@@ -375,7 +433,7 @@ public class DesktopPortalController : MonoBehaviour
                 Overlay.LockGaze(_scalingScale2); // Lock the Gaze Detection on the Overlay to it's current state
                 _scalingBaseScale = _scalingScale2 ? Overlay.Scale2 : Overlay.Scale;
                 _scalingBaseDistance = Vector3.Distance(_grabbingOverlay.transform.position, _scalingOverlay.transform.position);
-                StartCoroutine("GoToBlue");
+                StartCoroutine("GoToScalingColor");
             }
         }
         else
@@ -408,7 +466,7 @@ public class DesktopPortalController : MonoBehaviour
             {
                 ScaleField.InputField.text = Overlay.Scale.ToString(CultureInfo.InvariantCulture);
             }
-            StartCoroutine("GoToGreen");
+            StartCoroutine("GoToTouchColor");
         }
         else if (_grabbingOverlay != null)
         {
@@ -430,7 +488,7 @@ public class DesktopPortalController : MonoBehaviour
             OffsetRy.Slider.value = dy;
             OffsetRz.Slider.value = dz;
 
-            if (!_didHitOverlay) StartCoroutine("FadeOutOutline");
+            if (!_didHitOverlay) StartCoroutine("GoToDefaultColor");
         }
     }
     /// <summary>
@@ -502,50 +560,61 @@ public class DesktopPortalController : MonoBehaviour
 
     #region Coroutines
     // ReSharper disable UnusedMember.Local
-    private IEnumerator GoToGreen()
+    private IEnumerator GoToDefaultColor()
     {
-        StopCoroutine("GoToBlue");
+        StopCoroutine("GoToTouchColor");
+        StopCoroutine("GoToAimingColor");
+        StopCoroutine("GoToScalingColor");
+        _currentMode = OutlineColor.Default;
         var t = 0f;
-        while ((_touchingOverlay != null || _grabbingOverlay != null) && t < 1f)
+        while (t < 1f)
         {
             t += 0.25f;
-            OutlineMaterial.color = Color.Lerp(OutlineMaterial.color, new Color(0f, 1f, 0f, OutlineMaterial.color.a), t);
+            OutlineMaterial.color = Color.Lerp(OutlineMaterial.color, OutlineColorDefault, t);
             yield return new WaitForSeconds(0.025f);
         }
     }
-    private IEnumerator GoToBlue()
+    private IEnumerator GoToAimingColor()
     {
-        StopCoroutine("GoToGreen");
+        StopCoroutine("GoToDefaultColor");
+        StopCoroutine("GoToTouchColor");
+        StopCoroutine("GoToScalingColor");
+        _currentMode = OutlineColor.Aimed;
         var t = 0f;
-        while ((_touchingOverlay != null || _grabbingOverlay != null) && t < 1f)
+        while (t < 1f)
         {
             t += 0.25f;
-            OutlineMaterial.color = Color.Lerp(OutlineMaterial.color, new Color(0f, 0f, 1f, OutlineMaterial.color.a), t);
+            OutlineMaterial.color = Color.Lerp(OutlineMaterial.color, OutlineColorAimed, t);
             yield return new WaitForSeconds(0.025f);
         }
     }
-
-    private IEnumerator FadeInOutline()
+    private IEnumerator GoToTouchColor()
     {
-        StopCoroutine("FadeOutOutline");
-        if (_touchingOverlay == null && _grabbingOverlay == null) ShowCursor();
-        while (OutlineMaterial.color.a < 1f)
+        StopCoroutine("GoToDefaultColor");
+        StopCoroutine("GoToAimingColor");
+        StopCoroutine("GoToScalingColor");
+        _currentMode = OutlineColor.Touching;
+        var t = 0f;
+        while (t < 1f)
         {
-            OutlineMaterial.color = new Color(OutlineMaterial.color.r, OutlineMaterial.color.g, OutlineMaterial.color.b, OutlineMaterial.color.a + 0.1f);
-            if (CursorRenderer != null) CursorRenderer.color = new Color(CursorRenderer.color.r, CursorRenderer.color.g, CursorRenderer.color.b, OutlineMaterial.color.a);
+            t += 0.25f;
+            OutlineMaterial.color = Color.Lerp(OutlineMaterial.color, OutlineColorTouching, t);
             yield return new WaitForSeconds(0.025f);
         }
     }
-    private IEnumerator FadeOutOutline()
+    private IEnumerator GoToScalingColor()
     {
-        StopCoroutine("FadeInOutline");
-        while (OutlineMaterial.color.a > 0f)
+        StopCoroutine("GoToDefaultColor");
+        StopCoroutine("GoToAimingColor");
+        StopCoroutine("GoToTouchColor");
+        _currentMode = OutlineColor.Scaling;
+        var t = 0f;
+        while (t < 1f)
         {
-            OutlineMaterial.color = new Color(OutlineMaterial.color.r, OutlineMaterial.color.g, OutlineMaterial.color.b, OutlineMaterial.color.a - 0.1f);
-            if (CursorRenderer != null) CursorRenderer.color = new Color(CursorRenderer.color.r, CursorRenderer.color.g, CursorRenderer.color.b, OutlineMaterial.color.a);
+            t += 0.25f;
+            OutlineMaterial.color = Color.Lerp(OutlineMaterial.color, OutlineColorScaling, t);
             yield return new WaitForSeconds(0.025f);
         }
-        HideCursor();
     }
 
     private IEnumerator UpdateEvery1Second()
@@ -1017,6 +1086,43 @@ public class DesktopPortalController : MonoBehaviour
         return settings;
     }
 
+    public Color GetOutlineColor(OutlineColor mode)
+    {
+        switch (mode)
+        {
+            case OutlineColor.Default:
+                return OutlineColorDefault;
+            case OutlineColor.Aimed:
+                return OutlineColorAimed;
+            case OutlineColor.Touching:
+                return OutlineColorTouching;
+            case OutlineColor.Scaling:
+                return OutlineColorScaling;
+            default:
+                throw new ArgumentOutOfRangeException("mode", mode, null);
+        }
+    }
+    public void SetOutlineColor(OutlineColor mode, Color color)
+    {
+        switch (mode)
+        {
+            case OutlineColor.Default:
+                OutlineColorDefault = color;
+                break;
+            case OutlineColor.Aimed:
+                OutlineColorAimed = color;
+                break;
+            case OutlineColor.Touching:
+                OutlineColorTouching = color;
+                break;
+            case OutlineColor.Scaling:
+                OutlineColorScaling = color;
+                break;
+            default:
+                throw new ArgumentOutOfRangeException("mode", mode, null);
+        }
+    }
+
     #endregion
 
     #region Enums
@@ -1034,6 +1140,14 @@ public class DesktopPortalController : MonoBehaviour
         WindowTop = 1, // Keep Window on top only, Send Mouse Clicks Only (No Move)
         SendClicksOnly = 2, // Only Send Mouse Clicks
         Disabled = 3
+    }
+
+    public enum OutlineColor
+    {
+        Default = 0,
+        Aimed = 1,
+        Touching = 2,
+        Scaling,
     }
 
     #endregion

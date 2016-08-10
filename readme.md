@@ -90,4 +90,5 @@ If you know how to program, we could always use help! Feel free to fork the repo
 
 - Thanks to [Eric Daily](http://tutsplus.com/authors/eric-daily) for the base [SaveLoad](http://gamedevelopment.tutsplus.com/tutorials/how-to-save-and-load-your-players-progress-in-unity--cms-20934) script! The license file is available [here](../master/SaveLoad-LICENSE.txt).
 - Thanks to [Bumble](https://www.youtube.com/channel/UCahG62_Yv1IpL2RIOCV88qQ) this short [tutorial on Youtube](https://www.youtube.com/watch?v=jjnyjf7RuMU)!
+- Thanks to [judah4](https://github.com/judah4) for the base [HSVPicker](https://github.com/judah4/HSV-Color-Picker-Unity) script! The license file is available [here](../master/HSVPicker-LICENSE.txt).
 - Thanks to everyone who has tested it so far! The feedback has really helped speed things along!

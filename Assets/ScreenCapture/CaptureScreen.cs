@@ -56,8 +56,8 @@ namespace ScreenCapture
             info = new Win32Stuff.WINDOWINFO();
             info.cbSize = (uint)Marshal.SizeOf(info);
             Win32Stuff.GetWindowInfo(wnd, ref info);
-            size.cx = Math.Max(1, info.rcClient.Width + settings.offsetRight - settings.offsetLeft);// Win32Stuff.GetSystemMetrics(Win32Stuff.SM_CXSCREEN);
-            size.cy = Math.Max(1, info.rcClient.Height + settings.offsetBottom - settings.offsetTop);// Win32Stuff.GetSystemMetrics(Win32Stuff.SM_CYSCREEN
+            size.cx = Math.Max(1, info.rcClient.Width + settings.offsetRight - settings.offsetLeft);
+            size.cy = Math.Max(1, info.rcClient.Height + settings.offsetBottom - settings.offsetTop);
 
             hBitmap = GDIStuff.CreateCompatibleBitmap(hDC, size.cx, size.cy);
 
@@ -89,8 +89,8 @@ namespace ScreenCapture
             info.cbSize = (uint)Marshal.SizeOf(info);
             Win32Stuff.GetWindowInfo(wnd, ref info);
 
-            size.cx = Math.Max(1, info.rcClient.Width + settings.offsetRight - settings.offsetLeft);// Win32Stuff.GetSystemMetrics(Win32Stuff.SM_CXSCREEN);
-            size.cy = Math.Max(1, info.rcClient.Height + settings.offsetBottom - settings.offsetTop);// Win32Stuff.GetSystemMetrics(Win32Stuff.SM_CYSCREEN
+            size.cx = Math.Max(1, info.rcClient.Width + settings.offsetRight - settings.offsetLeft);
+            size.cy = Math.Max(1, info.rcClient.Height + settings.offsetBottom - settings.offsetTop);
 
             hBitmap = GDIStuff.CreateCompatibleBitmap(hDC, size.cx, size.cy);
 

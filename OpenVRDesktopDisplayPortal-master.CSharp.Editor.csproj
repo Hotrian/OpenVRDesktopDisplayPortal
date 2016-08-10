@@ -88,14 +88,14 @@
     <Reference Include="SyntaxTree.VisualStudio.Unity.Bridge">
       <HintPath>Library\UnityAssemblies\SyntaxTree.VisualStudio.Unity.Bridge.dll</HintPath>
     </Reference>
+    <Reference Include="System.Deployment">
+      <HintPath>Assets\Plugins\System.Deployment.dll</HintPath>
+    </Reference>
     <Reference Include="System.Drawing">
       <HintPath>Assets\Plugins\System.Drawing.dll</HintPath>
     </Reference>
     <Reference Include="System.Windows.Forms">
       <HintPath>Assets\Plugins\System.Windows.Forms.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Deployment">
-      <HintPath>Assets\Plugins\System.Deployment.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -110,6 +110,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Editor\HOTK\HOTK_OverlayInspector.cs" />
+    <Compile Include="Assets\HSVPicker\Editor\BoxSliderEditor.cs" />
     <Compile Include="Assets\SteamVR\Editor\SteamVR_Editor.cs" />
     <Compile Include="Assets\SteamVR\Editor\SteamVR_Settings.cs" />
     <Compile Include="Assets\SteamVR\Editor\SteamVR_Update.cs" />
