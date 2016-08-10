@@ -1,10 +1,12 @@
 [![Donate](https://img.shields.io/badge/Donate-PayPal-blue.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=UK5EVMA4DFBWY)
 
+**This Readme has not been updated for v1.0.5. Please see the Release notes for v1.0.5 until this has been updated.**
+
+**The following information still largely applies to v1.0.5, but none of the new features are mentioned.**
+
 This is a stripped down version of the SteamVR Unity Plugin with a custom Overlay script that displays _almost_ any Desktop Window in VR :D
 
 To use this download the [latest release](https://github.com/Hotrian/OpenVRDesktopDisplayPortal/releases), then click on the dropdown menu at the top left (see the example graphic down below), then configure the overlay to your liking :). You can hold your mouse over the UI elements for some hints on usage. More detailed instructions are down below.
-
-See also my [OpenVRTwitchChat](https://github.com/Hotrian/OpenVRTwitchChat) program that specializes putting Twitch Chat into VR. It is a bit more refined ;]
 
 **Note:** Overlays will always draw ontop of other game geometry. This is less noticable if you attach them to the controller since things rarely come between you and the controllers. Otherwise you may want to attach them to the screen, or put them on a wall behind you or up in the sky.
 
