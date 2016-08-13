@@ -144,20 +144,21 @@ public class HOTK_CompanionOverlay : MonoBehaviour
         _anchorDevice = o.AnchorDevice;
         _anchorPoint = o.AnchorPoint;
         _anchorOffset = o.AnchorOffset;
+        _alpha = o.GetCurrentAlpha();
         _scale = o.GetCurrentScale();
-        OverlayReference.transform.parent = o.transform;
-        OverlayReference.transform.localPosition = new Vector3(0f, 1f, 0f);
+        gameObject.transform.parent = o.gameObject.transform;
+        gameObject.transform.localPosition = new Vector3(0f, 1f, 0f);
         // Attach Overlay
         switch (_anchorDevice)
         {
             case HOTK_Overlay.AttachmentDevice.Screen:
                 _anchor = OpenVR.k_unTrackedDeviceIndexInvalid;
-                //
+                gameObject.transform.localRotation = Quaternion.identity;
                 OverlayReference.transform.localRotation = Quaternion.identity;
                 break;
             case HOTK_Overlay.AttachmentDevice.World:
                 _anchor = OpenVR.k_unTrackedDeviceIndexInvalid;
-                //OverlayReference.transform.localPosition = -_anchorOffset;
+                gameObject.transform.localRotation = Quaternion.identity;
                 OverlayReference.transform.localRotation = Quaternion.identity;
                 break;
             case HOTK_Overlay.AttachmentDevice.LeftController:
@@ -238,7 +239,7 @@ public class HOTK_CompanionOverlay : MonoBehaviour
 
     private void OverlayRotationChanges(HOTK_Overlay o, Quaternion rot)
     {
-        gameObject.transform.localRotation = rot;
+        //gameObject.transform.localRotation = rot;
         updateCompanion = true;
     }
 

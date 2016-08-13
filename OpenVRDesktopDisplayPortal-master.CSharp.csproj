@@ -90,6 +90,7 @@
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\DropdownMatchEnumOptions.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\DropdownSaveLoadController.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\InputFieldHideAnimationSettingsWhenNotSelected.cs" />
+    <Compile Include="Assets\HOTK\Example Content\UI Scripts\InputFieldScrollScript.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\OffsetMatchInputField.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\OffsetMatchSlider.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\OpenClosePanelScript.cs" />
@@ -97,7 +98,9 @@
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\RotationMatchInputField.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\RotationMatchSlider.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\ScaleMatchInputField.cs" />
+    <Compile Include="Assets\HOTK\Example Content\UI Scripts\SliderScrollScript.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\TooltipController.cs" />
+    <Compile Include="Assets\HOTK\HOTK_CompanionOverlay.cs" />
     <Compile Include="Assets\HOTK\HOTK_Overlay.cs" />
     <Compile Include="Assets\HOTK\HOTK_TrackedDevice.cs" />
     <Compile Include="Assets\HOTK\HOTK_TrackedDeviceManager.cs" />

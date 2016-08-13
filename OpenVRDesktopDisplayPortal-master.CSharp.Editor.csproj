@@ -109,6 +109,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Editor\HOTK\Example Content\UI Scripts\InputFieldScrollScriptEditor.cs" />
     <Compile Include="Assets\Editor\HOTK\HOTK_OverlayInspector.cs" />
     <Compile Include="Assets\HSVPicker\Editor\BoxSliderEditor.cs" />
     <Compile Include="Assets\SteamVR\Editor\SteamVR_Editor.cs" />

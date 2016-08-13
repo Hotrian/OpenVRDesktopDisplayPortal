@@ -366,12 +366,12 @@ public class HOTK_Overlay : MonoBehaviour
         {
             case AttachmentDevice.Screen:
                 _anchor = OpenVR.k_unTrackedDeviceIndexInvalid;
-                OverlayReference.transform.localPosition = -offset;
+                gameObject.transform.localPosition = offset;
                 OverlayReference.transform.localRotation = Quaternion.identity;
                 break;
             case AttachmentDevice.World:
                 _anchor = OpenVR.k_unTrackedDeviceIndexInvalid;
-                OverlayReference.transform.localPosition = -offset;
+                gameObject.transform.localPosition = offset;
                 OverlayReference.transform.localRotation = Quaternion.identity;
                 break;
             case AttachmentDevice.LeftController:
@@ -545,7 +545,7 @@ public class HOTK_Overlay : MonoBehaviour
             changed = true;
         }
         if (_anchor == OpenVR.k_unTrackedDeviceIndexInvalid || OverlayReference == null) return; // This part below is only for Controllers
-        if (!force && !gameObjectChanged && OverlayReference.transform.localRotation == _anchorRotation * _objectRotation) return;
+        //if (!force && !gameObjectChanged && OverlayReference.transform.localRotation == _anchorRotation * _objectRotation) return;
         OverlayReference.transform.localRotation = _anchorRotation * _objectRotation;
         changed = true;
     }
@@ -757,6 +757,10 @@ public class HOTK_Overlay : MonoBehaviour
         HandleAnimateOnGaze(hit, ref changed);
     }
 
+    public float GetCurrentAlpha()
+    {
+        return (AnimateOnGaze == AnimationType.Alpha || AnimateOnGaze == AnimationType.AlphaAndScale ? _alpha : Alpha);
+    }
     public float GetCurrentScale()
     {
         return (AnimateOnGaze == AnimationType.Scale || AnimateOnGaze == AnimationType.AlphaAndScale ? _scale : Scale);
