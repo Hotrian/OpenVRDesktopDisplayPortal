@@ -11,7 +11,7 @@ public class AutoResizeCameraForRenderTexture : MonoBehaviour
     private Camera _camera;
     public void ResizeCamera(RenderTexture render)
     {
-        Camera.orthographicSize = render.height / 2f;
+        Camera.orthographicSize = render.height / 4f;
         Camera.aspect = (float)render.width / (float)render.height;
     }
 }

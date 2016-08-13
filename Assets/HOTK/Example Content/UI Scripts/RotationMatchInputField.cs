@@ -77,7 +77,7 @@ public class RotationMatchInputField : MonoBehaviour
             default:
                 throw new ArgumentOutOfRangeException();
         }
-        Overlay.transform.rotation = Quaternion.Euler(dx, dy, dz);
+        Overlay.OverlayReference.transform.rotation = Quaternion.Euler(dx, dy, dz);
     }
 
     public enum RotationAxis

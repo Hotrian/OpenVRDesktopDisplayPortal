@@ -29,6 +29,7 @@ public class DesktopPortalController : MonoBehaviour
     public DropdownMatchEnumOptions CaptureModeDropdown; // A Dropdown used to select the current Capture Mode
     public DropdownMatchEnumOptions FramerateModeDropdown; // A Dropdown used to select the current Capture Framerate
     public DropdownMatchEnumOptions InteractionModeDropdown; // A Dropdown used to select the current Interaction Mode
+    public Dropdown FilterModeDropdown;
 
     // Used to control resolution lock
     public Image SizeLockSprite;
@@ -219,7 +220,7 @@ public class DesktopPortalController : MonoBehaviour
         Overlay.OverlayTexture = RenderTexture;
         _started = true;
         _bitmap = CaptureScreen.CaptureDesktop();
-        _texture = new Texture2D(_bitmap.Width, _bitmap.Height) { filterMode = FilterMode.Point };
+        _texture = new Texture2D(_bitmap.Width, _bitmap.Height) { filterMode = SelectedWindowSettings != null ? SelectedWindowSettings.filterMode : FilterMode.Point };
 
         _stream = new MemoryStream();
         _bitmap.Save(_stream, ImageFormat.Png);
@@ -806,8 +807,12 @@ public class DesktopPortalController : MonoBehaviour
     /// </summary>
     private RenderTexture NewRenderTexture()
     {
-        var r = new RenderTexture((int) DisplayQuad.transform.localScale.x + _renderTextureMarginWidth, (int) DisplayQuad.transform.localScale.y + _renderTextureMarginHeight, 24);
+        var r = new RenderTexture(((int) DisplayQuad.transform.localScale.x + _renderTextureMarginWidth) * 2, ((int) DisplayQuad.transform.localScale.y + _renderTextureMarginHeight) * 2, 24);
         var previous = RenderCamera.targetTexture;
+        if (_selectedWindow != IntPtr.Zero)
+        {
+            r.filterMode = SelectedWindowSettings.filterMode;
+        }
         RenderCamera.targetTexture = r;
         Overlay.OverlayTexture = r;
         if (previous != null) previous.Release();
@@ -856,6 +861,32 @@ public class DesktopPortalController : MonoBehaviour
         FpsCounter.gameObject.SetActive(true);
         ResolutionDisplay.gameObject.SetActive(true);
         _showFps = true;
+    }
+
+    public void DoChangeFilterMode()
+    {
+        if (FilterModeDropdown == null) return;
+        if (_selectedWindow == IntPtr.Zero) return;
+        switch (FilterModeDropdown.options[FilterModeDropdown.value].text)
+        {
+            case "None":
+                SelectedWindowSettings.filterMode = FilterMode.Point;
+                _texture.filterMode = SelectedWindowSettings.filterMode;
+                RenderTexture.filterMode = SelectedWindowSettings.filterMode;
+                break;
+            case "Bilinear":
+                SelectedWindowSettings.filterMode = FilterMode.Bilinear;
+                _texture.filterMode = SelectedWindowSettings.filterMode;
+                RenderTexture.filterMode = SelectedWindowSettings.filterMode;
+                break;
+            case "Trilinear":
+                SelectedWindowSettings.filterMode = FilterMode.Trilinear;
+                _texture.filterMode = SelectedWindowSettings.filterMode;
+                RenderTexture.filterMode = SelectedWindowSettings.filterMode;
+                break;
+            default:
+                throw new NotImplementedException();
+        }
     }
 
     public void StopRefreshing()
@@ -1160,6 +1191,15 @@ public class DesktopPortalController : MonoBehaviour
             settings.framerateMode = HOTK_Overlay.FramerateMode._24FPS; // Compatibility because these values changed significantly. Default to 24FPS.
             settings.SaveFileVersion = 3;
         }
+        if (settings.SaveFileVersion == 3)
+        {
+            Debug.Log("Upgrading [" + configName + "] to SaveFileVersion 4.");
+            settings.filterMode = FilterMode.Point;
+            settings.SaveFileVersion = 4;
+        }
+
+        if (_texture != null)
+            _texture.filterMode = settings.filterMode;
 
         OffsetLeftField.text = settings.offsetLeft.ToString();
         OffsetTopField.text = settings.offsetTop.ToString();

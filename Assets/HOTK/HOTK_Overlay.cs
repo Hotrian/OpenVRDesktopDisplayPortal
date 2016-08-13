@@ -7,7 +7,6 @@ using Random = System.Random;
 
 public class HOTK_Overlay : MonoBehaviour
 {
-
     #region Custom Inspector Vars
     [NonSerialized] public bool ShowSettingsAppearance = true;
     [NonSerialized] public bool ShowSettingsInput = false;
@@ -56,13 +55,18 @@ public class HOTK_Overlay : MonoBehaviour
     public Action<HOTK_Overlay, HOTK_TrackedDevice> OnControllerUnhitsOverlay; // Occurs when the currently aiming controller stops aiming at this overlay
     public Action<HOTK_Overlay, HOTK_TrackedDevice, IntersectionResults> OnControllerTouchesOverlay;
     public Action<HOTK_Overlay, HOTK_TrackedDevice> OnControllerStopsTouchingOverlay;
+    public Action<HOTK_Overlay> OnOverlayAttachmentChanges;
+    public Action<HOTK_Overlay, Vector3> OnOverlayPositionChanges;
+    public Action<HOTK_Overlay, Quaternion> OnOverlayRotationChanges;
+    public Action<HOTK_Overlay, float> OnOverlayAlphaChanges;
+    public Action<HOTK_Overlay, float> OnOverlayScaleChanges;
     public Action<HOTK_Overlay, AttachmentDevice> OnOverlayAnchorChanges;
     public Action<HOTK_Overlay, Quaternion> OnOverlayAnchorRotationChanges;
 
     #region Interal Vars
-    public static Random rand = new Random();
+    public static Random Rand = new Random();
     public static HOTK_Overlay HighQualityOverlay;  // Only one Overlay can be HQ at a time
-    public static string Key { get { return "unity:" + Application.companyName + "." + Application.productName + "." + rand.Next(); } }
+    public static string Key { get { return "unity:" + Application.companyName + "." + Application.productName + "." + Rand.Next(); } }
     public static GameObject ZeroReference;         // Used to get a reference to the world 0, 0, 0 point
     public GameObject OverlayReference;             // Used to get a reference for the Overlay's transform
     public bool IsBeingGazed;
@@ -84,8 +88,31 @@ public class HOTK_Overlay : MonoBehaviour
     private HOTK_TrackedDevice _leftTracker;                     // caches a reference to the HOTK_TrackedDevice that is tracking the Left Controller
     private HOTK_TrackedDevice _rightTracker;                     // caches a reference to the HOTK_TrackedDevice that is tracking the Right Controller
     private uint _anchor;   // caches a HOTK_TrackedDevice ID for anchoring the Overlay, if applicable
-    private float _alpha;
-    private float _scale;
+
+    private float _alpha
+    {
+        get { return _actualAlpha; }
+        set
+        {
+            _actualAlpha = value;
+            if (OnOverlayAlphaChanges != null)
+                OnOverlayAlphaChanges(this, value);
+        }
+    }
+
+    private float _scale
+    {
+        get { return _actualScale; }
+        set
+        {
+            _actualScale = value;
+            if (OnOverlayScaleChanges != null)
+                OnOverlayScaleChanges(this, value);
+        }
+    }
+
+    private float _actualAlpha;
+    private float _actualScale;
 
     private bool _lockGaze; // If true, _lockedGaze will be used instead of actually testing for gaze
     private bool _lockedGaze; // If _lockGaze, this value is forced instead of testing for gaze
@@ -284,7 +311,7 @@ public class HOTK_Overlay : MonoBehaviour
         if (overlay != null) overlay.DestroyOverlay(_handle);
         _handle = OpenVR.k_ulOverlayHandleInvalid;
     }
-
+    
     /// <summary>
     /// Attach the Overlay to [device] at base position [point].
     /// [point] isn't used for HMD or World, and can be ignored.
@@ -358,6 +385,9 @@ public class HOTK_Overlay : MonoBehaviour
             default:
                 throw new ArgumentOutOfRangeException("device", device, null);
         }
+
+        if (OnOverlayAttachmentChanges != null)
+            OnOverlayAttachmentChanges(this);
     }
 
     /// <summary>
@@ -494,6 +524,8 @@ public class HOTK_Overlay : MonoBehaviour
         if (AnchorDevice == AttachmentDevice.LeftController || AnchorDevice == AttachmentDevice.RightController) return; // Controller overlays do not adjust with gameObject transform
         if (_objectPosition == gameObject.transform.localPosition) return;
         _objectPosition = gameObject.transform.localPosition;
+        if (OnOverlayPositionChanges != null)
+            OnOverlayPositionChanges(this, _objectPosition);
         changed = true;
     }
 
@@ -508,6 +540,8 @@ public class HOTK_Overlay : MonoBehaviour
         if (gameObjectChanged)
         {
             _objectRotation = gameObject.transform.localRotation;
+            if (OnOverlayRotationChanges != null)
+                OnOverlayRotationChanges(this, _objectRotation);
             changed = true;
         }
         if (_anchor == OpenVR.k_unTrackedDeviceIndexInvalid || OverlayReference == null) return; // This part below is only for Controllers
@@ -578,7 +612,7 @@ public class HOTK_Overlay : MonoBehaviour
         results.Distance = output.fDistance;
         return true;
     }
-    private void FindDevice(ref HOTK_TrackedDevice tracker, HOTK_TrackedDevice.EType role)
+    public void FindDevice(ref HOTK_TrackedDevice tracker, HOTK_TrackedDevice.EType role)
     {
         if (tracker != null && tracker.IsValid) return;
         // Try to find an HOTK_TrackedDevice that is active and tracking the HMD
@@ -601,7 +635,7 @@ public class HOTK_Overlay : MonoBehaviour
     /// <returns></returns>
     private HmdMatrix34_t GetOverlayPosition()
     {
-        if (OverlayReference == null) OverlayReference = new GameObject("Overlay Reference") { hideFlags = HideFlags.HideInHierarchy };
+        if (OverlayReference == null) OverlayReference = new GameObject("Overlay Reference");// { hideFlags = HideFlags.HideInHierarchy };
         if (_anchor == OpenVR.k_unTrackedDeviceIndexInvalid)
         {
             var offset = new SteamVR_Utils.RigidTransform(OverlayReference.transform, transform);
@@ -741,7 +775,7 @@ public class HOTK_Overlay : MonoBehaviour
             var error = overlay.ShowOverlay(_handle);
             if (error == EVROverlayError.InvalidHandle || error == EVROverlayError.UnknownOverlay)
             {
-                if (overlay.FindOverlay(Key, ref _handle) != EVROverlayError.None) return;
+                if (overlay.FindOverlay(Key + gameObject.GetInstanceID(), ref _handle) != EVROverlayError.None) return;
             }
 
             var tex = new Texture_t
