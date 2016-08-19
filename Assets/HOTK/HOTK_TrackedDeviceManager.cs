@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using Valve.VR;
@@ -62,6 +63,7 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
         }
     }
 
+    private HOTK_TrackedDevice _hmdTracker;
     private HOTK_TrackedDevice _leftTracker;
     private HOTK_TrackedDevice _rightTracker;
 
@@ -70,6 +72,9 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
     private uint _leftIndex = OpenVR.k_unTrackedDeviceIndexInvalid;
     private uint _rightIndex = OpenVR.k_unTrackedDeviceIndexInvalid;
     private uint _hmdIndex = OpenVR.k_unTrackedDeviceIndexInvalid;
+
+    private readonly List<HOTK_Overlay> _gazeableOverlays = new List<HOTK_Overlay>();
+    private readonly List<HOTK_OverlayBase> _interactableOverlays = new List<HOTK_OverlayBase>();
 
     public void Start()
     {
@@ -82,8 +87,47 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
         FindControllers();
         UpdatePoses();
         UpdateButtons();
+
+        UpdateGaze();
+        UpdateAim();
     }
-    
+
+    public void SetOverlayCanGaze(HOTK_Overlay overlay, bool isInteractable = true)
+    {
+        if (isInteractable)
+        {
+            if (!_gazeableOverlays.Contains(overlay))
+            {
+                _gazeableOverlays.Add(overlay);
+            }
+        }
+        else
+        {
+            if (_gazeableOverlays.Contains(overlay))
+            {
+                _gazeableOverlays.Remove(overlay);
+            }
+        }
+    }
+
+    public void SetOverlayCanAim(HOTK_OverlayBase overlay, bool isInteractable = true)
+    {
+        if (isInteractable)
+        {
+            if (!_interactableOverlays.Contains(overlay))
+            {
+                _interactableOverlays.Add(overlay);
+            }
+        }
+        else
+        {
+            if (_interactableOverlays.Contains(overlay))
+            {
+                _interactableOverlays.Remove(overlay);
+            }
+        }
+    }
+
     private void FindTracker(ref HOTK_TrackedDevice tracker, HOTK_TrackedDevice.EType type)
     {
         if (tracker != null && tracker.IsValid) return;
@@ -501,4 +545,127 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
     {
         Debug.LogError(vars == null ? text : string.Format(text, vars));
     }
+
+    /// <summary>
+    /// Compute a given Ray and determine if it hit an Overlay
+    /// </summary>
+    /// <param name="source"></param>
+    /// <param name="direction"></param>
+    /// <param name="results"></param>
+    /// <returns></returns>
+    private bool ComputeIntersection(HOTK_OverlayBase hotkOverlay, Vector3 source, Vector3 direction, ref SteamVR_Overlay.IntersectionResults results)
+    {
+        var overlay = OpenVR.Overlay;
+        if (overlay == null) return false;
+
+        var input = new VROverlayIntersectionParams_t
+        {
+            eOrigin = SteamVR_Render.instance.trackingSpace,
+            vSource =
+            {
+                v0 = source.x,
+                v1 = source.y,
+                v2 = -source.z
+            },
+            vDirection =
+            {
+                v0 = direction.x,
+                v1 = direction.y,
+                v2 = -direction.z
+            }
+        };
+
+        var output = new VROverlayIntersectionResults_t();
+        if (!overlay.ComputeOverlayIntersection(hotkOverlay.Handle, ref input, ref output)) return false;
+
+        results.point = new Vector3(output.vPoint.v0, output.vPoint.v1, -output.vPoint.v2);
+        results.normal = new Vector3(output.vNormal.v0, output.vNormal.v1, -output.vNormal.v2);
+        results.UVs = new Vector2(output.vUVs.v0, output.vUVs.v1);
+        results.distance = output.fDistance;
+        return true;
+    }
+
+    private void UpdateGaze()
+    {
+        FindTracker(ref _hmdTracker, HOTK_TrackedDevice.EType.HMD);
+        foreach (var overlay in _gazeableOverlays)
+        {
+            if (overlay.AnimateOnGaze == HOTK_Overlay.AnimationType.None) continue;
+            var hit = overlay.GazeLocked && overlay.GazeLockedOn;
+            if (!overlay.GazeLocked && _hmdTracker != null && _hmdTracker.IsValid)
+            {
+                if (Vector3.Angle(_hmdTracker.transform.forward, overlay.RotationTracker.transform.forward) <= 90f)
+                {
+                    var result = new SteamVR_Overlay.IntersectionResults();
+                    hit = ComputeIntersection(overlay, _hmdTracker.gameObject.transform.position, _hmdTracker.gameObject.transform.forward, ref result);
+                }
+            }
+            overlay.UpdateGaze(hit);
+        }
+    }
+
+    private HOTK_OverlayBase lastHit;
+    private void UpdateAim()
+    {
+        HOTK_OverlayBase hitBase = null;
+        SteamVR_Overlay.IntersectionResults? hitResults = null;
+        foreach (var overlay in _interactableOverlays)
+        {
+            if (overlay.OnControllerHitsOverlay != null)
+            {
+                TestControllerAimsAtOverlay(overlay, ref _leftTracker, HOTK_TrackedDevice.EType.LeftController, ref hitBase, ref hitResults);
+                TestControllerAimsAtOverlay(overlay, ref _rightTracker, HOTK_TrackedDevice.EType.RightController, ref hitBase, ref hitResults);
+            }
+            if (overlay.OnControllerTouchesOverlay != null)
+            {
+                TestControllerTouchesOverlay(overlay, ref _leftTracker, HOTK_TrackedDevice.EType.LeftController, ref hitBase, ref hitResults);
+                TestControllerTouchesOverlay(overlay, ref _rightTracker, HOTK_TrackedDevice.EType.RightController, ref hitBase, ref hitResults);
+            }
+        }
+    }
+
+    private void TestControllerAimsAtOverlay(HOTK_OverlayBase overlay, ref HOTK_TrackedDevice tracker, HOTK_TrackedDevice.EType role, ref HOTK_OverlayBase target, ref SteamVR_Overlay.IntersectionResults? results)
+    {
+        FindTracker(ref tracker, role);
+        if (tracker == null || !tracker.IsValid) return;
+        if (overlay.HittingTracker != null && overlay.HittingTracker != tracker) return;
+        var result = new SteamVR_Overlay.IntersectionResults();
+        var hit = !(Vector3.Angle(tracker.transform.forward, overlay.RotationTracker.transform.forward) > 90f) && ComputeIntersection(overlay, tracker.gameObject.transform.position, tracker.gameObject.transform.forward, ref result);
+    }
+
+    /*
+        if (hit)
+        {
+            overlay.OnControllerHitsOverlay(overlay, tracker, result);
+            overlay.HittingTracker = tracker;
+        }
+        else
+        {
+            if (overlay.HittingTracker != null && overlay.OnControllerUnhitsOverlay != null) overlay.OnControllerUnhitsOverlay(overlay, overlay.HittingTracker);
+            overlay.HittingTracker = null;
+        }
+        */
+
+    private void TestControllerTouchesOverlay(HOTK_OverlayBase overlay, ref HOTK_TrackedDevice tracker, HOTK_TrackedDevice.EType role, ref HOTK_OverlayBase target, ref SteamVR_Overlay.IntersectionResults? results)
+    {
+        FindTracker(ref tracker, role);
+        if (tracker == null || !tracker.IsValid) return;
+        if (overlay.TouchingTracker != null && overlay.TouchingTracker != tracker) return;
+        var result = new SteamVR_Overlay.IntersectionResults();
+        var hit = !(Vector3.Angle(tracker.transform.forward, overlay.RotationTracker.transform.forward) > 90f) && ComputeIntersection(overlay, tracker.gameObject.transform.position - (tracker.gameObject.transform.forward * 0.1f), tracker.gameObject.transform.forward, ref result);
+    }
+
+    /*
+        if (hit && result.distance < 0.15f)
+        {
+            overlay.OnControllerTouchesOverlay(overlay, tracker, result);
+            overlay.TouchingTracker = tracker;
+        }
+        else
+        {
+            if (overlay.TouchingTracker != null && overlay.OnControllerStopsTouchingOverlay != null) overlay.OnControllerStopsTouchingOverlay(overlay, overlay.TouchingTracker);
+            overlay.TouchingTracker = null;
+        }
+       */
+
 }

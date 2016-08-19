@@ -214,6 +214,10 @@ public class DesktopPortalController : MonoBehaviour
     #region Unity Methods
     public void OnEnable()
     {
+        #pragma warning disable 0168
+        // ReSharper disable once UnusedVariable
+        var svr = SteamVR.instance; // Init the SteamVR drivers
+        #pragma warning restore 0168
         Debug.Log("Connected to: " + SteamVR.instance.hmd_TrackingSystemName); // Force SteamVR Plugin to Init
         if (Overlay == null) return;
         SaveLoad.Load();
@@ -327,7 +331,7 @@ public class DesktopPortalController : MonoBehaviour
     /// <summary>
     /// Occurs when a controller comes into contact with an Overlay
     /// </summary>
-    private void TouchOverlay(HOTK_Overlay o, HOTK_TrackedDevice tracker, HOTK_Overlay.IntersectionResults result)
+    private void TouchOverlay(HOTK_OverlayBase o, HOTK_TrackedDevice tracker, SteamVR_Overlay.IntersectionResults result)
     {
         if (!Overlay.gameObject.activeSelf) return;
         if (_selectedWindow == IntPtr.Zero) return;
@@ -343,7 +347,7 @@ public class DesktopPortalController : MonoBehaviour
     /// <summary>
     /// Occurs when a controller stops touching an Overlay
     /// </summary>
-    private void UnTouchOverlay(HOTK_Overlay o, HOTK_TrackedDevice tracker)
+    private void UnTouchOverlay(HOTK_OverlayBase o, HOTK_TrackedDevice tracker)
     {
         if (_grabbingOverlay != null) return;
         _touchingOverlay = null;
@@ -352,7 +356,7 @@ public class DesktopPortalController : MonoBehaviour
     /// <summary>
     /// Occurs when a controller is aiming at an Overlay
     /// </summary>
-    private void AimAtApplication(HOTK_Overlay o, HOTK_TrackedDevice tracker, HOTK_Overlay.IntersectionResults result)
+    private void AimAtApplication(HOTK_OverlayBase o, HOTK_TrackedDevice tracker, SteamVR_Overlay.IntersectionResults result)
     {
         if (!Overlay.gameObject.activeSelf) return;
         if (_selectedWindow == IntPtr.Zero) return;
@@ -406,7 +410,7 @@ public class DesktopPortalController : MonoBehaviour
     /// <summary>
     /// Occurs when a controller stops aiming at an Overlay
     /// </summary>
-    private void UnsetLastHit(HOTK_Overlay o, HOTK_TrackedDevice tracker)
+    private void UnsetLastHit(HOTK_OverlayBase o, HOTK_TrackedDevice tracker)
     {
         if (tracker != _aimingAtOverlay) return;
         _lastWindowPosX = -1;

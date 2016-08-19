@@ -2,26 +2,30 @@
 using UnityEngine;
 using Valve.VR;
 
-public class HOTK_CompanionOverlay : MonoBehaviour
+public class HOTK_CompanionOverlay : HOTK_OverlayBase
 {
     public HOTK_Overlay Overlay;
-    public GameObject OverlayReference;             // Used to get a reference for the Overlay's transform
     public Texture OverlayTexture;
     public VROverlayInputMethod InputMethod = VROverlayInputMethod.None;
     public Vector3 CompanionOffset;
 
-    private bool _subscribed;
+    public CompanionMode OverlayMode
+    {
+        get { return _overlayMode; }
+        set
+        {
+            if (_overlayMode == CompanionMode.Backside)
+            {
+                
+            }
+        }
+    }
+    private CompanionMode _overlayMode;
 
-    private Texture _overlayTexture;                    // These are used to cache values and check for changes
-    private Vector4 _uvOffset = Vector4.zero;
-    private HOTK_Overlay.AttachmentDevice _anchorDevice;             // These are used to cache values and check for changes
-    private HOTK_Overlay.AttachmentPoint _anchorPoint;               // These are used to cache values and check for changes
-    private Vector3 _anchorOffset = Vector3.zero;       // These are used to cache values and check for changes
-    private Vector3 _objectPosition = Vector3.zero;     // These are used to cache values and check for changes
-    private Quaternion _anchorRotation = Quaternion.identity;   // These are used to cache values and check for changes
+    private bool _subscribed;
+    
     private float _alpha;   // These are used to cache values and check for changes
     private float _scale;   // These are used to cache values and check for changes
-    private ulong _handle = OpenVR.k_ulOverlayHandleInvalid;    // caches a reference to our Overlay handle
     private uint _anchor;   // caches a HOTK_TrackedDevice ID for anchoring the Overlay, if applicable
 
     public void OnEnable()
@@ -34,7 +38,12 @@ public class HOTK_CompanionOverlay : MonoBehaviour
         if (overlay == null) return;
         // Cache the default value on start
         _objectPosition = Vector3.zero;
+        AutoUpdateRenderTextures = false;
         var error = overlay.CreateOverlay(HOTK_Overlay.Key + gameObject.GetInstanceID(), gameObject.name, ref _handle);
+        #pragma warning disable 0168
+        // ReSharper disable once UnusedVariable
+        var rt = RotationTracker; // Spawn RotationTracker
+        #pragma warning restore 0168
         if (error != EVROverlayError.None)
         {
             Debug.Log(error.ToString());
@@ -50,6 +59,7 @@ public class HOTK_CompanionOverlay : MonoBehaviour
             Overlay.OnOverlayScaleChanges += OverlayScaleChanges;
             Overlay.OnOverlayRotationChanges += OverlayRotationChanges;
         }
+        updateCompanion = true;
     }
 
     /// <summary>
@@ -97,6 +107,11 @@ public class HOTK_CompanionOverlay : MonoBehaviour
         }
     }
 
+    public void DoUpdateOverlay()
+    {
+        updateCompanion = true;
+    }
+
     private void CheckOverlayTextureChanged(ref bool changed)
     {
         if (_overlayTexture == OverlayTexture && _uvOffset == Overlay.UvOffset) return;
@@ -114,7 +129,6 @@ public class HOTK_CompanionOverlay : MonoBehaviour
     /// <returns></returns>
     private HmdMatrix34_t GetOverlayPosition()
     {
-        if (OverlayReference == null) OverlayReference = new GameObject("Overlay Reference");// { hideFlags = HideFlags.HideInHierarchy };
         if (_anchor == OpenVR.k_unTrackedDeviceIndexInvalid)
         {
             var offset = new SteamVR_Utils.RigidTransform(OverlayReference.transform, transform);
@@ -135,88 +149,56 @@ public class HOTK_CompanionOverlay : MonoBehaviour
         }
     }
 
-    private void AttachToOverlay(HOTK_Overlay o)
+    private void AttachToOverlay(HOTK_OverlayBase o)
     {
+        var overlay = o as HOTK_Overlay;
+        if (overlay == null) return;
         // Update Overlay Anchor position
         GetOverlayPosition();
 
         // Update cached values
-        _anchorDevice = o.AnchorDevice;
-        _anchorPoint = o.AnchorPoint;
-        _anchorOffset = o.AnchorOffset;
-        _alpha = o.GetCurrentAlpha();
-        _scale = o.GetCurrentScale();
+        _anchorDevice = overlay.AnchorDevice;
+        _anchorPoint = overlay.AnchorPoint;
+        _anchorOffset = overlay.AnchorOffset;
+        _alpha = overlay.GetCurrentAlpha();
+        _scale = overlay.GetCurrentScale();
         gameObject.transform.parent = o.gameObject.transform;
-        gameObject.transform.localPosition = new Vector3(0f, 1f, 0f);
+        gameObject.transform.localPosition = Vector3.zero;
+        OverlayReference.transform.parent = Overlay.OverlayReference.transform;
+        OverlayReference.transform.localPosition = Vector3.zero;
         // Attach Overlay
         switch (_anchorDevice)
         {
             case HOTK_Overlay.AttachmentDevice.Screen:
                 _anchor = OpenVR.k_unTrackedDeviceIndexInvalid;
-                gameObject.transform.localRotation = Quaternion.identity;
+                gameObject.transform.localRotation = OverlayMode == CompanionMode.Backside ? Quaternion.AngleAxis(180f, Vector3.up) : Quaternion.identity;
                 OverlayReference.transform.localRotation = Quaternion.identity;
                 break;
             case HOTK_Overlay.AttachmentDevice.World:
                 _anchor = OpenVR.k_unTrackedDeviceIndexInvalid;
-                gameObject.transform.localRotation = Quaternion.identity;
+                gameObject.transform.localRotation = OverlayMode == CompanionMode.Backside ? Quaternion.AngleAxis(180f, Vector3.up) : Quaternion.identity;
                 OverlayReference.transform.localRotation = Quaternion.identity;
                 break;
             case HOTK_Overlay.AttachmentDevice.LeftController:
                 _anchor = HOTK_TrackedDeviceManager.Instance.LeftIndex;
-                AttachToController(_anchorPoint, _anchorOffset);
+                gameObject.transform.localRotation = Quaternion.identity;
+                OverlayReference.transform.localRotation = OverlayMode == CompanionMode.Backside ? Quaternion.AngleAxis(180f, Vector3.up) : Quaternion.identity;
+                OverlayRotationChanges(true); // Force rotational update
                 break;
             case HOTK_Overlay.AttachmentDevice.RightController:
                 _anchor = HOTK_TrackedDeviceManager.Instance.RightIndex;
-                AttachToController(_anchorPoint, _anchorOffset);
+                gameObject.transform.localRotation = Quaternion.identity;
+                OverlayReference.transform.localRotation = OverlayMode == CompanionMode.Backside ? Quaternion.AngleAxis(180f, Vector3.up) : Quaternion.identity;
+                OverlayRotationChanges(true); // Force rotational update
                 break;
             default:
                 throw new ArgumentOutOfRangeException("device", _anchorDevice, null);
         }
 
+        if (OnOverlayAttachmentChanges != null)
+            OnOverlayAttachmentChanges(this);
+
         updateCompanion = true;
-    }
-
-    private void AttachToController(HOTK_Overlay.AttachmentPoint point, Vector3 offset)
-    {
-        float dx = offset.x, dy = offset.y, dz = offset.z;
-
-        Vector3 pos;
-        var rot = Quaternion.identity;
-        // Apply position and rotation to Overlay anchor
-        // Some Axis are flipped here to reorient the offset
-        switch (point)
-        {
-            case HOTK_Overlay.AttachmentPoint.FlatAbove:
-            case HOTK_Overlay.AttachmentPoint.FlatBelow:
-                pos = new Vector3(dx, dy, dz);
-                break;
-            case HOTK_Overlay.AttachmentPoint.FlatBelowFlipped:
-                pos = new Vector3(dx, -dy, -dz);
-                rot = Quaternion.AngleAxis(180f, new Vector3(1f, 0f, 0f));
-                break;
-            case HOTK_Overlay.AttachmentPoint.Center:
-            case HOTK_Overlay.AttachmentPoint.Above:
-            case HOTK_Overlay.AttachmentPoint.Below:
-                pos = new Vector3(dx, -dz, dy);
-                rot = Quaternion.AngleAxis(90f, new Vector3(1f, 0f, 0f));
-                break;
-            case HOTK_Overlay.AttachmentPoint.Up:
-            case HOTK_Overlay.AttachmentPoint.Down:
-            case HOTK_Overlay.AttachmentPoint.Left:
-            case HOTK_Overlay.AttachmentPoint.Right:
-                pos = new Vector3(dx, -dz, dy);
-                rot = Quaternion.AngleAxis(90f, new Vector3(1f, 0f, 0f));
-                break;
-            case HOTK_Overlay.AttachmentPoint.AboveFlipped:
-            case HOTK_Overlay.AttachmentPoint.BelowFlipped:
-                pos = new Vector3(-dx, dz, dy);
-                rot = Quaternion.AngleAxis(90f, new Vector3(1f, 0f, 0f)) * Quaternion.AngleAxis(180f, new Vector3(0f, 1f, 0f));
-                break;
-            default:
-                throw new ArgumentOutOfRangeException("point", point, null);
-        }
-        //OverlayReference.transform.localPosition = pos;
-        _anchorRotation = rot;
     }
 
     private void OverlayAlphaChanges(HOTK_Overlay o, float alpha)
@@ -239,7 +221,17 @@ public class HOTK_CompanionOverlay : MonoBehaviour
 
     private void OverlayRotationChanges(HOTK_Overlay o, Quaternion rot)
     {
-        //gameObject.transform.localRotation = rot;
+        //_anchorRotation = rot;
+        OverlayRotationChanges();
+    }
+
+    private void OverlayRotationChanges(bool force = false)
+    {
+        var gameObjectChanged = _objectRotation != gameObject.transform.localRotation;
+        if (gameObjectChanged)
+        {
+            _objectRotation = gameObject.transform.localRotation;
+        }
         updateCompanion = true;
     }
 
@@ -258,7 +250,6 @@ public class HOTK_CompanionOverlay : MonoBehaviour
             {
                 if (overlay.FindOverlay(HOTK_Overlay.Key + gameObject.GetInstanceID(), ref _handle) != EVROverlayError.None) return;
             }
-            Debug.Log("Drawing Companion");
             var tex = new Texture_t
             {
                 handle = OverlayTexture.GetNativeTexturePtr(),

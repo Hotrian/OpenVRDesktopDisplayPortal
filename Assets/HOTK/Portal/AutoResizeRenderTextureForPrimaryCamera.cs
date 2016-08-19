@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
-public class AutoResizeRenderTexture : MonoBehaviour
+public class AutoResizeRenderTextureForPrimaryCamera : MonoBehaviour
 {
     public AutoResizeCameraForRenderTexture script;
     public GameObject OutlineQuad;
@@ -18,7 +18,7 @@ public class AutoResizeRenderTexture : MonoBehaviour
 	    var marginY = Math.Max(4, (((int) (transform.localScale.y/100f)) / 2) * 2);
 
         var r = DesktopPortalController.Instance.GetNewRenderTexture(marginX, marginY);
-	    if (script != null) script.ResizeCamera(r);
+	    if (script != null) script.ResizeCamera(r, 4f);
         if (OutlineQuad != null) OutlineQuad.transform.localScale = new Vector3(transform.localScale.x + marginX, transform.localScale.y + marginY, 1f);
     }
 }
