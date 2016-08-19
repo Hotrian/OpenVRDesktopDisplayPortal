@@ -52,12 +52,6 @@ public class DropdownMatchEnumOptions : MonoBehaviour
                 if (DesktopPortalController.Instance.SelectedWindowSettings != null)
                     Dropdown.value = strings.IndexOf(FramerateModeNames[(int)DesktopPortalController.Instance.SelectedWindowSettings.framerateMode]);
                 break;
-            case EnumSelection.MouseMode:
-                strings.AddRange(MouseModeNames);
-                Dropdown.AddOptions(strings);
-                if (DesktopPortalController.Instance.SelectedWindowSettings != null)
-                    Dropdown.value = strings.IndexOf(MouseModeNames[(int)DesktopPortalController.Instance.SelectedWindowSettings.interactionMode]);
-                break;
             default:
                 throw new ArgumentOutOfRangeException();
         }
@@ -121,9 +115,6 @@ public class DropdownMatchEnumOptions : MonoBehaviour
                 var index = CaptureModeNames.IndexOf(Dropdown.options[Dropdown.value].text);
                 DesktopPortalController.Instance.SelectedWindowSettings.captureMode = index == -1 ? DesktopPortalController.CaptureMode.GdiDirect : (DesktopPortalController.CaptureMode)index; // Fallback to GDI Direct if they were using a now disabled capture method
                 break;
-            case EnumSelection.MouseMode:
-                DesktopPortalController.Instance.SelectedWindowSettings.interactionMode = (DesktopPortalController.MouseInteractionMode) MouseModeNames.IndexOf(Dropdown.options[Dropdown.value].text);
-                break;
             default:
                 throw new ArgumentOutOfRangeException();
         }
@@ -147,8 +138,7 @@ public class DropdownMatchEnumOptions : MonoBehaviour
         AttachmentPoint,
         AnimationType,
         Framerate,
-        CaptureMode,
-        MouseMode
+        CaptureMode
     }
 
     public static readonly List<string> CaptureModeNames = new List<string>
@@ -161,11 +151,6 @@ public class DropdownMatchEnumOptions : MonoBehaviour
         true,
         true,
         false
-    };
-
-    public static readonly List<string> MouseModeNames = new List<string>
-    {
-        "Full Interaction", "Window On Top", "Click Interaction Only", "No Interaction"
     };
 
     public static readonly List<string> FramerateModeNames = new List<string>

@@ -604,68 +604,86 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
         }
     }
 
-    private HOTK_OverlayBase lastHit;
+    private HOTK_OverlayBase lastAimed;
+    private HOTK_OverlayBase lastTouched;
     private void UpdateAim()
     {
         HOTK_OverlayBase hitBase = null;
+        HOTK_TrackedDevice hitTracker = null;
         SteamVR_Overlay.IntersectionResults? hitResults = null;
-        foreach (var overlay in _interactableOverlays)
+
+        // Check if we are touching an overlay
+        foreach (var overlay in _interactableOverlays.Where(overlay => overlay.OnControllerTouchesOverlay != null))
         {
-            if (overlay.OnControllerHitsOverlay != null)
-            {
-                TestControllerAimsAtOverlay(overlay, ref _leftTracker, HOTK_TrackedDevice.EType.LeftController, ref hitBase, ref hitResults);
-                TestControllerAimsAtOverlay(overlay, ref _rightTracker, HOTK_TrackedDevice.EType.RightController, ref hitBase, ref hitResults);
-            }
-            if (overlay.OnControllerTouchesOverlay != null)
-            {
-                TestControllerTouchesOverlay(overlay, ref _leftTracker, HOTK_TrackedDevice.EType.LeftController, ref hitBase, ref hitResults);
-                TestControllerTouchesOverlay(overlay, ref _rightTracker, HOTK_TrackedDevice.EType.RightController, ref hitBase, ref hitResults);
-            }
+            TestControllerTouchesOverlay(overlay, ref _leftTracker, HOTK_TrackedDevice.EType.LeftController, ref hitBase, ref hitTracker, ref hitResults);
+            TestControllerTouchesOverlay(overlay, ref _rightTracker, HOTK_TrackedDevice.EType.RightController, ref hitBase, ref hitTracker, ref hitResults);
+        }
+        if (hitBase == null && lastTouched != null) StopTouching();
+        if (hitBase != null && lastTouched != hitBase) StopTouching();
+        if (hitBase != null && hitResults != null)
+        {
+            StopAiming();
+            hitBase.OnControllerTouchesOverlay(hitBase, hitTracker, hitResults.Value);
+            hitBase.TouchingTracker = hitTracker;
+            lastTouched = hitBase;
+            return;
+        }
+
+        // Check if we are aiming at an overlay
+        foreach (var overlay in _interactableOverlays.Where(overlay => overlay.OnControllerHitsOverlay != null))
+        {
+            TestControllerAimsAtOverlay(overlay, ref _leftTracker, HOTK_TrackedDevice.EType.LeftController, ref hitBase, ref hitTracker, ref hitResults);
+            TestControllerAimsAtOverlay(overlay, ref _rightTracker, HOTK_TrackedDevice.EType.RightController, ref hitBase, ref hitTracker, ref hitResults);
+        }
+        if (hitBase == null && lastAimed != null) StopAiming();
+        if (hitBase != null && lastAimed != hitBase) StopAiming();
+        if (hitBase != null && hitResults != null)
+        {
+            hitBase.OnControllerHitsOverlay(hitBase, hitTracker, hitResults.Value);
+            hitBase.HittingTracker = hitTracker;
+            lastAimed = hitBase;
         }
     }
 
-    private void TestControllerAimsAtOverlay(HOTK_OverlayBase overlay, ref HOTK_TrackedDevice tracker, HOTK_TrackedDevice.EType role, ref HOTK_OverlayBase target, ref SteamVR_Overlay.IntersectionResults? results)
+    private void StopTouching()
+    {
+        if (lastTouched == null) return;
+        if (lastTouched.TouchingTracker != null && lastTouched.OnControllerStopsTouchingOverlay != null) lastTouched.OnControllerStopsTouchingOverlay(lastTouched, lastTouched.TouchingTracker);
+        lastTouched.TouchingTracker = null;
+        lastTouched = null;
+    }
+
+    private void StopAiming()
+    {
+        if (lastAimed == null) return;
+        if (lastAimed.HittingTracker != null && lastAimed.OnControllerUnhitsOverlay != null) lastAimed.OnControllerUnhitsOverlay(lastAimed, lastAimed.HittingTracker);
+        lastAimed.HittingTracker = null;
+        lastAimed = null;
+    }
+
+    private void TestControllerAimsAtOverlay(HOTK_OverlayBase overlay, ref HOTK_TrackedDevice tracker, HOTK_TrackedDevice.EType role, ref HOTK_OverlayBase target, ref HOTK_TrackedDevice hitTracker, ref SteamVR_Overlay.IntersectionResults? results)
     {
         FindTracker(ref tracker, role);
         if (tracker == null || !tracker.IsValid) return;
         if (overlay.HittingTracker != null && overlay.HittingTracker != tracker) return;
         var result = new SteamVR_Overlay.IntersectionResults();
         var hit = !(Vector3.Angle(tracker.transform.forward, overlay.RotationTracker.transform.forward) > 90f) && ComputeIntersection(overlay, tracker.gameObject.transform.position, tracker.gameObject.transform.forward, ref result);
+        if (!hit || (results != null && (result.distance > results.Value.distance))) return;
+        target = overlay;
+        hitTracker = tracker;
+        results = result;
     }
 
-    /*
-        if (hit)
-        {
-            overlay.OnControllerHitsOverlay(overlay, tracker, result);
-            overlay.HittingTracker = tracker;
-        }
-        else
-        {
-            if (overlay.HittingTracker != null && overlay.OnControllerUnhitsOverlay != null) overlay.OnControllerUnhitsOverlay(overlay, overlay.HittingTracker);
-            overlay.HittingTracker = null;
-        }
-        */
-
-    private void TestControllerTouchesOverlay(HOTK_OverlayBase overlay, ref HOTK_TrackedDevice tracker, HOTK_TrackedDevice.EType role, ref HOTK_OverlayBase target, ref SteamVR_Overlay.IntersectionResults? results)
+    private void TestControllerTouchesOverlay(HOTK_OverlayBase overlay, ref HOTK_TrackedDevice tracker, HOTK_TrackedDevice.EType role, ref HOTK_OverlayBase target, ref HOTK_TrackedDevice hitTracker, ref SteamVR_Overlay.IntersectionResults? results)
     {
         FindTracker(ref tracker, role);
         if (tracker == null || !tracker.IsValid) return;
         if (overlay.TouchingTracker != null && overlay.TouchingTracker != tracker) return;
         var result = new SteamVR_Overlay.IntersectionResults();
         var hit = !(Vector3.Angle(tracker.transform.forward, overlay.RotationTracker.transform.forward) > 90f) && ComputeIntersection(overlay, tracker.gameObject.transform.position - (tracker.gameObject.transform.forward * 0.1f), tracker.gameObject.transform.forward, ref result);
+        if (!hit || result.distance >= 0.15f || (results != null && !(result.distance < results.Value.distance))) return;
+        target = overlay;
+        hitTracker = tracker;
+        results = result;
     }
-
-    /*
-        if (hit && result.distance < 0.15f)
-        {
-            overlay.OnControllerTouchesOverlay(overlay, tracker, result);
-            overlay.TouchingTracker = tracker;
-        }
-        else
-        {
-            if (overlay.TouchingTracker != null && overlay.OnControllerStopsTouchingOverlay != null) overlay.OnControllerStopsTouchingOverlay(overlay, overlay.TouchingTracker);
-            overlay.TouchingTracker = null;
-        }
-       */
-
 }

@@ -28,7 +28,6 @@ public class DesktopPortalController : MonoBehaviour
     public Texture DefaultTexture; // Texture drawn to the overlay when there is nothing else to draw
     public DropdownMatchEnumOptions CaptureModeDropdown; // A Dropdown used to select the current Capture Mode
     public DropdownMatchEnumOptions FramerateModeDropdown; // A Dropdown used to select the current Capture Framerate
-    public DropdownMatchEnumOptions InteractionModeDropdown; // A Dropdown used to select the current Interaction Mode
     public Dropdown FilterModeDropdown;
 
     // Used to control resolution lock
@@ -360,10 +359,11 @@ public class DesktopPortalController : MonoBehaviour
     {
         if (!Overlay.gameObject.activeSelf) return;
         if (_selectedWindow == IntPtr.Zero) return;
-        if (SelectedWindowSettings.interactionMode == MouseInteractionMode.Disabled) return;
+        if (SelectedWindowSettings.clickAPI == ClickAPI.None) return;
         if (Overlay.AnchorDevice == HOTK_Overlay.AttachmentDevice.LeftController && tracker.Type == HOTK_TrackedDevice.EType.LeftController) return;
         if (Overlay.AnchorDevice == HOTK_Overlay.AttachmentDevice.RightController && tracker.Type == HOTK_TrackedDevice.EType.RightController) return;
         if (_touchingOverlay != null || _grabbingOverlay != null) return;
+
         if (_currentWindowWidth > 0 && _currentWindowHeight > 0)
         {
             var p = new Point((int) ((_currentWindowWidth + _renderTextureMarginWidth) * result.UVs.x),
@@ -379,11 +379,10 @@ public class DesktopPortalController : MonoBehaviour
             {
                 _aimingAtOverlay = tracker;
                 _didHitOverlay = true;
-                if (SelectedWindowSettings.interactionMode == MouseInteractionMode.DirectInteraction ||
-                    SelectedWindowSettings.interactionMode == MouseInteractionMode.WindowTop)
+                if (SelectedWindowSettings.clickForceWindowOnTop)
                     Win32Stuff.SetForegroundWindow(_selectedWindow);
 
-                if (SelectedWindowSettings.interactionMode == MouseInteractionMode.DirectInteraction)
+                if (SelectedWindowSettings.clickMoveDesktopCursor)
                 {
                     CursorInteraction.MoveOverWindow(_selectedWindow, new Point((int) v2.x, (int) v2.y));
                 }else
@@ -540,29 +539,13 @@ public class DesktopPortalController : MonoBehaviour
     private void ClickApplication(HOTK_TrackedDevice tracker, CursorInteraction.SimulationMode mode)
     {
         if (_selectedWindow == IntPtr.Zero) return;
-        if (SelectedWindowSettings.interactionMode == MouseInteractionMode.Disabled) return;
+        if (SelectedWindowSettings.clickAPI == ClickAPI.None) return;
         if (!_isHittingOverlay) return;
         if (tracker != _aimingAtOverlay) return;
-        //Debug.Log("Try Click " + tracker.Type);
+        Debug.Log("Try Click " + tracker.Type);
         if (_selectedWindow == IntPtr.Zero) return;
-        //Debug.Log("Clicking" + tracker.Type);
-        switch (SelectedWindowSettings.interactionMode)
-        {
-            case MouseInteractionMode.DirectInteraction:
-                CursorInteraction.ClickOnPointAtCursor(_selectedWindow, mode);
-                break;
-            case MouseInteractionMode.WindowTop:
-            case MouseInteractionMode.SendClicksOnly:
-                if (_localWindowPosX > -1 && _localWindowPosY > -1)
-                    CursorInteraction.ClickOnPoint(_selectedWindow, new Point(_localWindowPosX, _localWindowPosY), mode);
-                else
-                    Debug.LogWarning("X or Y missing");
-                break;
-            case MouseInteractionMode.Disabled:
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
-        }
+        Debug.Log("Clicking" + tracker.Type);
+        CursorInteraction.ClickSendInput(_selectedWindow, mode, SelectedWindowSettings.clickAPI, new Point(_localWindowPosX, _localWindowPosY));
     }
 
     /// <summary>
@@ -572,6 +555,7 @@ public class DesktopPortalController : MonoBehaviour
     {
         ClickApplication(tracker, CursorInteraction.SimulationMode.LeftClick);
     }
+
     /// <summary>
     /// Occurs when a trigger has been double clicked (pressed and released rapidly, twice in a row)
     /// </summary>
@@ -579,6 +563,7 @@ public class DesktopPortalController : MonoBehaviour
     {
         ClickApplication(tracker, CursorInteraction.SimulationMode.DoubleClick);
     }
+
     /// <summary>
     /// Occurs when a touchpad has been clicked (pressed and released rapidly)
     /// </summary>
@@ -586,9 +571,11 @@ public class DesktopPortalController : MonoBehaviour
     {
         ClickApplication(tracker, CursorInteraction.SimulationMode.RightClick);
     }
+
     #endregion
 
     #region Coroutines
+
     // ReSharper disable UnusedMember.Local
     private IEnumerator GoToDefaultColor()
     {
@@ -605,6 +592,7 @@ public class DesktopPortalController : MonoBehaviour
             yield return new WaitForSeconds(0.025f);
         }
     }
+
     private IEnumerator GoToAimingColor()
     {
         StopCoroutine("GoToDefaultColor");
@@ -620,6 +608,7 @@ public class DesktopPortalController : MonoBehaviour
             yield return new WaitForSeconds(0.025f);
         }
     }
+
     private IEnumerator GoToTouchColor()
     {
         StopCoroutine("GoToDefaultColor");
@@ -635,6 +624,7 @@ public class DesktopPortalController : MonoBehaviour
             yield return new WaitForSeconds(0.025f);
         }
     }
+
     private IEnumerator GoToScalingColor()
     {
         StopCoroutine("GoToDefaultColor");
@@ -663,6 +653,7 @@ public class DesktopPortalController : MonoBehaviour
             yield return new WaitForSeconds(0.025f);
         }
     }
+
     private IEnumerator FadeOutCursor()
     {
         StopCoroutine("FadeInCursor");
@@ -700,6 +691,7 @@ public class DesktopPortalController : MonoBehaviour
             yield return new WaitForSeconds(1f);
         }
     }
+
     private IEnumerator UpdateEvery10Seconds()
     {
         while (Application.isPlaying)
@@ -803,7 +795,9 @@ public class DesktopPortalController : MonoBehaviour
             }
         }
     }
+
     // ReSharper restore UnusedMember.Local
+
     #endregion
 
     /// <summary>
@@ -811,7 +805,7 @@ public class DesktopPortalController : MonoBehaviour
     /// </summary>
     private RenderTexture NewRenderTexture()
     {
-        var r = new RenderTexture(((int) DisplayQuad.transform.localScale.x + _renderTextureMarginWidth) * 2, ((int) DisplayQuad.transform.localScale.y + _renderTextureMarginHeight) * 2, 24);
+        var r = new RenderTexture(((int) DisplayQuad.transform.localScale.x + _renderTextureMarginWidth)*2, ((int) DisplayQuad.transform.localScale.y + _renderTextureMarginHeight)*2, 24);
         var previous = RenderCamera.targetTexture;
         if (_selectedWindow != IntPtr.Zero)
         {
@@ -822,6 +816,7 @@ public class DesktopPortalController : MonoBehaviour
         if (previous != null) previous.Release();
         return r;
     }
+
     /// <summary>
     /// Automatically replaces the existing RenderTexture with an appropriately sized one using the Getter/Setter
     /// </summary>
@@ -860,6 +855,7 @@ public class DesktopPortalController : MonoBehaviour
     }
 
     #region UI Methods
+
     public void EnableFpsCounter()
     {
         FpsCounter.gameObject.SetActive(true);
@@ -898,6 +894,7 @@ public class DesktopPortalController : MonoBehaviour
         if (!Overlay.gameObject.activeSelf) return;
         StopCoroutine("UpdateEvery10Seconds");
     }
+
     public void StartRefreshing()
     {
         if (!Overlay.gameObject.activeSelf) return;
@@ -1201,6 +1198,16 @@ public class DesktopPortalController : MonoBehaviour
             settings.filterMode = FilterMode.Point;
             settings.SaveFileVersion = 4;
         }
+        if (settings.SaveFileVersion == 4)
+        {
+            Debug.Log("Upgrading [" + configName + "] to SaveFileVersion 5.");
+            settings.interactionMode = MouseInteractionMode.Disabled;
+            settings.clickAPI = ClickAPI.SendInput;
+            settings.clickForceWindowOnTop = true;
+            settings.clickMoveDesktopCursor = true;
+            settings.clickShowDesktopCursor = false;
+            settings.SaveFileVersion = 5;
+        }
 
         if (_texture != null)
             _texture.filterMode = settings.filterMode;
@@ -1212,7 +1219,6 @@ public class DesktopPortalController : MonoBehaviour
         SizeLockSprite.sprite = settings.windowSizeLocked ? LockSprite : UnlockSprite;
         CaptureModeDropdown.SetToOption(DropdownMatchEnumOptions.CaptureModeNames[(int) settings.captureMode], true);
         FramerateModeDropdown.SetToOption(DropdownMatchEnumOptions.FramerateModeNames[(int) settings.framerateMode], true);
-        InteractionModeDropdown.SetToOption(DropdownMatchEnumOptions.MouseModeNames[(int) settings.interactionMode], true);
         return settings;
     }
 
@@ -1232,6 +1238,7 @@ public class DesktopPortalController : MonoBehaviour
                 throw new ArgumentOutOfRangeException("mode", mode, null);
         }
     }
+
     public void SetOutlineColor(OutlineColor mode, Color color)
     {
         switch (mode)
@@ -1270,6 +1277,25 @@ public class DesktopPortalController : MonoBehaviour
         WindowTop = 1, // Keep Window on top only, Send Mouse Clicks Only (No Move)
         SendClicksOnly = 2, // Only Send Mouse Clicks
         Disabled = 3
+    }
+
+    public enum ClickAPI
+    {
+        None = 0,
+        SendInput = 1,
+        SendMessage = 2,
+        SendNotifyMessage = 3,
+    }
+
+    public enum BacksideTexture
+    {
+        None = 0,
+        Green = 1,
+        Blue = 2,
+        Purple = 3,
+        Red = 4,
+        Orange = 5,
+        Yellow = 6,
     }
 
     public enum OutlineColor

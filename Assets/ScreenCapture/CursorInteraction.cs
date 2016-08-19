@@ -987,7 +987,6 @@ public class CursorInteraction
         OEM_CLEAR = 0,
     }
     #endregion
-
 #pragma warning restore 649
     
     public static void PostMessageSafe(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
@@ -1000,15 +999,43 @@ public class CursorInteraction
         }
     }
 
-    private static bool _clicking;
-
-    // Click the cursor where it is
-    public static void ClickOnPointAtCursor(IntPtr wndHandle, SimulationMode mode = SimulationMode.LeftClick)
+    public static void ClickSendInput(IntPtr wndHandle, SimulationMode mode, DesktopPortalController.ClickAPI api, Point clickPoint)
     {
-        // Calculate current cursor pos
-        var clientPoint = new Point(Cursor.Position.X, Cursor.Position.Y);
-        ScreenToClient(wndHandle, ref clientPoint);
+        Point oldPos;
+        IntPtr lPrm;
+        switch (api)
+        {
+            case DesktopPortalController.ClickAPI.None:
+                break;
+            case DesktopPortalController.ClickAPI.SendInput:
+                SendInput(mode);
+                break;
+            case DesktopPortalController.ClickAPI.SendMessage:
+                lPrm = GetLParam(wndHandle, clickPoint, out oldPos);
+                SendMessage(wndHandle, mode, lPrm);
+                Cursor.Position = oldPos;
+                break;
+            case DesktopPortalController.ClickAPI.SendNotifyMessage:
+                lPrm = GetLParam(wndHandle, clickPoint, out oldPos);
+                SendNotifyMessage(wndHandle, mode, lPrm);
+                Cursor.Position = oldPos;
+                break;
+            default:
+                throw new ArgumentOutOfRangeException("api", api, null);
+        }
+    }
+
+    private static IntPtr GetLParam(IntPtr wndHandle, Point clientPoint, out Point oldPos)
+    {
+        oldPos = Cursor.Position;
         IntPtr lParam = (IntPtr)((clientPoint.Y << 16) | clientPoint.X);
+        ClientToScreen(wndHandle, ref clientPoint);
+        Cursor.Position = new Point(clientPoint.X, clientPoint.Y);
+        return lParam;
+    }
+
+    private static void SendInput(SimulationMode mode)
+    {
         INPUT[] pInputs;
         // Click Mouse
         switch (mode)
@@ -1016,15 +1043,14 @@ public class CursorInteraction
             case SimulationMode.RightClick:
                 pInputs = new[]
                 {
-                    new INPUT() { type = InputType.MOUSE, U = new InputUnion() { mi = new MOUSEINPUT() { dwFlags = MOUSEEVENTF.RIGHTDOWN, } } },
-                    new INPUT() { type = InputType.MOUSE, U = new InputUnion() { mi = new MOUSEINPUT() { dwFlags = MOUSEEVENTF.RIGHTUP, } } } };
+                    new INPUT() {type = InputType.MOUSE, U = new InputUnion() {mi = new MOUSEINPUT() {dwFlags = MOUSEEVENTF.RIGHTDOWN,}}}, new INPUT() {type = InputType.MOUSE, U = new InputUnion() {mi = new MOUSEINPUT() {dwFlags = MOUSEEVENTF.RIGHTUP,}}}
+                };
                 break;
             case SimulationMode.LeftClick:
             case SimulationMode.DoubleClick:
-                pInputs = new []
+                pInputs = new[]
                 {
-                    new INPUT() { type = InputType.MOUSE, U = new InputUnion() { mi = new MOUSEINPUT() { dwFlags = MOUSEEVENTF.LEFTDOWN, } } },
-                    new INPUT() { type = InputType.MOUSE, U = new InputUnion() { mi = new MOUSEINPUT() { dwFlags = MOUSEEVENTF.LEFTUP, } } }
+                    new INPUT() {type = InputType.MOUSE, U = new InputUnion() {mi = new MOUSEINPUT() {dwFlags = MOUSEEVENTF.LEFTDOWN,}}}, new INPUT() {type = InputType.MOUSE, U = new InputUnion() {mi = new MOUSEINPUT() {dwFlags = MOUSEEVENTF.LEFTUP,}}}
                 };
                 break;
             default:
@@ -1032,16 +1058,10 @@ public class CursorInteraction
         }
         if (pInputs.Length > 0)
             SendInput((uint)pInputs.Length, pInputs, INPUT.Size);
-        _clicking = true;
     }
 
-    // Click on a window even if it's in the background
-    public static void ClickOnPoint(IntPtr wndHandle, Point clientPoint, SimulationMode mode = SimulationMode.LeftClick)
+    private static void SendMessage(IntPtr wndHandle, SimulationMode mode, IntPtr lParam)
     {
-        var oldPos = Cursor.Position;
-        IntPtr lParam = (IntPtr) ((clientPoint.Y << 16) | clientPoint.X);
-        ClientToScreen(wndHandle, ref clientPoint);
-        Cursor.Position = new Point(clientPoint.X, clientPoint.Y);
         switch (mode)
         {
             case SimulationMode.LeftClick:
@@ -1059,16 +1079,27 @@ public class CursorInteraction
             default:
                 throw new ArgumentOutOfRangeException("mode", mode, null);
         }
-        Cursor.Position = oldPos;
     }
 
-    // Release click - not currently used
-    public static void ReleaseClick(IntPtr wndHandle)
+    private static void SendNotifyMessage(IntPtr wndHandle, SimulationMode mode, IntPtr lParam)
     {
-        var clientPoint = new Point(Cursor.Position.X, Cursor.Position.Y);
-        ScreenToClient(wndHandle, ref clientPoint);
-        SendNotifyMessage(wndHandle, (uint) MouseEvents.WM_LBUTTONUP, UIntPtr.Zero, (IntPtr) ((clientPoint.Y << 16) | clientPoint.X));
-        _clicking = false;
+        switch (mode)
+        {
+            case SimulationMode.LeftClick:
+                SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONDOWN, (UIntPtr)1, lParam);
+                SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONUP, UIntPtr.Zero, lParam);
+                break;
+            case SimulationMode.RightClick:
+                SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_RBUTTONDOWN, (UIntPtr)2, lParam);
+                SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_RBUTTONUP, UIntPtr.Zero, lParam);
+                break;
+            case SimulationMode.DoubleClick:
+                SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONDBLCLK, (UIntPtr)1, lParam);
+                SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONUP, UIntPtr.Zero, lParam);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException("mode", mode, null);
+        }
     }
 
     private static IntPtr lastHandle;
@@ -1082,7 +1113,7 @@ public class CursorInteraction
         IntPtr lParam = (IntPtr) ((clientPoint.Y << 16) | clientPoint.X);
         ClientToScreen(wndHandle, ref clientPoint);
         Cursor.Position = new Point(clientPoint.X, clientPoint.Y);
-        SendNotifyMessage(wndHandle, (uint) MouseEvents.WM_MOUSEMOVE, _clicking ? (UIntPtr) 1 : UIntPtr.Zero, lParam);
+        SendNotifyMessage(wndHandle, (uint) MouseEvents.WM_MOUSEMOVE, UIntPtr.Zero, lParam);
     }
 
     public enum SimulationMode
