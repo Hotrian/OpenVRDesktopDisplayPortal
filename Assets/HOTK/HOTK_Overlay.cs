@@ -104,7 +104,6 @@ public class HOTK_Overlay : HOTK_OverlayBase
         get { return _lockedGaze; }
     }
 
-
     private bool _lockGaze; // If true, _lockedGaze will be used instead of actually testing for gaze
     private bool _lockedGaze; // If _lockGaze, this value is forced instead of testing for gaze
 

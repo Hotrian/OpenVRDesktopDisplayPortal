@@ -1,5 +1,6 @@
-﻿using System.Security.Cryptography.X509Certificates;
-
+﻿/// <summary>
+/// This class stores settings for each Target Application
+/// </summary>
 [System.Serializable]
 public class WindowSettings
 {

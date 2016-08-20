@@ -10,11 +10,13 @@ public class ProgramSettings
 
     public string LastProfile;
 }
-
+/// <summary>
+/// This class stores settings for each 'Profile'
+/// </summary>
 [System.Serializable]
 public class PortalSettings
 {
-    public const uint CurrentSaveVersion = 2;
+    public const uint CurrentSaveVersion = 3;
 
     public uint SaveFileVersion;
     
@@ -45,6 +47,8 @@ public class PortalSettings
     public float OutlineScalingG;
     public float OutlineScalingB;
     public float OutlineScalingA;
+
+    public DesktopPortalController.BacksideTexture Backside;
 }
 
 public static class PortalSettingsSaver

@@ -6,7 +6,6 @@ using System.Windows.Forms;
 
 public class CursorInteraction
 {
-
     [DllImport("user32.dll")]
     static extern bool ClientToScreen(IntPtr hWnd, ref Point lpPoint);
 
@@ -1114,6 +1113,13 @@ public class CursorInteraction
         ClientToScreen(wndHandle, ref clientPoint);
         Cursor.Position = new Point(clientPoint.X, clientPoint.Y);
         SendNotifyMessage(wndHandle, (uint) MouseEvents.WM_MOUSEMOVE, UIntPtr.Zero, lParam);
+    }
+
+    public static Point GetCursorPosRelativeWindow(IntPtr wndHandle)
+    {
+        var clientPoint = Cursor.Position;
+        ScreenToClient(wndHandle, ref clientPoint);
+        return clientPoint;
     }
 
     public enum SimulationMode

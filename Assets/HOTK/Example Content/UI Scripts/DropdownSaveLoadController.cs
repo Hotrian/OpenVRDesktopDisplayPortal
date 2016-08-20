@@ -141,6 +141,11 @@ public class DropdownSaveLoadController : MonoBehaviour
             settings.OutlineScalingR =  0f; settings.OutlineScalingG =  0f; settings.OutlineScalingB =  1f; settings.OutlineScalingA = 1f;
             settings.SaveFileVersion = 2;
         }
+        if (settings.SaveFileVersion == 2)
+        {
+            settings.Backside = DesktopPortalController.BacksideTexture.Blue;
+            settings.SaveFileVersion = 3;
+        }
         DesktopPortalController.Instance.ScreenOffsetPerformed = settings.ScreenOffsetPerformed;
 
         // Recenter XYZ Sliders
@@ -190,6 +195,8 @@ public class DropdownSaveLoadController : MonoBehaviour
         DesktopPortalController.Instance.OutlineColorAiming =   new Color(settings.OutlineAimingR,      settings.OutlineAimingG,    settings.OutlineAimingB,    settings.OutlineAimingA);
         DesktopPortalController.Instance.OutlineColorTouching = new Color(settings.OutlineTouchingR,    settings.OutlineTouchingG,  settings.OutlineTouchingB,  settings.OutlineTouchingA);
         DesktopPortalController.Instance.OutlineColorScaling =  new Color(settings.OutlineScalingR,     settings.OutlineScalingG,   settings.OutlineScalingB,   settings.OutlineScalingA);
+
+        DesktopPortalController.Instance.CurrentBacksideTexture = settings.Backside;
 
         ColorPicker.LoadButtonColors();
     }
@@ -286,6 +293,8 @@ public class DropdownSaveLoadController : MonoBehaviour
             settings.OutlineScalingB = DesktopPortalController.Instance.OutlineColorScaling.b;
             settings.OutlineScalingA = DesktopPortalController.Instance.OutlineColorScaling.a;
 
+            settings.Backside = DesktopPortalController.Instance.CurrentBacksideTexture;
+
             PortalSettingsSaver.SaveProfiles();
         }
     }
@@ -347,6 +356,8 @@ public class DropdownSaveLoadController : MonoBehaviour
             OutlineScalingG = DesktopPortalController.Instance.OutlineColorScaling.g,
             OutlineScalingB = DesktopPortalController.Instance.OutlineColorScaling.b,
             OutlineScalingA = DesktopPortalController.Instance.OutlineColorScaling.a,
+
+            Backside = DesktopPortalController.Instance.CurrentBacksideTexture,
         };
     }
 

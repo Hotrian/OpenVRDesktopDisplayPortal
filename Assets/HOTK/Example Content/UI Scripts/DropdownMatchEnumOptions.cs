@@ -52,6 +52,21 @@ public class DropdownMatchEnumOptions : MonoBehaviour
                 if (DesktopPortalController.Instance.SelectedWindowSettings != null)
                     Dropdown.value = strings.IndexOf(FramerateModeNames[(int)DesktopPortalController.Instance.SelectedWindowSettings.framerateMode]);
                 break;
+            case EnumSelection.BacksideTexture:
+                strings.AddRange(from object e in Enum.GetValues(typeof(DesktopPortalController.BacksideTexture)) select e.ToString());
+                Dropdown.AddOptions(strings);
+                Dropdown.value = strings.IndexOf(DesktopPortalController.Instance.CurrentBacksideTexture.ToString());
+                break;
+            case EnumSelection.ClickAPI:
+                strings.AddRange(from object e in Enum.GetValues(typeof(DesktopPortalController.ClickAPI)) select e.ToString());
+                Dropdown.AddOptions(strings);
+                if (DesktopPortalController.Instance.enabled &&
+                    DesktopPortalController.Instance.SelectedWindowSettings != null)
+                {
+                    Dropdown.value = strings.IndexOf(DesktopPortalController.Instance.SelectedWindowSettings.clickAPI.ToString());
+                    Dropdown.interactable = true;
+                }
+                break;
             default:
                 throw new ArgumentOutOfRangeException();
         }
@@ -115,6 +130,12 @@ public class DropdownMatchEnumOptions : MonoBehaviour
                 var index = CaptureModeNames.IndexOf(Dropdown.options[Dropdown.value].text);
                 DesktopPortalController.Instance.SelectedWindowSettings.captureMode = index == -1 ? DesktopPortalController.CaptureMode.GdiDirect : (DesktopPortalController.CaptureMode)index; // Fallback to GDI Direct if they were using a now disabled capture method
                 break;
+            case EnumSelection.BacksideTexture:
+                DesktopPortalController.Instance.CurrentBacksideTexture = (DesktopPortalController.BacksideTexture) Dropdown.value;
+                break;
+            case EnumSelection.ClickAPI:
+                    DesktopPortalController.Instance.SetClickAPI((DesktopPortalController.ClickAPI) Dropdown.value);
+                break;
             default:
                 throw new ArgumentOutOfRangeException();
         }
@@ -122,6 +143,7 @@ public class DropdownMatchEnumOptions : MonoBehaviour
 
     public void SetToOption(string text, bool ignoreChange = false)
     {
+        if (Dropdown.options[Dropdown.value].text == text) return;
         if (ignoreChange)
             _ignoreNextChange = true;
         for (var i = 0; i < Dropdown.options.Count; i ++)
@@ -138,7 +160,9 @@ public class DropdownMatchEnumOptions : MonoBehaviour
         AttachmentPoint,
         AnimationType,
         Framerate,
-        CaptureMode
+        CaptureMode,
+        BacksideTexture,
+        ClickAPI,
     }
 
     public static readonly List<string> CaptureModeNames = new List<string>

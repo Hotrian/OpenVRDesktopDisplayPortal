@@ -19,11 +19,7 @@ using Image = UnityEngine.UI.Image;
 // ReSharper disable once CheckNamespace
 public class DesktopPortalController : MonoBehaviour
 {
-    #region Public Variables
-    public static DesktopPortalController Instance
-    {
-        get { return _instance ?? (_instance = FindObjectOfType<DesktopPortalController>()); }
-    }
+    #region Unity Variables
     public Camera RenderCamera; // A Render Camera used to capture the texture drawn to the overlay
     public Texture DefaultTexture; // Texture drawn to the overlay when there is nothing else to draw
     public DropdownMatchEnumOptions CaptureModeDropdown; // A Dropdown used to select the current Capture Mode
@@ -38,7 +34,7 @@ public class DesktopPortalController : MonoBehaviour
     public Material OutlineMaterial; // Material used for the outline
 
     // Input Fields used to control cropping and window size
-    public InputField OffsetLeftField; 
+    public InputField OffsetLeftField;
     public InputField OffsetTopField;
     public InputField OffsetRightField;
     public InputField OffsetBottomField;
@@ -48,7 +44,7 @@ public class DesktopPortalController : MonoBehaviour
     public HOTK_Overlay Overlay; // The Overlay we are manipulating
     public Material DisplayMaterial; // The Material we are drawing to
     public Dropdown ApplicationDropdown; // A Dropdown used to select the Target Application
-    public GameObject DisplayQuad; // A Quad used to show the output in the Desktop Window, which is captured by the Render Camera
+    public GameObject DisplayQuad; // A Quad used to show the output in the Desktop Window, which is captured by a RenderCamera
 
     // Used to map Position Sliders
     public OffsetMatchInputField OffsetX;
@@ -60,11 +56,40 @@ public class DesktopPortalController : MonoBehaviour
     public RotationMatchSlider OffsetRy;
     public RotationMatchSlider OffsetRz;
 
+    public GameObject CursorGameObject; // A GameObject which displays our Cursor Sprite
+
+    public Text FpsCounter; // A Text that shows the current FPS
+    public Text ResolutionDisplay; // A Text that shows the current Resolution
+    public ScaleMatchInputField ScaleField;
+    public ScaleMatchInputField Scale2Field;
+
+    public InputField ZInputField;
+
+    public OffsetMatchSlider XSlider;
+    public OffsetMatchSlider YSlider;
+    public OffsetMatchSlider ZSlider;
+
+    public HOTK_CompanionOverlay Backside;
+    public GameObject BacksideDisplayQuad; // A Quad used to show the Backside, which is captured by a RenderCamera
+    public Material BacksideDisplayMaterial; // The Material we are drawing to
+    public Texture[] BacksideTextures;
+
+    public DropdownMatchEnumOptions ClickAPIDropdown;
+    public Toggle WindowOnTopToggle;
+    public Toggle MoveDesktopCursorToggle;
+    public Toggle ShowDesktopCursorToggle;
+    public DropdownMatchEnumOptions BacksideDropdown;
+    #endregion
+
+    #region Public Variables
+    public static DesktopPortalController Instance
+    {
+        get { return _instance ?? (_instance = FindObjectOfType<DesktopPortalController>()); }
+    }
     public RenderTexture RenderTexture // A Render Texture used to copy the DisplayQuad into VR with an Outline
     {
         get { return _renderTexture ?? (_renderTexture = NewRenderTexture()); }
     }
-    public GameObject CursorGameObject; // A GameObject which displays our Cursor Sprite
     public SpriteRenderer CursorRenderer // Cache and return the SpriteRenderer for the Cursor if we can
     {
         get
@@ -80,10 +105,6 @@ public class DesktopPortalController : MonoBehaviour
     }
     [HideInInspector]
     public bool ScreenOffsetPerformed;
-    public Text FpsCounter; // A Text that shows the current FPS
-    public Text ResolutionDisplay; // A Text that shows the current Resolution
-    public ScaleMatchInputField ScaleField;
-    public ScaleMatchInputField Scale2Field;
     [HideInInspector]
     public string SelectedWindowTitle;
 
@@ -140,13 +161,18 @@ public class DesktopPortalController : MonoBehaviour
         }
     }
 
-    public InputField ZInputField;
-
-    public OffsetMatchSlider XSlider;
-    public OffsetMatchSlider YSlider;
-    public OffsetMatchSlider ZSlider;
+    public BacksideTexture CurrentBacksideTexture
+    {
+        get { return _currentBacksideTexture; }
+        set
+        {
+            _currentBacksideTexture = value;
+            SetBacksideTexture(_currentBacksideTexture);
+        }
+    }
     public WindowSettings SelectedWindowSettings; // The WindowSettings of the current Target Application
     #endregion
+
     #region Private Variables
     // Getter / Setter vars
     private static DesktopPortalController _instance;
@@ -202,6 +228,9 @@ public class DesktopPortalController : MonoBehaviour
     private Color _outlineColorTouching = Color.green;
     private Color _outlineColorScaling = Color.blue;
     private OutlineColor _currentMode = OutlineColor.Default;
+
+    private BacksideTexture _currentBacksideTexture = BacksideTexture.Blue;
+
     // Cache these fractions so they aren't constantly recalculated
     private static readonly float[] FramerateFractions = {
         1f, 1f/2f, 1f/5f, 1f/10f, 1/15f, 1/24f, 1f/30f, 1f/60f, 1f/90f, 1f/120f
@@ -213,11 +242,8 @@ public class DesktopPortalController : MonoBehaviour
     #region Unity Methods
     public void OnEnable()
     {
-        #pragma warning disable 0168
-        // ReSharper disable once UnusedVariable
         var svr = SteamVR.instance; // Init the SteamVR drivers
-        #pragma warning restore 0168
-        Debug.Log("Connected to: " + SteamVR.instance.hmd_TrackingSystemName); // Force SteamVR Plugin to Init
+        Debug.Log("Connected to: " + svr.hmd_TrackingSystemName);
         if (Overlay == null) return;
         SaveLoad.Load();
         Overlay.OverlayTexture = RenderTexture;
@@ -275,6 +301,8 @@ public class DesktopPortalController : MonoBehaviour
         OutlineMaterial.color = new Color(OutlineMaterial.color.r, OutlineMaterial.color.g, OutlineMaterial.color.b, 0f);
     }
 
+    private int _trueCursorRelativeX;
+    private int _trueCursorRelativeY;
     public void Update()
     {
         if (_showFps)
@@ -305,6 +333,39 @@ public class DesktopPortalController : MonoBehaviour
                 _fpsTimer.Start();
             }
             _fpsCount++;
+        }
+        if (SelectedWindowSettings != null)
+        {
+            if (_selectedWindow != IntPtr.Zero)
+            {
+                if (SelectedWindowSettings.clickShowDesktopCursor)
+                {
+                    var p = CursorInteraction.GetCursorPosRelativeWindow(_selectedWindow);
+                    if (_trueCursorRelativeX != p.X || _trueCursorRelativeY != p.Y)
+                    {
+                        _trueCursorRelativeX = p.X;
+                        _trueCursorRelativeY = p.Y;
+                        if (_grabbingOverlay == null && _touchingOverlay == null && _aimingAtOverlay == null)
+                        {
+                            if (p.X >= 0 && p.X <= _currentWindowWidth && p.Y >= 0 && p.Y <= _currentWindowHeight)
+                            {
+                                CursorGameObject.transform.localPosition = new Vector3(-(_currentWindowWidth / 2f) + p.X, (_currentWindowHeight / 2f) - p.Y, -0.5f);
+                                StartCoroutine("GoToAimingColor");
+                            }
+                            else StartCoroutine("GoToDefaultColor");
+                        }
+                    }
+                }else if (_trueCursorRelativeX != -1 || _trueCursorRelativeY != -1)
+                {
+                    _trueCursorRelativeX = -1;
+                    _trueCursorRelativeY = -1;
+                    
+                    if (_grabbingOverlay == null && _touchingOverlay == null && _aimingAtOverlay == null)
+                    {
+                        StartCoroutine("GoToDefaultColor");
+                    }
+                }
+            }
         }
         if (_scalingOverlay != null)
         {
@@ -535,7 +596,6 @@ public class DesktopPortalController : MonoBehaviour
         }
     }
     
-    // ReSharper disable once UnusedParameter.Local
     private void ClickApplication(HOTK_TrackedDevice tracker, CursorInteraction.SimulationMode mode)
     {
         if (_selectedWindow == IntPtr.Zero) return;
@@ -648,7 +708,7 @@ public class DesktopPortalController : MonoBehaviour
         ShowCursor();
         while (t < 1f)
         {
-            t += 0.25f;
+            t += 0.1f;
             if (CursorRenderer != null) CursorRenderer.color = new Color(CursorRenderer.color.r, CursorRenderer.color.g, CursorRenderer.color.b, t);
             yield return new WaitForSeconds(0.025f);
         }
@@ -660,7 +720,7 @@ public class DesktopPortalController : MonoBehaviour
         var t = CursorRenderer.color.a;
         while (t > 0)
         {
-            t -= 0.25f;
+            t -= 0.1f;
             if (CursorRenderer != null) CursorRenderer.color = new Color(CursorRenderer.color.r, CursorRenderer.color.g, CursorRenderer.color.b, t);
             yield return new WaitForSeconds(0.025f);
         }
@@ -796,6 +856,12 @@ public class DesktopPortalController : MonoBehaviour
         }
     }
 
+    private IEnumerator UpdateBacksideAfterFrame()
+    {
+        yield return new WaitForEndOfFrame();
+        Backside.DoUpdateOverlay();
+    }
+
     // ReSharper restore UnusedMember.Local
 
     #endregion
@@ -852,6 +918,24 @@ public class DesktopPortalController : MonoBehaviour
             ZSlider.OnOffsetChanged();
             ZInputField.text = v.ToString(CultureInfo.InvariantCulture);
         }
+    }
+
+    private void SetBacksideTexture(BacksideTexture texture)
+    {
+        if (BacksideDropdown != null)
+            BacksideDropdown.SetToOption(texture.ToString(), true);
+        if (texture == BacksideTexture.None)
+        {
+            Backside.gameObject.SetActive(false);
+            BacksideDisplayQuad.gameObject.SetActive(false);
+            return;
+        }
+        BacksideDisplayMaterial.mainTexture = BacksideTextures[(int)texture - 1];
+        BacksideDisplayQuad.gameObject.SetActive(true);
+        if (Backside.gameObject.activeSelf)
+            StartCoroutine(UpdateBacksideAfterFrame());
+        else
+            Backside.gameObject.SetActive(true);
     }
 
     #region UI Methods
@@ -1219,6 +1303,11 @@ public class DesktopPortalController : MonoBehaviour
         SizeLockSprite.sprite = settings.windowSizeLocked ? LockSprite : UnlockSprite;
         CaptureModeDropdown.SetToOption(DropdownMatchEnumOptions.CaptureModeNames[(int) settings.captureMode], true);
         FramerateModeDropdown.SetToOption(DropdownMatchEnumOptions.FramerateModeNames[(int) settings.framerateMode], true);
+
+        ClickAPIDropdown.Dropdown.interactable = true;
+        ClickAPIDropdown.SetToOption(settings.clickAPI.ToString(), true);
+        SetClickAPIInternal(settings);
+
         return settings;
     }
 
@@ -1258,6 +1347,70 @@ public class DesktopPortalController : MonoBehaviour
             default:
                 throw new ArgumentOutOfRangeException("mode", mode, null);
         }
+    }
+
+    public void SetClickAPI(ClickAPI api)
+    {
+        if (SelectedWindowSettings == null) return;
+        SelectedWindowSettings.clickAPI = api;
+        SetClickAPIInternal(SelectedWindowSettings);
+    }
+
+    private void SetClickAPIInternal(WindowSettings settings)
+    {
+        if (settings == null) return;
+        switch (settings.clickAPI)
+        {
+            case ClickAPI.None:
+                WindowOnTopToggle.interactable = false;
+                MoveDesktopCursorToggle.interactable = false;
+                ShowDesktopCursorToggle.interactable = _selectedWindow != IntPtr.Zero;
+                WindowOnTopToggle.isOn = false;
+                MoveDesktopCursorToggle.isOn = false;
+                ShowDesktopCursorToggle.isOn = settings.clickShowDesktopCursor;
+                break;
+            case ClickAPI.SendInput:
+                WindowOnTopToggle.interactable = false;
+                MoveDesktopCursorToggle.interactable = false;
+                ShowDesktopCursorToggle.interactable = true;
+                WindowOnTopToggle.isOn = true;
+                MoveDesktopCursorToggle.isOn = true;
+                ShowDesktopCursorToggle.isOn = settings.clickShowDesktopCursor;
+                break;
+            case ClickAPI.SendMessage:
+                WindowOnTopToggle.interactable = true;
+                MoveDesktopCursorToggle.interactable = true;
+                ShowDesktopCursorToggle.interactable = true;
+                WindowOnTopToggle.isOn = settings.clickForceWindowOnTop;
+                MoveDesktopCursorToggle.isOn = settings.clickMoveDesktopCursor;
+                ShowDesktopCursorToggle.isOn = settings.clickShowDesktopCursor;
+                break;
+            case ClickAPI.SendNotifyMessage:
+                WindowOnTopToggle.interactable = true;
+                MoveDesktopCursorToggle.interactable = true;
+                ShowDesktopCursorToggle.interactable = true;
+                WindowOnTopToggle.isOn = settings.clickForceWindowOnTop;
+                MoveDesktopCursorToggle.isOn = settings.clickMoveDesktopCursor;
+                ShowDesktopCursorToggle.isOn = settings.clickShowDesktopCursor;
+                break;
+            default:
+                throw new ArgumentOutOfRangeException("api", settings.clickAPI, null);
+        }
+    }
+
+    public void ToggleWindowOnTop()
+    {
+        SelectedWindowSettings.clickForceWindowOnTop = WindowOnTopToggle.isOn;
+    }
+
+    public void ToggleMoveCursor()
+    {
+        SelectedWindowSettings.clickMoveDesktopCursor = MoveDesktopCursorToggle.isOn;
+    }
+
+    public void ToggleShowCursor()
+    {
+        SelectedWindowSettings.clickShowDesktopCursor = ShowDesktopCursorToggle.isOn;
     }
 
     #endregion
