@@ -146,6 +146,12 @@ public class DropdownSaveLoadController : MonoBehaviour
             settings.Backside = DesktopPortalController.BacksideTexture.Blue;
             settings.SaveFileVersion = 3;
         }
+        if (settings.SaveFileVersion == 3)
+        {
+            settings.GrabEnabled = true;
+            settings.ScaleEnabled = true;
+            settings.SaveFileVersion = 4;
+        }
         DesktopPortalController.Instance.ScreenOffsetPerformed = settings.ScreenOffsetPerformed;
 
         // Recenter XYZ Sliders
@@ -197,6 +203,9 @@ public class DropdownSaveLoadController : MonoBehaviour
         DesktopPortalController.Instance.OutlineColorScaling =  new Color(settings.OutlineScalingR,     settings.OutlineScalingG,   settings.OutlineScalingB,   settings.OutlineScalingA);
 
         DesktopPortalController.Instance.CurrentBacksideTexture = settings.Backside;
+
+        DesktopPortalController.Instance.GrabEnabledToggle.isOn = settings.GrabEnabled;
+        DesktopPortalController.Instance.ScaleEnabledToggle.isOn = settings.ScaleEnabled;
 
         ColorPicker.LoadButtonColors();
     }
@@ -295,6 +304,9 @@ public class DropdownSaveLoadController : MonoBehaviour
 
             settings.Backside = DesktopPortalController.Instance.CurrentBacksideTexture;
 
+            settings.GrabEnabled = DesktopPortalController.Instance.GrabEnabledToggle.isOn;
+            settings.ScaleEnabled = DesktopPortalController.Instance.ScaleEnabledToggle.isOn;
+
             PortalSettingsSaver.SaveProfiles();
         }
     }
@@ -358,6 +370,9 @@ public class DropdownSaveLoadController : MonoBehaviour
             OutlineScalingA = DesktopPortalController.Instance.OutlineColorScaling.a,
 
             Backside = DesktopPortalController.Instance.CurrentBacksideTexture,
+
+            GrabEnabled = DesktopPortalController.Instance.GrabEnabledToggle.isOn,
+            ScaleEnabled = DesktopPortalController.Instance.ScaleEnabledToggle.isOn,
         };
     }
 

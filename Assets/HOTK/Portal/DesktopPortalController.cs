@@ -78,7 +78,10 @@ public class DesktopPortalController : MonoBehaviour
     public Toggle WindowOnTopToggle;
     public Toggle MoveDesktopCursorToggle;
     public Toggle ShowDesktopCursorToggle;
+    public Toggle DesktopCursorWindowOnTopToggle;
     public DropdownMatchEnumOptions BacksideDropdown;
+    public Toggle GrabEnabledToggle;
+    public Toggle ScaleEnabledToggle;
     #endregion
 
     #region Public Variables
@@ -170,7 +173,9 @@ public class DesktopPortalController : MonoBehaviour
             SetBacksideTexture(_currentBacksideTexture);
         }
     }
-    public WindowSettings SelectedWindowSettings; // The WindowSettings of the current Target Application
+
+    public WindowSettings SelectedWindowSettings { get; set; } // The WindowSettings of the current Target Application
+
     #endregion
 
     #region Private Variables
@@ -303,6 +308,7 @@ public class DesktopPortalController : MonoBehaviour
 
     private int _trueCursorRelativeX;
     private int _trueCursorRelativeY;
+    private float _lastTrueCursorMoveTime;
     public void Update()
     {
         if (_showFps)
@@ -345,17 +351,28 @@ public class DesktopPortalController : MonoBehaviour
                     {
                         _trueCursorRelativeX = p.X;
                         _trueCursorRelativeY = p.Y;
+                        _lastTrueCursorMoveTime = Time.time;
                         if (_grabbingOverlay == null && _touchingOverlay == null && _aimingAtOverlay == null)
                         {
                             if (p.X >= 0 && p.X <= _currentWindowWidth && p.Y >= 0 && p.Y <= _currentWindowHeight)
                             {
                                 CursorGameObject.transform.localPosition = new Vector3(-(_currentWindowWidth / 2f) + p.X, (_currentWindowHeight / 2f) - p.Y, -0.5f);
+                                if (SelectedWindowSettings.clickDesktopCursorForceWindowOnTop)
+                                    Win32Stuff.SetForegroundWindow(_selectedWindow);
                                 StartCoroutine("GoToAimingColor");
                             }
                             else StartCoroutine("GoToDefaultColor");
                         }
                     }
-                }else if (_trueCursorRelativeX != -1 || _trueCursorRelativeY != -1)
+                    else if (Time.time - _lastTrueCursorMoveTime > 3.0f)
+                    {
+                        if (_grabbingOverlay == null && _touchingOverlay == null && _aimingAtOverlay == null)
+                        {
+                            StartCoroutine("GoToDefaultColor");
+                        }
+                    }
+                }
+                else if (_trueCursorRelativeX != -1 || _trueCursorRelativeY != -1)
                 {
                     _trueCursorRelativeX = -1;
                     _trueCursorRelativeY = -1;
@@ -440,10 +457,10 @@ public class DesktopPortalController : MonoBehaviour
             {
                 _aimingAtOverlay = tracker;
                 _didHitOverlay = true;
-                if (SelectedWindowSettings.clickForceWindowOnTop)
+                if (WindowOnTopToggle.isOn)
                     Win32Stuff.SetForegroundWindow(_selectedWindow);
 
-                if (SelectedWindowSettings.clickMoveDesktopCursor)
+                if (MoveDesktopCursorToggle.isOn)
                 {
                     CursorInteraction.MoveOverWindow(_selectedWindow, new Point((int) v2.x, (int) v2.y));
                 }else
@@ -501,21 +518,27 @@ public class DesktopPortalController : MonoBehaviour
         {
             if (_grabbingOverlay == null)
             {
-                _grabbingOverlay = tracker;
-                _lastOverlayParent = Overlay.gameObject.transform.parent;
-                _grabbingOffset = Overlay.AnchorOffset - _grabbingOverlay.transform.position;
-                OverlayOffsetTracker.transform.parent = _grabbingOverlay.transform;
-                OverlayOffsetTracker.transform.localPosition = _grabbingOffset;
-                OverlayOffsetTracker.transform.rotation = _grabbingOverlay.transform.rotation;
+                if (GrabEnabledToggle.isOn)
+                {
+                    _grabbingOverlay = tracker;
+                    _lastOverlayParent = Overlay.gameObject.transform.parent;
+                    _grabbingOffset = Overlay.AnchorOffset - _grabbingOverlay.transform.position;
+                    OverlayOffsetTracker.transform.parent = _grabbingOverlay.transform;
+                    OverlayOffsetTracker.transform.localPosition = _grabbingOffset;
+                    OverlayOffsetTracker.transform.rotation = _grabbingOverlay.transform.rotation;
+                }
             }
             else if (_scalingOverlay == null)
             {
-                _scalingOverlay = tracker;
-                _scalingScale2 = Overlay.IsBeingGazed;
-                Overlay.LockGaze(_scalingScale2); // Lock the Gaze Detection on the Overlay to it's current state
-                _scalingBaseScale = _scalingScale2 ? Overlay.Scale2 : Overlay.Scale;
-                _scalingBaseDistance = Vector3.Distance(_grabbingOverlay.transform.position, _scalingOverlay.transform.position);
-                StartCoroutine("GoToScalingColor");
+                if (ScaleEnabledToggle.isOn)
+                {
+                    _scalingOverlay = tracker;
+                    _scalingScale2 = Overlay.IsBeingGazed;
+                    Overlay.LockGaze(_scalingScale2); // Lock the Gaze Detection on the Overlay to it's current state
+                    _scalingBaseScale = _scalingScale2 ? Overlay.Scale2 : Overlay.Scale;
+                    _scalingBaseDistance = Vector3.Distance(_grabbingOverlay.transform.position, _scalingOverlay.transform.position);
+                    StartCoroutine("GoToScalingColor");
+                }
             }
         }
         else
@@ -1245,7 +1268,7 @@ public class DesktopPortalController : MonoBehaviour
             Debug.Log("Config [" + configName + "] not found.");
             settings = new WindowSettings {SaveFileVersion = WindowSettings.CurrentSaveVersion};
             SaveLoad.SavedSettings.Add(configName, settings);
-        }
+        }else Debug.Log("Config [" + configName + "] Loaded.");
 
         if (settings.SaveFileVersion == 0)
         {
@@ -1365,33 +1388,45 @@ public class DesktopPortalController : MonoBehaviour
                 WindowOnTopToggle.interactable = false;
                 MoveDesktopCursorToggle.interactable = false;
                 ShowDesktopCursorToggle.interactable = _selectedWindow != IntPtr.Zero;
+                DesktopCursorWindowOnTopToggle.interactable = _selectedWindow != IntPtr.Zero && settings.clickShowDesktopCursor;
+
                 WindowOnTopToggle.isOn = false;
                 MoveDesktopCursorToggle.isOn = false;
                 ShowDesktopCursorToggle.isOn = settings.clickShowDesktopCursor;
+                DesktopCursorWindowOnTopToggle.isOn = settings.clickDesktopCursorForceWindowOnTop;
                 break;
             case ClickAPI.SendInput:
                 WindowOnTopToggle.interactable = false;
                 MoveDesktopCursorToggle.interactable = false;
                 ShowDesktopCursorToggle.interactable = true;
+                DesktopCursorWindowOnTopToggle.interactable = settings.clickShowDesktopCursor;
+
                 WindowOnTopToggle.isOn = true;
                 MoveDesktopCursorToggle.isOn = true;
                 ShowDesktopCursorToggle.isOn = settings.clickShowDesktopCursor;
+                DesktopCursorWindowOnTopToggle.isOn = settings.clickDesktopCursorForceWindowOnTop;
                 break;
             case ClickAPI.SendMessage:
                 WindowOnTopToggle.interactable = true;
                 MoveDesktopCursorToggle.interactable = true;
                 ShowDesktopCursorToggle.interactable = true;
+                DesktopCursorWindowOnTopToggle.interactable = settings.clickShowDesktopCursor;
+
                 WindowOnTopToggle.isOn = settings.clickForceWindowOnTop;
                 MoveDesktopCursorToggle.isOn = settings.clickMoveDesktopCursor;
                 ShowDesktopCursorToggle.isOn = settings.clickShowDesktopCursor;
+                DesktopCursorWindowOnTopToggle.isOn = settings.clickDesktopCursorForceWindowOnTop;
                 break;
             case ClickAPI.SendNotifyMessage:
                 WindowOnTopToggle.interactable = true;
                 MoveDesktopCursorToggle.interactable = true;
                 ShowDesktopCursorToggle.interactable = true;
+                DesktopCursorWindowOnTopToggle.interactable = settings.clickShowDesktopCursor;
+
                 WindowOnTopToggle.isOn = settings.clickForceWindowOnTop;
                 MoveDesktopCursorToggle.isOn = settings.clickMoveDesktopCursor;
                 ShowDesktopCursorToggle.isOn = settings.clickShowDesktopCursor;
+                DesktopCursorWindowOnTopToggle.isOn = settings.clickDesktopCursorForceWindowOnTop;
                 break;
             default:
                 throw new ArgumentOutOfRangeException("api", settings.clickAPI, null);
@@ -1400,17 +1435,37 @@ public class DesktopPortalController : MonoBehaviour
 
     public void ToggleWindowOnTop()
     {
+        if (!WindowOnTopToggle.IsInteractable()) return;
         SelectedWindowSettings.clickForceWindowOnTop = WindowOnTopToggle.isOn;
     }
 
     public void ToggleMoveCursor()
     {
+        if (!MoveDesktopCursorToggle.IsInteractable()) return;
         SelectedWindowSettings.clickMoveDesktopCursor = MoveDesktopCursorToggle.isOn;
     }
 
     public void ToggleShowCursor()
     {
+        if (!ShowDesktopCursorToggle.IsInteractable()) return;
         SelectedWindowSettings.clickShowDesktopCursor = ShowDesktopCursorToggle.isOn;
+        DesktopCursorWindowOnTopToggle.interactable= ShowDesktopCursorToggle.isOn;
+    }
+
+    public void ToggleWindowOnTopWithDesktopCursor()
+    {
+        if (!DesktopCursorWindowOnTopToggle.IsInteractable()) return;
+        SelectedWindowSettings.clickDesktopCursorForceWindowOnTop = DesktopCursorWindowOnTopToggle.isOn;
+    }
+
+    public void ToggleGrabEnabled()
+    {
+        if (!GrabEnabledToggle.IsInteractable()) return;
+    }
+
+    public void ToggleScaleEnabled()
+    {
+        if (!ScaleEnabledToggle.IsInteractable()) return;
     }
 
     #endregion

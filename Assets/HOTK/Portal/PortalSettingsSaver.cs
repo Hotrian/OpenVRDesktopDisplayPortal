@@ -16,7 +16,7 @@ public class ProgramSettings
 [System.Serializable]
 public class PortalSettings
 {
-    public const uint CurrentSaveVersion = 3;
+    public const uint CurrentSaveVersion = 4;
 
     public uint SaveFileVersion;
     
@@ -49,6 +49,8 @@ public class PortalSettings
     public float OutlineScalingA;
 
     public DesktopPortalController.BacksideTexture Backside;
+    public bool GrabEnabled;
+    public bool ScaleEnabled;
 }
 
 public static class PortalSettingsSaver

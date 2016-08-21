@@ -17,6 +17,7 @@ public class WindowSettings
     public bool clickForceWindowOnTop = true;
     public bool clickMoveDesktopCursor = true;
     public bool clickShowDesktopCursor = false;
+    public bool clickDesktopCursorForceWindowOnTop = true;
 
     public DesktopPortalController.BacksideTexture backsideTexture = DesktopPortalController.BacksideTexture.Purple;
 
