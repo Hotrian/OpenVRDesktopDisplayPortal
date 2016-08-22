@@ -18,6 +18,7 @@ public class WindowSettings
     public bool clickMoveDesktopCursor = true;
     public bool clickShowDesktopCursor = false;
     public bool clickDesktopCursorForceWindowOnTop = true;
+    public bool clickDesktopCursorAutoHide = true;
 
     public DesktopPortalController.BacksideTexture backsideTexture = DesktopPortalController.BacksideTexture.Purple;
 

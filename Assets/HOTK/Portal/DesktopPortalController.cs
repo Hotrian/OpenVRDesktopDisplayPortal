@@ -79,6 +79,7 @@ public class DesktopPortalController : MonoBehaviour
     public Toggle MoveDesktopCursorToggle;
     public Toggle ShowDesktopCursorToggle;
     public Toggle DesktopCursorWindowOnTopToggle;
+    public Toggle DesktopCursorAutoHideToggle;
     public DropdownMatchEnumOptions BacksideDropdown;
     public Toggle GrabEnabledToggle;
     public Toggle ScaleEnabledToggle;
@@ -364,7 +365,7 @@ public class DesktopPortalController : MonoBehaviour
                             else StartCoroutine("GoToDefaultColor");
                         }
                     }
-                    else if (Time.time - _lastTrueCursorMoveTime > 3.0f)
+                    else if (SelectedWindowSettings.clickDesktopCursorAutoHide && Time.time - _lastTrueCursorMoveTime > 3.0f)
                     {
                         if (_grabbingOverlay == null && _touchingOverlay == null && _aimingAtOverlay == null)
                         {
@@ -1389,44 +1390,52 @@ public class DesktopPortalController : MonoBehaviour
                 MoveDesktopCursorToggle.interactable = false;
                 ShowDesktopCursorToggle.interactable = _selectedWindow != IntPtr.Zero;
                 DesktopCursorWindowOnTopToggle.interactable = _selectedWindow != IntPtr.Zero && settings.clickShowDesktopCursor;
+                DesktopCursorAutoHideToggle.interactable = _selectedWindow != IntPtr.Zero && settings.clickShowDesktopCursor;
 
                 WindowOnTopToggle.isOn = false;
                 MoveDesktopCursorToggle.isOn = false;
                 ShowDesktopCursorToggle.isOn = settings.clickShowDesktopCursor;
                 DesktopCursorWindowOnTopToggle.isOn = settings.clickDesktopCursorForceWindowOnTop;
+                DesktopCursorAutoHideToggle.isOn = settings.clickDesktopCursorAutoHide;
                 break;
             case ClickAPI.SendInput:
                 WindowOnTopToggle.interactable = false;
                 MoveDesktopCursorToggle.interactable = false;
                 ShowDesktopCursorToggle.interactable = true;
                 DesktopCursorWindowOnTopToggle.interactable = settings.clickShowDesktopCursor;
+                DesktopCursorAutoHideToggle.interactable = settings.clickShowDesktopCursor;
 
                 WindowOnTopToggle.isOn = true;
                 MoveDesktopCursorToggle.isOn = true;
                 ShowDesktopCursorToggle.isOn = settings.clickShowDesktopCursor;
                 DesktopCursorWindowOnTopToggle.isOn = settings.clickDesktopCursorForceWindowOnTop;
+                DesktopCursorAutoHideToggle.isOn = settings.clickDesktopCursorAutoHide;
                 break;
             case ClickAPI.SendMessage:
                 WindowOnTopToggle.interactable = true;
                 MoveDesktopCursorToggle.interactable = true;
                 ShowDesktopCursorToggle.interactable = true;
                 DesktopCursorWindowOnTopToggle.interactable = settings.clickShowDesktopCursor;
+                DesktopCursorAutoHideToggle.interactable = settings.clickShowDesktopCursor;
 
                 WindowOnTopToggle.isOn = settings.clickForceWindowOnTop;
                 MoveDesktopCursorToggle.isOn = settings.clickMoveDesktopCursor;
                 ShowDesktopCursorToggle.isOn = settings.clickShowDesktopCursor;
                 DesktopCursorWindowOnTopToggle.isOn = settings.clickDesktopCursorForceWindowOnTop;
+                DesktopCursorAutoHideToggle.isOn = settings.clickDesktopCursorAutoHide;
                 break;
             case ClickAPI.SendNotifyMessage:
                 WindowOnTopToggle.interactable = true;
                 MoveDesktopCursorToggle.interactable = true;
                 ShowDesktopCursorToggle.interactable = true;
                 DesktopCursorWindowOnTopToggle.interactable = settings.clickShowDesktopCursor;
+                DesktopCursorAutoHideToggle.interactable = settings.clickShowDesktopCursor;
 
                 WindowOnTopToggle.isOn = settings.clickForceWindowOnTop;
                 MoveDesktopCursorToggle.isOn = settings.clickMoveDesktopCursor;
                 ShowDesktopCursorToggle.isOn = settings.clickShowDesktopCursor;
                 DesktopCursorWindowOnTopToggle.isOn = settings.clickDesktopCursorForceWindowOnTop;
+                DesktopCursorAutoHideToggle.isOn = settings.clickDesktopCursorAutoHide;
                 break;
             default:
                 throw new ArgumentOutOfRangeException("api", settings.clickAPI, null);
@@ -1449,13 +1458,20 @@ public class DesktopPortalController : MonoBehaviour
     {
         if (!ShowDesktopCursorToggle.IsInteractable()) return;
         SelectedWindowSettings.clickShowDesktopCursor = ShowDesktopCursorToggle.isOn;
-        DesktopCursorWindowOnTopToggle.interactable= ShowDesktopCursorToggle.isOn;
+        DesktopCursorWindowOnTopToggle.interactable = ShowDesktopCursorToggle.isOn;
+        DesktopCursorAutoHideToggle.interactable = ShowDesktopCursorToggle.isOn;
     }
 
     public void ToggleWindowOnTopWithDesktopCursor()
     {
         if (!DesktopCursorWindowOnTopToggle.IsInteractable()) return;
         SelectedWindowSettings.clickDesktopCursorForceWindowOnTop = DesktopCursorWindowOnTopToggle.isOn;
+    }
+
+    public void ToggleAutoHideWithDesktopCursor()
+    {
+        if (!DesktopCursorAutoHideToggle.IsInteractable()) return;
+        SelectedWindowSettings.clickDesktopCursorAutoHide = DesktopCursorAutoHideToggle.isOn;
     }
 
     public void ToggleGrabEnabled()

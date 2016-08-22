@@ -89,13 +89,24 @@ public static class PortalSettingsSaver
     }
     private static void LoadSettings()
     {
-        if (!File.Exists(ProgramSettingsFileName)) return;
+        if (!File.Exists(ProgramSettingsFileName))
+        {
+            if (Current == null) return;
+            if (CurrentProgramSettings == null)
+                CurrentProgramSettings = new ProgramSettings {LastProfile = Current};
+            else
+                CurrentProgramSettings.LastProfile = Current;
+            return;
+        }
         var bf = new BinaryFormatter();
         var file = File.Open(ProgramSettingsFileName, FileMode.Open);
         CurrentProgramSettings = (ProgramSettings)bf.Deserialize(file);
         file.Close();
-
-        if (SavedProfiles != null && SavedProfiles.Count > 0 && SavedProfiles.ContainsKey(CurrentProgramSettings.LastProfile))
+        if (Current != null)
+        {
+            CurrentProgramSettings.LastProfile = Current;
+        }
+        else if (SavedProfiles != null && SavedProfiles.Count > 0 && SavedProfiles.ContainsKey(CurrentProgramSettings.LastProfile))
         {
             Current = CurrentProgramSettings.LastProfile;
         }
@@ -122,12 +133,225 @@ public static class PortalSettingsSaver
 
     public static void LoadProfiles()
     {
-        if (!File.Exists(ProfilesFileName)) return;
+        if (!File.Exists(ProfilesFileName))
+        {
+            LoadDefaultProfiles();
+            return;
+        }
         var bf = new BinaryFormatter();
         var file = File.Open(ProfilesFileName, FileMode.Open);
         SavedProfiles = (Dictionary<string, PortalSettings>)bf.Deserialize(file);
         file.Close();
         Debug.Log("Loaded " + SavedProfiles.Count + " profile(s).");
+        LoadDefaultProfiles();
+    }
+
+    public static void LoadDefaultProfiles()
+    {
+        if (SavedProfiles.Count != 0) return;
+        Debug.Log("Loading Default Profiles");
+        SavedProfiles = new Dictionary<string, PortalSettings>();
+        Current = "World - Forward Wall";
+        SavedProfiles.Add("World - Forward Wall", new PortalSettings()
+        {
+            SaveFileVersion = PortalSettings.CurrentSaveVersion,
+
+            X = 0, Y = 0, Z = 4,
+            RX = 0, RY = 0, RZ = 0,
+
+            Device = HOTK_Overlay.AttachmentDevice.World,
+            Point = HOTK_Overlay.AttachmentPoint.Center,
+            Animation = HOTK_Overlay.AnimationType.None,
+
+            AlphaStart = 1f, AlphaEnd = 1f, AlphaSpeed = 0.1f,
+            ScaleStart = 1f, ScaleEnd = 1f, ScaleSpeed = 0.1f,
+
+            ScreenOffsetPerformed = false,
+
+            OutlineDefaultR = 0f, OutlineDefaultG = 0f, OutlineDefaultB = 0f, OutlineDefaultA = 0f,
+            OutlineAimingR = 1f, OutlineAimingG = 0f, OutlineAimingB = 0f, OutlineAimingA = 1f,
+            OutlineTouchingR = 0f, OutlineTouchingG = 1f, OutlineTouchingB = 0f, OutlineTouchingA = 1f,
+            OutlineScalingR = 0f, OutlineScalingG = 0f, OutlineScalingB = 1f, OutlineScalingA = 1f,
+
+            Backside = DesktopPortalController.BacksideTexture.Blue,
+            GrabEnabled = true,
+            ScaleEnabled = true
+        });
+        SavedProfiles.Add("World - Right Wall", new PortalSettings()
+        {
+            SaveFileVersion = PortalSettings.CurrentSaveVersion,
+
+            X = 4, Y = 0, Z = 0,
+            RX = 0, RY = 90, RZ = 0,
+
+            Device = HOTK_Overlay.AttachmentDevice.World,
+            Point = HOTK_Overlay.AttachmentPoint.Center,
+            Animation = HOTK_Overlay.AnimationType.None,
+
+            AlphaStart = 1f, AlphaEnd = 1f, AlphaSpeed = 0.1f,
+            ScaleStart = 1f, ScaleEnd = 1f, ScaleSpeed = 0.1f,
+
+            ScreenOffsetPerformed = false,
+
+            OutlineDefaultR = 0f, OutlineDefaultG = 0f, OutlineDefaultB = 0f, OutlineDefaultA = 0f,
+            OutlineAimingR = 1f, OutlineAimingG = 0f, OutlineAimingB = 0f, OutlineAimingA = 1f,
+            OutlineTouchingR = 0f, OutlineTouchingG = 1f, OutlineTouchingB = 0f, OutlineTouchingA = 1f,
+            OutlineScalingR = 0f, OutlineScalingG = 0f, OutlineScalingB = 1f, OutlineScalingA = 1f,
+
+            Backside = DesktopPortalController.BacksideTexture.Blue,
+            GrabEnabled = true,
+            ScaleEnabled = true
+        });
+        SavedProfiles.Add("World - Back Wall", new PortalSettings()
+        {
+            SaveFileVersion = PortalSettings.CurrentSaveVersion,
+
+            X = 0, Y = 0, Z = -4,
+            RX = 0, RY = 180, RZ = 0,
+
+            Device = HOTK_Overlay.AttachmentDevice.World,
+            Point = HOTK_Overlay.AttachmentPoint.Center,
+            Animation = HOTK_Overlay.AnimationType.None,
+
+            AlphaStart = 1f, AlphaEnd = 1f, AlphaSpeed = 0.1f,
+            ScaleStart = 1f, ScaleEnd = 1f, ScaleSpeed = 0.1f,
+
+            ScreenOffsetPerformed = false,
+
+            OutlineDefaultR = 0f, OutlineDefaultG = 0f, OutlineDefaultB = 0f, OutlineDefaultA = 0f,
+            OutlineAimingR = 1f, OutlineAimingG = 0f, OutlineAimingB = 0f, OutlineAimingA = 1f,
+            OutlineTouchingR = 0f, OutlineTouchingG = 1f, OutlineTouchingB = 0f, OutlineTouchingA = 1f,
+            OutlineScalingR = 0f, OutlineScalingG = 0f, OutlineScalingB = 1f, OutlineScalingA = 1f,
+
+            Backside = DesktopPortalController.BacksideTexture.Blue,
+            GrabEnabled = true,
+            ScaleEnabled = true
+        });
+        SavedProfiles.Add("World - Left Wall", new PortalSettings()
+        {
+            SaveFileVersion = PortalSettings.CurrentSaveVersion,
+
+            X = -4, Y = 0, Z = 0,
+            RX = 0, RY = -90, RZ = 0,
+
+            Device = HOTK_Overlay.AttachmentDevice.World,
+            Point = HOTK_Overlay.AttachmentPoint.Center,
+            Animation = HOTK_Overlay.AnimationType.None,
+
+            AlphaStart = 1f, AlphaEnd = 1f, AlphaSpeed = 0.1f,
+            ScaleStart = 1f, ScaleEnd = 1f, ScaleSpeed = 0.1f,
+
+            ScreenOffsetPerformed = false,
+
+            OutlineDefaultR = 0f, OutlineDefaultG = 0f, OutlineDefaultB = 0f, OutlineDefaultA = 0f,
+            OutlineAimingR = 1f, OutlineAimingG = 0f, OutlineAimingB = 0f, OutlineAimingA = 1f,
+            OutlineTouchingR = 0f, OutlineTouchingG = 1f, OutlineTouchingB = 0f, OutlineTouchingA = 1f,
+            OutlineScalingR = 0f, OutlineScalingG = 0f, OutlineScalingB = 1f, OutlineScalingA = 1f,
+
+            Backside = DesktopPortalController.BacksideTexture.Blue,
+            GrabEnabled = true,
+            ScaleEnabled = true
+        });
+        SavedProfiles.Add("Controller - Back Side", new PortalSettings()
+        {
+            SaveFileVersion = PortalSettings.CurrentSaveVersion,
+
+            X = 0, Y = 0, Z = 0,
+            RX = 0, RY = 0, RZ = 0,
+
+            Device = HOTK_Overlay.AttachmentDevice.LeftController,
+            Point = HOTK_Overlay.AttachmentPoint.BelowFlipped,
+            Animation = HOTK_Overlay.AnimationType.None,
+
+            AlphaStart = 1f, AlphaEnd = 1f, AlphaSpeed = 0.1f,
+            ScaleStart = 0.5f, ScaleEnd = 1f, ScaleSpeed = 0.1f,
+
+            ScreenOffsetPerformed = false,
+
+            OutlineDefaultR = 0f, OutlineDefaultG = 0f, OutlineDefaultB = 0f, OutlineDefaultA = 0f,
+            OutlineAimingR = 1f, OutlineAimingG = 0f, OutlineAimingB = 0f, OutlineAimingA = 1f,
+            OutlineTouchingR = 0f, OutlineTouchingG = 1f, OutlineTouchingB = 0f, OutlineTouchingA = 1f,
+            OutlineScalingR = 0f, OutlineScalingG = 0f, OutlineScalingB = 1f, OutlineScalingA = 1f,
+
+            Backside = DesktopPortalController.BacksideTexture.None,
+            GrabEnabled = true,
+            ScaleEnabled = true
+        });
+        SavedProfiles.Add("Controller - Right Side", new PortalSettings()
+        {
+            SaveFileVersion = PortalSettings.CurrentSaveVersion,
+
+            X = 0.5f, Y = 0, Z = 0,
+            RX = 0, RY = -90, RZ = 0,
+
+            Device = HOTK_Overlay.AttachmentDevice.LeftController,
+            Point = HOTK_Overlay.AttachmentPoint.Center,
+            Animation = HOTK_Overlay.AnimationType.None,
+
+            AlphaStart = 1f, AlphaEnd = 1f, AlphaSpeed = 0.1f,
+            ScaleStart = 0.5f, ScaleEnd = 1f, ScaleSpeed = 0.1f,
+
+            ScreenOffsetPerformed = false,
+
+            OutlineDefaultR = 0f, OutlineDefaultG = 0f, OutlineDefaultB = 0f, OutlineDefaultA = 0f,
+            OutlineAimingR = 1f, OutlineAimingG = 0f, OutlineAimingB = 0f, OutlineAimingA = 1f,
+            OutlineTouchingR = 0f, OutlineTouchingG = 1f, OutlineTouchingB = 0f, OutlineTouchingA = 1f,
+            OutlineScalingR = 0f, OutlineScalingG = 0f, OutlineScalingB = 1f, OutlineScalingA = 1f,
+
+            Backside = DesktopPortalController.BacksideTexture.None,
+            GrabEnabled = true,
+            ScaleEnabled = true
+        });
+        SavedProfiles.Add("Screen - Bottom Left", new PortalSettings()
+        {
+            SaveFileVersion = PortalSettings.CurrentSaveVersion,
+
+            X = -0.45f, Y = -0.5f, Z = 1,
+            RX = 0, RY = 0, RZ = 0,
+
+            Device = HOTK_Overlay.AttachmentDevice.Screen,
+            Point = HOTK_Overlay.AttachmentPoint.Center,
+            Animation = HOTK_Overlay.AnimationType.None,
+
+            AlphaStart = 0.8f, AlphaEnd = 1f, AlphaSpeed = 0.1f,
+            ScaleStart = 1f, ScaleEnd = 1f, ScaleSpeed = 0.1f,
+
+            ScreenOffsetPerformed = true,
+
+            OutlineDefaultR = 0f, OutlineDefaultG = 0f, OutlineDefaultB = 0f, OutlineDefaultA = 0f,
+            OutlineAimingR = 1f, OutlineAimingG = 0f, OutlineAimingB = 0f, OutlineAimingA = 1f,
+            OutlineTouchingR = 0f, OutlineTouchingG = 1f, OutlineTouchingB = 0f, OutlineTouchingA = 1f,
+            OutlineScalingR = 0f, OutlineScalingG = 0f, OutlineScalingB = 1f, OutlineScalingA = 1f,
+
+            Backside = DesktopPortalController.BacksideTexture.None,
+            GrabEnabled = true,
+            ScaleEnabled = true
+        });
+        SavedProfiles.Add("Screen - Bottom Right", new PortalSettings()
+        {
+            SaveFileVersion = PortalSettings.CurrentSaveVersion,
+
+            X = 0.45f, Y = -0.5f, Z = 1,
+            RX = 0, RY = 0, RZ = 0,
+
+            Device = HOTK_Overlay.AttachmentDevice.Screen,
+            Point = HOTK_Overlay.AttachmentPoint.Center,
+            Animation = HOTK_Overlay.AnimationType.None,
+
+            AlphaStart = 0.8f, AlphaEnd = 1f, AlphaSpeed = 0.1f,
+            ScaleStart = 1f, ScaleEnd = 1f, ScaleSpeed = 0.1f,
+
+            ScreenOffsetPerformed = true,
+
+            OutlineDefaultR = 0f, OutlineDefaultG = 0f, OutlineDefaultB = 0f, OutlineDefaultA = 0f,
+            OutlineAimingR = 1f, OutlineAimingG = 0f, OutlineAimingB = 0f, OutlineAimingA = 1f,
+            OutlineTouchingR = 0f, OutlineTouchingG = 1f, OutlineTouchingB = 0f, OutlineTouchingA = 1f,
+            OutlineScalingR = 0f, OutlineScalingG = 0f, OutlineScalingB = 1f, OutlineScalingA = 1f,
+
+            Backside = DesktopPortalController.BacksideTexture.None,
+            GrabEnabled = true,
+            ScaleEnabled = true
+        });
     }
 
     public static void DeleteProfile(string profileName = null)

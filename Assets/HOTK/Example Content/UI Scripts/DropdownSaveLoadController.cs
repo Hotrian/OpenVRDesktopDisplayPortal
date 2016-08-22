@@ -247,6 +247,8 @@ public class DropdownSaveLoadController : MonoBehaviour
         {
             PortalSettingsSaver.DeleteProfile(Dropdown.options[Dropdown.value].text);
             CancelConfirmingDelete();
+            if (PortalSettingsSaver.SavedProfiles.Count == 0)
+                PortalSettingsSaver.LoadDefaultProfiles();
             ReloadOptions();
         }
     }
