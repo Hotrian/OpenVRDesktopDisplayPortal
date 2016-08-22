@@ -67,6 +67,16 @@ public class DropdownMatchEnumOptions : MonoBehaviour
                     Dropdown.interactable = true;
                 }
                 break;
+            case EnumSelection.FilterMode:
+                strings.AddRange(from object e in Enum.GetValues(typeof(FilterMode)) select e.ToString());
+                Dropdown.AddOptions(strings);
+                if (DesktopPortalController.Instance.enabled &&
+                    DesktopPortalController.Instance.SelectedWindowSettings != null)
+                {
+                    Dropdown.value = strings.IndexOf(DesktopPortalController.Instance.SelectedWindowSettings.filterMode.ToString());
+                    Dropdown.interactable = true;
+                }
+                break;
             default:
                 throw new ArgumentOutOfRangeException();
         }
@@ -134,7 +144,10 @@ public class DropdownMatchEnumOptions : MonoBehaviour
                 DesktopPortalController.Instance.CurrentBacksideTexture = (DesktopPortalController.BacksideTexture) Dropdown.value;
                 break;
             case EnumSelection.ClickAPI:
-                    DesktopPortalController.Instance.SetClickAPI((DesktopPortalController.ClickAPI) Dropdown.value);
+                DesktopPortalController.Instance.SetClickAPI((DesktopPortalController.ClickAPI) Dropdown.value);
+                break;
+            case EnumSelection.FilterMode:
+                DesktopPortalController.Instance.DoChangeFilterMode((FilterMode) Dropdown.value);
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
@@ -163,6 +176,7 @@ public class DropdownMatchEnumOptions : MonoBehaviour
         CaptureMode,
         BacksideTexture,
         ClickAPI,
+        FilterMode,
     }
 
     public static readonly List<string> CaptureModeNames = new List<string>

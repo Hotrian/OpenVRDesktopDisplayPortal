@@ -156,7 +156,7 @@ public static class PortalSettingsSaver
         {
             SaveFileVersion = PortalSettings.CurrentSaveVersion,
 
-            X = 0, Y = 0, Z = 4,
+            X = 0f, Y = 1f, Z = 4f,
             RX = 0, RY = 0, RZ = 0,
 
             Device = HOTK_Overlay.AttachmentDevice.World,
@@ -164,7 +164,7 @@ public static class PortalSettingsSaver
             Animation = HOTK_Overlay.AnimationType.None,
 
             AlphaStart = 1f, AlphaEnd = 1f, AlphaSpeed = 0.1f,
-            ScaleStart = 1f, ScaleEnd = 1f, ScaleSpeed = 0.1f,
+            ScaleStart = 2f, ScaleEnd = 1f, ScaleSpeed = 0.1f,
 
             ScreenOffsetPerformed = false,
 
@@ -181,7 +181,7 @@ public static class PortalSettingsSaver
         {
             SaveFileVersion = PortalSettings.CurrentSaveVersion,
 
-            X = 4, Y = 0, Z = 0,
+            X = 4f, Y = 1f, Z = 0f,
             RX = 0, RY = 90, RZ = 0,
 
             Device = HOTK_Overlay.AttachmentDevice.World,
@@ -189,7 +189,7 @@ public static class PortalSettingsSaver
             Animation = HOTK_Overlay.AnimationType.None,
 
             AlphaStart = 1f, AlphaEnd = 1f, AlphaSpeed = 0.1f,
-            ScaleStart = 1f, ScaleEnd = 1f, ScaleSpeed = 0.1f,
+            ScaleStart = 2f, ScaleEnd = 1f, ScaleSpeed = 0.1f,
 
             ScreenOffsetPerformed = false,
 
@@ -206,7 +206,7 @@ public static class PortalSettingsSaver
         {
             SaveFileVersion = PortalSettings.CurrentSaveVersion,
 
-            X = 0, Y = 0, Z = -4,
+            X = 0f, Y = 1f, Z = -4f,
             RX = 0, RY = 180, RZ = 0,
 
             Device = HOTK_Overlay.AttachmentDevice.World,
@@ -214,7 +214,7 @@ public static class PortalSettingsSaver
             Animation = HOTK_Overlay.AnimationType.None,
 
             AlphaStart = 1f, AlphaEnd = 1f, AlphaSpeed = 0.1f,
-            ScaleStart = 1f, ScaleEnd = 1f, ScaleSpeed = 0.1f,
+            ScaleStart = 2f, ScaleEnd = 1f, ScaleSpeed = 0.1f,
 
             ScreenOffsetPerformed = false,
 
@@ -231,7 +231,7 @@ public static class PortalSettingsSaver
         {
             SaveFileVersion = PortalSettings.CurrentSaveVersion,
 
-            X = -4, Y = 0, Z = 0,
+            X = -4f, Y = 1f, Z = 0f,
             RX = 0, RY = -90, RZ = 0,
 
             Device = HOTK_Overlay.AttachmentDevice.World,
@@ -239,7 +239,7 @@ public static class PortalSettingsSaver
             Animation = HOTK_Overlay.AnimationType.None,
 
             AlphaStart = 1f, AlphaEnd = 1f, AlphaSpeed = 0.1f,
-            ScaleStart = 1f, ScaleEnd = 1f, ScaleSpeed = 0.1f,
+            ScaleStart = 2f, ScaleEnd = 1f, ScaleSpeed = 0.1f,
 
             ScreenOffsetPerformed = false,
 
@@ -256,7 +256,7 @@ public static class PortalSettingsSaver
         {
             SaveFileVersion = PortalSettings.CurrentSaveVersion,
 
-            X = 0, Y = 0, Z = 0,
+            X = 0f, Y = 0f, Z = 0f,
             RX = 0, RY = 0, RZ = 0,
 
             Device = HOTK_Overlay.AttachmentDevice.LeftController,
@@ -281,7 +281,7 @@ public static class PortalSettingsSaver
         {
             SaveFileVersion = PortalSettings.CurrentSaveVersion,
 
-            X = 0.5f, Y = 0, Z = 0,
+            X = 0.5f, Y = 0f, Z = 0f,
             RX = 0, RY = -90, RZ = 0,
 
             Device = HOTK_Overlay.AttachmentDevice.LeftController,
@@ -306,7 +306,7 @@ public static class PortalSettingsSaver
         {
             SaveFileVersion = PortalSettings.CurrentSaveVersion,
 
-            X = -0.45f, Y = -0.5f, Z = 1,
+            X = -0.45f, Y = -0.5f, Z = 1f,
             RX = 0, RY = 0, RZ = 0,
 
             Device = HOTK_Overlay.AttachmentDevice.Screen,
@@ -331,7 +331,7 @@ public static class PortalSettingsSaver
         {
             SaveFileVersion = PortalSettings.CurrentSaveVersion,
 
-            X = 0.45f, Y = -0.5f, Z = 1,
+            X = 0.45f, Y = -0.5f, Z = 1f,
             RX = 0, RY = 0, RZ = 0,
 
             Device = HOTK_Overlay.AttachmentDevice.Screen,

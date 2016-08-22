@@ -24,7 +24,7 @@ public class DesktopPortalController : MonoBehaviour
     public Texture DefaultTexture; // Texture drawn to the overlay when there is nothing else to draw
     public DropdownMatchEnumOptions CaptureModeDropdown; // A Dropdown used to select the current Capture Mode
     public DropdownMatchEnumOptions FramerateModeDropdown; // A Dropdown used to select the current Capture Framerate
-    public Dropdown FilterModeDropdown;
+    public DropdownMatchEnumOptions FilterModeDropdown;
 
     // Used to control resolution lock
     public Image SizeLockSprite;
@@ -284,6 +284,7 @@ public class DesktopPortalController : MonoBehaviour
             HOTK_TrackedDeviceManager.OnControllerTriggerClicked += SingleClickApplication;
             HOTK_TrackedDeviceManager.OnControllerTriggerDoubleClicked += DoubleClickApplication;
             HOTK_TrackedDeviceManager.OnControllerTouchpadClicked += RightClickApplication;
+            HOTK_TrackedDeviceManager.OnControllerGripsClicked += MiddleClickApplication;
             HOTK_TrackedDeviceManager.OnControllerTriggerDown += TriggerDown;
             HOTK_TrackedDeviceManager.OnControllerTriggerUp += TriggerUp;
             HOTK_TrackedDeviceManager.OnControllerTouchpadDown += TouchpadDown;
@@ -387,7 +388,7 @@ public class DesktopPortalController : MonoBehaviour
         }
         if (_scalingOverlay != null)
         {
-            var scale = _scalingBaseScale + (Vector3.Distance(_grabbingOverlay.transform.position, _scalingOverlay.transform.position) - _scalingBaseDistance);
+            var scale = Mathf.Max(0.1f, _scalingBaseScale + (Vector3.Distance(_grabbingOverlay.transform.position, _scalingOverlay.transform.position) - _scalingBaseDistance));
             if (_scalingScale2) Overlay.Scale2 = scale;
             else Overlay.Scale = scale;
 
@@ -464,12 +465,10 @@ public class DesktopPortalController : MonoBehaviour
                 if (MoveDesktopCursorToggle.isOn)
                 {
                     CursorInteraction.MoveOverWindow(_selectedWindow, new Point((int) v2.x, (int) v2.y));
-                }else
-                {
-                    _localWindowPosX = (int)v2.x;
-                    _localWindowPosY = (int)v2.y;
                 }
-                
+                _localWindowPosX = (int)v2.x;
+                _localWindowPosY = (int)v2.y;
+
                 CursorGameObject.transform.localPosition = v1;
                 StopCoroutine("GoToTouchColor");
                 StopCoroutine("GoToScalingColor");
@@ -519,7 +518,7 @@ public class DesktopPortalController : MonoBehaviour
         {
             if (_grabbingOverlay == null)
             {
-                if (GrabEnabledToggle.isOn)
+                if (tracker == _touchingOverlay && GrabEnabledToggle.isOn)
                 {
                     _grabbingOverlay = tracker;
                     _lastOverlayParent = Overlay.gameObject.transform.parent;
@@ -626,9 +625,8 @@ public class DesktopPortalController : MonoBehaviour
         if (SelectedWindowSettings.clickAPI == ClickAPI.None) return;
         if (!_isHittingOverlay) return;
         if (tracker != _aimingAtOverlay) return;
-        Debug.Log("Try Click " + tracker.Type);
         if (_selectedWindow == IntPtr.Zero) return;
-        Debug.Log("Clicking" + tracker.Type);
+        Debug.Log("Clicking " + tracker.Type + " | " + mode + " " + _localWindowPosX + " " + _localWindowPosY);
         CursorInteraction.ClickSendInput(_selectedWindow, mode, SelectedWindowSettings.clickAPI, new Point(_localWindowPosX, _localWindowPosY));
     }
 
@@ -654,6 +652,14 @@ public class DesktopPortalController : MonoBehaviour
     private void RightClickApplication(HOTK_TrackedDevice tracker)
     {
         ClickApplication(tracker, CursorInteraction.SimulationMode.RightClick);
+    }
+
+    /// <summary>
+    /// Occurs when grips has been clicked (pressed and released rapidly)
+    /// </summary>
+    private void MiddleClickApplication(HOTK_TrackedDevice tracker)
+    {
+        ClickApplication(tracker, CursorInteraction.SimulationMode.MiddleClick);
     }
 
     #endregion
@@ -971,24 +977,15 @@ public class DesktopPortalController : MonoBehaviour
         _showFps = true;
     }
 
-    public void DoChangeFilterMode()
+    public void DoChangeFilterMode(FilterMode mode)
     {
-        if (FilterModeDropdown == null) return;
         if (_selectedWindow == IntPtr.Zero) return;
-        switch (FilterModeDropdown.options[FilterModeDropdown.value].text)
+        switch (mode)
         {
-            case "None":
-                SelectedWindowSettings.filterMode = FilterMode.Point;
-                _texture.filterMode = SelectedWindowSettings.filterMode;
-                RenderTexture.filterMode = SelectedWindowSettings.filterMode;
-                break;
-            case "Bilinear":
-                SelectedWindowSettings.filterMode = FilterMode.Bilinear;
-                _texture.filterMode = SelectedWindowSettings.filterMode;
-                RenderTexture.filterMode = SelectedWindowSettings.filterMode;
-                break;
-            case "Trilinear":
-                SelectedWindowSettings.filterMode = FilterMode.Trilinear;
+            case FilterMode.Point:
+            case FilterMode.Bilinear:
+            case FilterMode.Trilinear:
+                SelectedWindowSettings.filterMode = mode;
                 _texture.filterMode = SelectedWindowSettings.filterMode;
                 RenderTexture.filterMode = SelectedWindowSettings.filterMode;
                 break;
@@ -1327,6 +1324,9 @@ public class DesktopPortalController : MonoBehaviour
         SizeLockSprite.sprite = settings.windowSizeLocked ? LockSprite : UnlockSprite;
         CaptureModeDropdown.SetToOption(DropdownMatchEnumOptions.CaptureModeNames[(int) settings.captureMode], true);
         FramerateModeDropdown.SetToOption(DropdownMatchEnumOptions.FramerateModeNames[(int) settings.framerateMode], true);
+
+        FilterModeDropdown.Dropdown.interactable = true;
+        FilterModeDropdown.SetToOption(settings.filterMode.ToString(), true);
 
         ClickAPIDropdown.Dropdown.interactable = true;
         ClickAPIDropdown.SetToOption(settings.clickAPI.ToString(), true);

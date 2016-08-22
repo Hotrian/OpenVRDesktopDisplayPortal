@@ -1015,6 +1015,7 @@ public class CursorInteraction
                 Cursor.Position = oldPos;
                 break;
             case DesktopPortalController.ClickAPI.SendNotifyMessage:
+                UnityEngine.Debug.Log("Send Notify " + mode + " " + clickPoint.X + " " + clickPoint.Y);
                 lPrm = GetLParam(wndHandle, clickPoint, out oldPos);
                 SendNotifyMessage(wndHandle, mode, lPrm);
                 Cursor.Position = oldPos;
@@ -1026,6 +1027,7 @@ public class CursorInteraction
 
     private static IntPtr GetLParam(IntPtr wndHandle, Point clientPoint, out Point oldPos)
     {
+        UnityEngine.Debug.Log("GetLParam");
         oldPos = Cursor.Position;
         IntPtr lParam = (IntPtr)((clientPoint.Y << 16) | clientPoint.X);
         ClientToScreen(wndHandle, ref clientPoint);
@@ -1052,6 +1054,12 @@ public class CursorInteraction
                     new INPUT() {type = InputType.MOUSE, U = new InputUnion() {mi = new MOUSEINPUT() {dwFlags = MOUSEEVENTF.LEFTDOWN,}}}, new INPUT() {type = InputType.MOUSE, U = new InputUnion() {mi = new MOUSEINPUT() {dwFlags = MOUSEEVENTF.LEFTUP,}}}
                 };
                 break;
+            case SimulationMode.MiddleClick:
+                pInputs = new[]
+                {
+                    new INPUT() {type = InputType.MOUSE, U = new InputUnion() {mi = new MOUSEINPUT() {dwFlags = MOUSEEVENTF.MIDDLEDOWN,}}}, new INPUT() {type = InputType.MOUSE, U = new InputUnion() {mi = new MOUSEINPUT() {dwFlags = MOUSEEVENTF.MIDDLEUP,}}}
+                };
+                break;
             default:
                 throw new ArgumentOutOfRangeException("mode", mode, null);
         }
@@ -1075,6 +1083,10 @@ public class CursorInteraction
                 SendMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONDBLCLK, (IntPtr)1, lParam);
                 SendMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONUP, IntPtr.Zero, lParam);
                 break;
+            case SimulationMode.MiddleClick:
+                SendMessage(wndHandle, (uint)MouseEvents.WM_MBUTTONDOWN, (IntPtr)10, lParam);
+                SendMessage(wndHandle, (uint)MouseEvents.WM_MBUTTONUP, IntPtr.Zero, lParam);
+                break;
             default:
                 throw new ArgumentOutOfRangeException("mode", mode, null);
         }
@@ -1095,6 +1107,10 @@ public class CursorInteraction
             case SimulationMode.DoubleClick:
                 SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONDBLCLK, (UIntPtr)1, lParam);
                 SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_LBUTTONUP, UIntPtr.Zero, lParam);
+                break;
+            case SimulationMode.MiddleClick:
+                SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_MBUTTONDOWN, (UIntPtr)10, lParam);
+                SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_MBUTTONUP, UIntPtr.Zero, lParam);
                 break;
             default:
                 throw new ArgumentOutOfRangeException("mode", mode, null);
@@ -1126,7 +1142,8 @@ public class CursorInteraction
     {
         LeftClick,
         RightClick,
-        DoubleClick
+        DoubleClick,
+        MiddleClick
     }
 
     private enum MouseEvents

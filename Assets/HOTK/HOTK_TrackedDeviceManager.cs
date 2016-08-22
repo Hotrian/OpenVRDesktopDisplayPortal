@@ -14,6 +14,9 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
     public static Action<HOTK_TrackedDevice> OnControllerTouchpadDown;
     public static Action<HOTK_TrackedDevice> OnControllerTouchpadUp;
     public static Action<HOTK_TrackedDevice> OnControllerTouchpadClicked;
+    public static Action<HOTK_TrackedDevice> OnControllerGripsDown;
+    public static Action<HOTK_TrackedDevice> OnControllerGripsUp;
+    public static Action<HOTK_TrackedDevice> OnControllerGripsClicked;
     public static Action OnControllerIndicesUpdated; // Called only when both controllers have been checked/assigned or are swapped
 
     public static HOTK_TrackedDeviceManager Instance
@@ -166,22 +169,26 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
     private float _leftDoubleClickTimeLeft;
     private float _touchpadDownTimeLeft;
     private bool _touchpadClickedLeft;
+    private float _gripsDownTimeLeft;
+    private bool _gripsClickedLeft;
 
     private bool _clickedRight;
     private float _leftButtonDownTimeRight;
     private float _leftDoubleClickTimeRight;
     private float _touchpadDownTimeRight;
     private bool _touchpadClickedRight;
+    private float _gripsDownTimeRight;
+    private bool _gripsClickedRight;
 
     private void UpdateButtons()
     {
-        UpdateInput(_leftTracker, ref _clickedLeft, ref _leftButtonDownTimeLeft, ref _leftDoubleClickTimeLeft, ref _touchpadClickedLeft, ref _touchpadDownTimeLeft, ETrackedControllerRole.LeftHand);
-        UpdateInput(_rightTracker, ref _clickedRight, ref _leftButtonDownTimeRight, ref _leftDoubleClickTimeRight, ref _touchpadClickedRight, ref _touchpadDownTimeRight, ETrackedControllerRole.RightHand);
+        UpdateInput(_leftTracker, ref _clickedLeft, ref _leftButtonDownTimeLeft, ref _leftDoubleClickTimeLeft, ref _touchpadClickedLeft, ref _touchpadDownTimeLeft, ref _gripsClickedLeft, ref _gripsDownTimeLeft, ETrackedControllerRole.LeftHand);
+        UpdateInput(_rightTracker, ref _clickedRight, ref _leftButtonDownTimeRight, ref _leftDoubleClickTimeRight, ref _touchpadClickedRight, ref _touchpadDownTimeRight, ref _gripsClickedRight, ref _gripsDownTimeRight, ETrackedControllerRole.RightHand);
     }
 
     private bool GetPress(VRControllerState_t state, EVRButtonId buttonId) { return (state.ulButtonPressed & (1ul << (int)buttonId)) != 0; }
 
-    private void UpdateInput(HOTK_TrackedDevice dev, ref bool clicked, ref float clickTime, ref float doubleClickTime, ref bool touchpad, ref float touchpadTime, ETrackedControllerRole role)
+    private void UpdateInput(HOTK_TrackedDevice dev, ref bool clicked, ref float clickTime, ref float doubleClickTime, ref bool touchpad, ref float touchpadTime, ref bool grips, ref float gripsTime, ETrackedControllerRole role)
     {
         if (dev == null || !dev.IsValid) return;
         var svr = SteamVR.instance;
@@ -238,6 +245,27 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
                 if (OnControllerTouchpadUp != null) OnControllerTouchpadUp(dev);
                 if (!((Time.time - touchpadTime) < 0.25f)) return;
                 if (OnControllerTouchpadClicked != null) OnControllerTouchpadClicked(dev);
+            }
+        }
+
+        // Grips Check
+        if (GetPress(c, EVRButtonId.k_EButton_Grip))
+        {
+            if (!grips)
+            {
+                grips = true;
+                gripsTime = Time.time;
+                if (OnControllerGripsDown != null) OnControllerGripsDown(dev);
+            }
+        }
+        else
+        {
+            if (grips)
+            {
+                grips = false;
+                if (OnControllerGripsUp != null) OnControllerGripsUp(dev);
+                if (!((Time.time - gripsTime) < 0.25f)) return;
+                if (OnControllerGripsClicked != null) OnControllerGripsClicked(dev);
             }
         }
     }
