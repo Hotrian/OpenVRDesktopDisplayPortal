@@ -1015,7 +1015,6 @@ public class CursorInteraction
                 Cursor.Position = oldPos;
                 break;
             case DesktopPortalController.ClickAPI.SendNotifyMessage:
-                UnityEngine.Debug.Log("Send Notify " + mode + " " + clickPoint.X + " " + clickPoint.Y);
                 lPrm = GetLParam(wndHandle, clickPoint, out oldPos);
                 SendNotifyMessage(wndHandle, mode, lPrm);
                 Cursor.Position = oldPos;
@@ -1027,7 +1026,6 @@ public class CursorInteraction
 
     private static IntPtr GetLParam(IntPtr wndHandle, Point clientPoint, out Point oldPos)
     {
-        UnityEngine.Debug.Log("GetLParam");
         oldPos = Cursor.Position;
         IntPtr lParam = (IntPtr)((clientPoint.Y << 16) | clientPoint.X);
         ClientToScreen(wndHandle, ref clientPoint);

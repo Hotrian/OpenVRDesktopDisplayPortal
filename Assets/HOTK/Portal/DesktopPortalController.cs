@@ -639,7 +639,6 @@ public class DesktopPortalController : MonoBehaviour
         if (!_isHittingOverlay) return;
         if (tracker != _aimingAtOverlay) return;
         if (_selectedWindow == IntPtr.Zero) return;
-        Debug.Log("Clicking " + tracker.Type + " | " + mode + " " + _localWindowPosX + " " + _localWindowPosY);
         CursorInteraction.ClickSendInput(_selectedWindow, mode, SelectedWindowSettings.clickAPI, new Point(_localWindowPosX, _localWindowPosY));
     }
 
