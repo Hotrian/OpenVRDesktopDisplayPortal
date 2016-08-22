@@ -714,4 +714,11 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
         hitTracker = tracker;
         results = result;
     }
+
+    public void TriggerHapticPulse(HOTK_TrackedDevice dev, ushort duration)
+    {
+        if (dev.Index == HOTK_TrackedDevice.EIndex.None) return;
+        var system = OpenVR.System;
+        system.TriggerHapticPulse((uint)dev.Index, 0, (char)duration);
+    }
 }

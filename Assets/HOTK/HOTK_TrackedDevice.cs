@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using UnityEngine;
 using Valve.VR;
 
@@ -143,5 +144,30 @@ public class HOTK_TrackedDevice : MonoBehaviour
     {
         Index = EIndex.None;
         IsValid = false;
+    }
+
+    public void TriggerHapticPulse(ushort strength)
+    {
+        HOTK_TrackedDeviceManager.Instance.TriggerHapticPulse(this, strength);
+    }
+
+    public void TriggerHapticPulse(ushort strength, float duration, float interval)
+    {
+        if (!enabled)
+            return;
+        StartCoroutine(HapticPulse(duration, (strength > 3999 ? (ushort)3999 : strength), interval));
+    }
+
+    private IEnumerator HapticPulse(float duration, ushort strength, float interval)
+    {
+        if (interval <= 0)
+            yield break;
+
+        while (duration > 0)
+        {
+            HOTK_TrackedDeviceManager.Instance.TriggerHapticPulse(this, strength);
+            yield return new WaitForSeconds(interval);
+            duration -= interval;
+        }
     }
 }

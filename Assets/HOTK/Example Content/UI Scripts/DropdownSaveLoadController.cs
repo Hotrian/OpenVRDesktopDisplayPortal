@@ -152,6 +152,11 @@ public class DropdownSaveLoadController : MonoBehaviour
             settings.ScaleEnabled = true;
             settings.SaveFileVersion = 4;
         }
+        if (settings.SaveFileVersion == 4)
+        {
+            settings.HapticsEnabled = true;
+            settings.SaveFileVersion = 5;
+        }
         DesktopPortalController.Instance.ScreenOffsetPerformed = settings.ScreenOffsetPerformed;
 
         // Recenter XYZ Sliders
@@ -206,6 +211,7 @@ public class DropdownSaveLoadController : MonoBehaviour
 
         DesktopPortalController.Instance.GrabEnabledToggle.isOn = settings.GrabEnabled;
         DesktopPortalController.Instance.ScaleEnabledToggle.isOn = settings.ScaleEnabled;
+        DesktopPortalController.Instance.HapticsEnabledToggle.isOn = settings.HapticsEnabled;
 
         ColorPicker.LoadButtonColors();
     }
@@ -308,6 +314,7 @@ public class DropdownSaveLoadController : MonoBehaviour
 
             settings.GrabEnabled = DesktopPortalController.Instance.GrabEnabledToggle.isOn;
             settings.ScaleEnabled = DesktopPortalController.Instance.ScaleEnabledToggle.isOn;
+            settings.HapticsEnabled = DesktopPortalController.Instance.HapticsEnabledToggle.isOn;
 
             PortalSettingsSaver.SaveProfiles();
         }
@@ -375,6 +382,7 @@ public class DropdownSaveLoadController : MonoBehaviour
 
             GrabEnabled = DesktopPortalController.Instance.GrabEnabledToggle.isOn,
             ScaleEnabled = DesktopPortalController.Instance.ScaleEnabledToggle.isOn,
+            HapticsEnabled = DesktopPortalController.Instance.HapticsEnabledToggle.isOn,
         };
     }
 

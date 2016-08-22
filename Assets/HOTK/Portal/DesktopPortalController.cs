@@ -83,6 +83,7 @@ public class DesktopPortalController : MonoBehaviour
     public DropdownMatchEnumOptions BacksideDropdown;
     public Toggle GrabEnabledToggle;
     public Toggle ScaleEnabledToggle;
+    public Toggle HapticsEnabledToggle;
     #endregion
 
     #region Public Variables
@@ -311,6 +312,7 @@ public class DesktopPortalController : MonoBehaviour
     private int _trueCursorRelativeX;
     private int _trueCursorRelativeY;
     private float _lastTrueCursorMoveTime;
+    private float _lastScalingHapticPulse;
     public void Update()
     {
         if (_showFps)
@@ -389,6 +391,12 @@ public class DesktopPortalController : MonoBehaviour
         if (_scalingOverlay != null)
         {
             var scale = Mathf.Max(0.1f, _scalingBaseScale + (Vector3.Distance(_grabbingOverlay.transform.position, _scalingOverlay.transform.position) - _scalingBaseDistance));
+            if (HapticsEnabledToggle.isOn && Mathf.Abs(scale - _lastScalingHapticPulse) > 0.1f)
+            {
+                _lastScalingHapticPulse = scale;
+                _grabbingOverlay.TriggerHapticPulse(2000);
+                _scalingOverlay.TriggerHapticPulse(2000);
+            }
             if (_scalingScale2) Overlay.Scale2 = scale;
             else Overlay.Scale = scale;
 
@@ -420,6 +428,8 @@ public class DesktopPortalController : MonoBehaviour
         if (_grabbingOverlay != null) return;
         // Hide the cursor from when we were just aiming
         _didHitOverlay = false;
+        if (HapticsEnabledToggle.isOn && _touchingOverlay != tracker)
+            tracker.TriggerHapticPulse(2000);
         _touchingOverlay = tracker;
         StartCoroutine("GoToTouchColor");
     }
@@ -457,6 +467,8 @@ public class DesktopPortalController : MonoBehaviour
 
             if (v2.x > 0 && v2.y > 0 && v2.x < _currentWindowWidth + SelectedWindowSettings.offsetLeft && v2.y < _currentWindowHeight + SelectedWindowSettings.offsetTop)
             {
+                if (HapticsEnabledToggle.isOn && _aimingAtOverlay != tracker)
+                    tracker.TriggerHapticPulse(2000);
                 _aimingAtOverlay = tracker;
                 _didHitOverlay = true;
                 if (WindowOnTopToggle.isOn)
@@ -536,6 +548,7 @@ public class DesktopPortalController : MonoBehaviour
                     _scalingScale2 = Overlay.IsBeingGazed;
                     Overlay.LockGaze(_scalingScale2); // Lock the Gaze Detection on the Overlay to it's current state
                     _scalingBaseScale = _scalingScale2 ? Overlay.Scale2 : Overlay.Scale;
+                    _lastScalingHapticPulse = _scalingBaseScale;
                     _scalingBaseDistance = Vector3.Distance(_grabbingOverlay.transform.position, _scalingOverlay.transform.position);
                     StartCoroutine("GoToScalingColor");
                 }
@@ -1482,6 +1495,11 @@ public class DesktopPortalController : MonoBehaviour
     public void ToggleScaleEnabled()
     {
         if (!ScaleEnabledToggle.IsInteractable()) return;
+    }
+
+    public void ToggleHapticsEnabled()
+    {
+        if (!HapticsEnabledToggle.IsInteractable()) return;
     }
 
     #endregion

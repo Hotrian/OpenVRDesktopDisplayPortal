@@ -16,7 +16,7 @@ public class ProgramSettings
 [System.Serializable]
 public class PortalSettings
 {
-    public const uint CurrentSaveVersion = 4;
+    public const uint CurrentSaveVersion = 5;
 
     public uint SaveFileVersion;
     
@@ -51,6 +51,8 @@ public class PortalSettings
     public DesktopPortalController.BacksideTexture Backside;
     public bool GrabEnabled;
     public bool ScaleEnabled;
+
+    public bool HapticsEnabled;
 }
 
 public static class PortalSettingsSaver
@@ -175,7 +177,8 @@ public static class PortalSettingsSaver
 
             Backside = DesktopPortalController.BacksideTexture.Blue,
             GrabEnabled = true,
-            ScaleEnabled = true
+            ScaleEnabled = true,
+            HapticsEnabled = true,
         });
         SavedProfiles.Add("World - Right Wall", new PortalSettings()
         {
@@ -200,7 +203,8 @@ public static class PortalSettingsSaver
 
             Backside = DesktopPortalController.BacksideTexture.Blue,
             GrabEnabled = true,
-            ScaleEnabled = true
+            ScaleEnabled = true,
+            HapticsEnabled = true,
         });
         SavedProfiles.Add("World - Back Wall", new PortalSettings()
         {
@@ -225,7 +229,8 @@ public static class PortalSettingsSaver
 
             Backside = DesktopPortalController.BacksideTexture.Blue,
             GrabEnabled = true,
-            ScaleEnabled = true
+            ScaleEnabled = true,
+            HapticsEnabled = true,
         });
         SavedProfiles.Add("World - Left Wall", new PortalSettings()
         {
@@ -250,7 +255,8 @@ public static class PortalSettingsSaver
 
             Backside = DesktopPortalController.BacksideTexture.Blue,
             GrabEnabled = true,
-            ScaleEnabled = true
+            ScaleEnabled = true,
+            HapticsEnabled = true,
         });
         SavedProfiles.Add("Controller - Back Side", new PortalSettings()
         {
@@ -275,7 +281,8 @@ public static class PortalSettingsSaver
 
             Backside = DesktopPortalController.BacksideTexture.None,
             GrabEnabled = true,
-            ScaleEnabled = true
+            ScaleEnabled = true,
+            HapticsEnabled = true,
         });
         SavedProfiles.Add("Controller - Right Side", new PortalSettings()
         {
@@ -300,7 +307,8 @@ public static class PortalSettingsSaver
 
             Backside = DesktopPortalController.BacksideTexture.None,
             GrabEnabled = true,
-            ScaleEnabled = true
+            ScaleEnabled = true,
+            HapticsEnabled = true,
         });
         SavedProfiles.Add("Screen - Bottom Left", new PortalSettings()
         {
@@ -325,7 +333,8 @@ public static class PortalSettingsSaver
 
             Backside = DesktopPortalController.BacksideTexture.None,
             GrabEnabled = true,
-            ScaleEnabled = true
+            ScaleEnabled = true,
+            HapticsEnabled = true,
         });
         SavedProfiles.Add("Screen - Bottom Right", new PortalSettings()
         {
@@ -350,7 +359,8 @@ public static class PortalSettingsSaver
 
             Backside = DesktopPortalController.BacksideTexture.None,
             GrabEnabled = true,
-            ScaleEnabled = true
+            ScaleEnabled = true,
+            HapticsEnabled = true,
         });
     }
 
