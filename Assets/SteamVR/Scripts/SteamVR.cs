@@ -56,7 +56,7 @@ public class SteamVR : System.IDisposable
 	{
 		get
 		{
-#if !(UNITY_5_3 || UNITY_5_2 || UNITY_5_1 || UNITY_5_0)
+#if !(UNITY_5_3_OR_NEWER || UNITY_5_2 || UNITY_5_1 || UNITY_5_0)
 			return UnityEngine.VR.VRDevice.GetNativePtr() != System.IntPtr.Zero;
 #else
 			return false;
@@ -71,7 +71,7 @@ public class SteamVR : System.IDisposable
 			var error = EVRInitError.None;
 			if (!SteamVR.usingNativeSupport)
 			{
-#if !(UNITY_5_3 || UNITY_5_2 || UNITY_5_1 || UNITY_5_0)
+#if !(UNITY_5_3_OR_NEWER || UNITY_5_2 || UNITY_5_1 || UNITY_5_0)
 				Debug.Log("OpenVR initialization failed.  Ensure 'Virtual Reality Supported' is checked in Player Settings, and OpenVR is added to the list of Virtual Reality SDKs.");
 				return null;
 #else
@@ -301,7 +301,7 @@ public class SteamVR : System.IDisposable
 		textureBounds[1].vMin = 0.5f - 0.5f * r_bottom / tanHalfFov.y;
 		textureBounds[1].vMax = 0.5f - 0.5f * r_top / tanHalfFov.y;
 
-#if (UNITY_5_3 || UNITY_5_2 || UNITY_5_1 || UNITY_5_0)
+#if (UNITY_5_3_OR_NEWER || UNITY_5_2 || UNITY_5_1 || UNITY_5_0)
 		SteamVR.Unity.SetSubmitParams(textureBounds[0], textureBounds[1], EVRSubmitFlags.Submit_Default);
 #endif
 		// Grow the recommended size to account for the overlapping fov
@@ -352,7 +352,7 @@ public class SteamVR : System.IDisposable
 
 	private static void ShutdownSystems()
 	{
-#if (UNITY_5_3 || UNITY_5_2 || UNITY_5_1 || UNITY_5_0)
+#if (UNITY_5_3_OR_NEWER || UNITY_5_2 || UNITY_5_1 || UNITY_5_0)
 		OpenVR.Shutdown();
 #endif
 	}
@@ -364,7 +364,7 @@ public class SteamVR : System.IDisposable
 			_instance.Dispose();
 	}
 
-#if (UNITY_5_3 || UNITY_5_2 || UNITY_5_1 || UNITY_5_0)
+#if (UNITY_5_3_OR_NEWER || UNITY_5_2 || UNITY_5_1 || UNITY_5_0)
 	// Unityhooks in openvr_api.
 	public class Unity
 	{

@@ -149,7 +149,7 @@ public class SteamVR_ExternalCamera : MonoBehaviour
 		clipRenderer.material = clipMaterial;
 		clipRenderer.shadowCastingMode = ShadowCastingMode.Off;
 		clipRenderer.receiveShadows = false;
-#if !(UNITY_5_3 || UNITY_5_2 || UNITY_5_1 || UNITY_5_0)
+#if !(UNITY_5_3_OR_NEWER || UNITY_5_2 || UNITY_5_1 || UNITY_5_0)
 		clipRenderer.lightProbeUsage = LightProbeUsage.Off;
 #else
 		clipRenderer.useLightProbes = false;
