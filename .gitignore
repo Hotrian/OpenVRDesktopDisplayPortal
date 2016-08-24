@@ -52,3 +52,5 @@ Library/
 Temp/
 *.csproj
 *.sln
+.vs/
+*.userprefs
