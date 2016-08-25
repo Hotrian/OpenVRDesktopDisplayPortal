@@ -298,6 +298,9 @@ public class DesktopPortalController : MonoBehaviour
         Overlay.OnOverlayAnimationChanges += AnimationChanges;
 
         DodgeGazeDetector.OnOverlayGazed += Overlay.GazeDetectorGazed;
+
+        Overlay.OnOverlayEnabled += DodgeGazeDetector.OnParentEnabled;
+        Overlay.OnOverlayDisabled += DodgeGazeDetector.OnParentDisabled;
     }
 
     public void OnDisable()

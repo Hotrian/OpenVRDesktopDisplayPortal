@@ -53,6 +53,8 @@ public class HOTK_Overlay : HOTK_OverlayBase
     public FramerateMode Framerate = FramerateMode._30FPS;
     #endregion
 
+    public Action<HOTK_Overlay> OnOverlayEnabled;
+    public Action<HOTK_Overlay> OnOverlayDisabled;
     public Action<HOTK_Overlay> OnOverlayAnimationChanges;
     public Action<HOTK_Overlay, Vector3> OnOverlayPositionChanges;
     public Action<HOTK_Overlay, Quaternion> OnOverlayRotationChanges;
@@ -229,6 +231,12 @@ public class HOTK_Overlay : HOTK_OverlayBase
         _objectPosition = Vector3.zero;
         AutoUpdateRenderTextures = true;
         var error = overlay.CreateOverlay(Key + gameObject.GetInstanceID(), gameObject.name, ref _handle);
+        if (error != EVROverlayError.None)
+        {
+            Debug.Log(error.ToString());
+            enabled = false;
+            return;
+        }
         #pragma warning disable 0168
         // ReSharper disable once UnusedVariable
         var rt = RotationTracker; // Spawn RotationTracker
@@ -238,9 +246,8 @@ public class HOTK_Overlay : HOTK_OverlayBase
             HOTK_TrackedDeviceManager.Instance.SetOverlayCanGaze(this, AnimateOnGaze != AnimationType.DodgeGaze);
             HOTK_TrackedDeviceManager.Instance.SetOverlayCanAim(this);
         }
-        if (error == EVROverlayError.None) return;
-        Debug.Log(error.ToString());
-        enabled = false;
+        if (OnOverlayEnabled != null)
+            OnOverlayEnabled(this);
     }
 
     /// <summary>
@@ -254,6 +261,8 @@ public class HOTK_Overlay : HOTK_OverlayBase
         var overlay = OpenVR.Overlay;
         if (overlay != null) overlay.DestroyOverlay(_handle);
         _handle = OpenVR.k_ulOverlayHandleInvalid;
+        if (OnOverlayDisabled != null)
+            OnOverlayDisabled(this);
     }
     
     /// <summary>

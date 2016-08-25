@@ -65,6 +65,16 @@ public class HOTK_CompanionOverlay : HOTK_OverlayBase
         _handle = OpenVR.k_ulOverlayHandleInvalid;
     }
 
+    public void OnParentEnabled(HOTK_Overlay o)
+    {
+        gameObject.SetActive(OverlayMode != CompanionMode.DodgeOnGaze || Overlay.AnimateOnGaze == HOTK_Overlay.AnimationType.DodgeGaze);
+    }
+
+    public void OnParentDisabled(HOTK_Overlay o)
+    {
+        gameObject.SetActive(false);
+    }
+
     private bool updateCompanion;
 
     public void Update()
