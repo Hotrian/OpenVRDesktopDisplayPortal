@@ -28,7 +28,7 @@ public class HOTK_OverlayBase : MonoBehaviour
     {
         get
         {
-            return _overlayReference ?? (_overlayReference = new GameObject("Overlay Reference" + GetType()));// { hideFlags = HideFlags.HideInHierarchy };
+            return _overlayReference ?? (_overlayReference = new GameObject("Overlay Reference " + gameObject.name));// { hideFlags = HideFlags.HideInHierarchy };
         }
     }
     private GameObject _overlayReference;
@@ -50,4 +50,6 @@ public class HOTK_OverlayBase : MonoBehaviour
     protected Vector3 _objectPosition = Vector3.zero;     // These are used to cache values and check for changes
     protected Quaternion _anchorRotation = Quaternion.identity;   // These are used to cache values and check for changes
     protected Quaternion _objectRotation = Quaternion.identity;   // These are used to cache values and check for changes
+
+    public virtual void UpdateGaze(bool wasHit) { }
 }

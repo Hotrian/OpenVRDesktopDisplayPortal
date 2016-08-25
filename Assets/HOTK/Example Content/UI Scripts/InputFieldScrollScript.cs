@@ -7,12 +7,14 @@ using UnityEngine.UI;
 public class InputFieldScrollScript : MonoBehaviour
 {
     public bool UseInt;
+    [Tooltip("Should the InputField use Two Decimal Places (e.g. X.YY)?")]
+    public bool TwoDecimalPlaces;
     public float ValMultiplier = 10f;
     public bool UseLimits;
     public bool UseLowerLimit;
     public bool UseUpperLimit;
-    public int MinVal;
-    public int MaxVal;
+    public float MinVal;
+    public float MaxVal;
 
     public InputField InputField
     {
@@ -33,11 +35,11 @@ public class InputFieldScrollScript : MonoBehaviour
             {
                 if (v < 0)
                 {
-                    if (UseLowerLimit) val = Math.Max(MinVal, val + v); // Return the larger of the two numbers
+                    if (UseLowerLimit) val = Math.Max((int)MinVal, val + v); // Return the larger of the two numbers
                     else val += v;
                 }else if (v > 0)
                 {
-                    if (UseUpperLimit) val = Math.Min(MaxVal, val + v); // Return the smaller of the two numbers
+                    if (UseUpperLimit) val = Math.Min((int)MaxVal, val + v); // Return the smaller of the two numbers
                     else val += v;
                 }else return;
             }
@@ -67,8 +69,9 @@ public class InputFieldScrollScript : MonoBehaviour
             }
             else if (v != 0) val += v;
             else return;
-
-            val = (int)(val*10f)/10f; // floor to nearest 1/10th
+            
+            if (TwoDecimalPlaces) val = Mathf.Round(val * 100f) / 100f; // floor to nearest 1/10th
+            else val = ((int)Mathf.Round(val * 10f) * 10) / 100f; // floor to nearest 1/10th
 
             InputField.text = val.ToString(CultureInfo.InvariantCulture);
         }

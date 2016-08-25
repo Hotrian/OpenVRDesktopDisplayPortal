@@ -13,6 +13,9 @@ public class ScaleMatchInputField : MonoBehaviour
         get { return _inputField ?? (_inputField = GetComponent<InputField>()); }
     }
 
+    public InputField LinkedField;
+    public InputField LinkedField2;
+
     private InputField _inputField;
 
     private float _lastSafeValue;
@@ -42,6 +45,10 @@ public class ScaleMatchInputField : MonoBehaviour
         if (!float.TryParse(InputField.text, out f))
         {
             InputField.text = _lastSafeValue.ToString();
+            if (LinkedField != null)
+                LinkedField.text = InputField.text;
+            if (LinkedField2 != null)
+                LinkedField2.text = InputField.text;
             return;
         }
         if (Overlay == null) return;
@@ -86,6 +93,11 @@ public class ScaleMatchInputField : MonoBehaviour
             default:
                 throw new ArgumentOutOfRangeException();
         }
+
+        if (LinkedField != null)
+            LinkedField.text = InputField.text;
+        if (LinkedField2 != null)
+            LinkedField2.text = InputField.text;
     }
 
     public enum InputValue

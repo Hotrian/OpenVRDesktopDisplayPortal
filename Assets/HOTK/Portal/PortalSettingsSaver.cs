@@ -16,7 +16,7 @@ public class ProgramSettings
 [System.Serializable]
 public class PortalSettings
 {
-    public const uint CurrentSaveVersion = 5;
+    public const uint CurrentSaveVersion = 6;
 
     public uint SaveFileVersion;
     
@@ -53,6 +53,10 @@ public class PortalSettings
     public bool ScaleEnabled;
 
     public bool HapticsEnabled;
+
+    public float DodgeOffsetX;
+    public float DodgeOffsetY;
+    public float DodgeOffsetSpeed;
 }
 
 public static class PortalSettingsSaver
@@ -179,6 +183,10 @@ public static class PortalSettingsSaver
             GrabEnabled = true,
             ScaleEnabled = true,
             HapticsEnabled = true,
+
+            DodgeOffsetX = 2f,
+            DodgeOffsetY = 0f,
+            DodgeOffsetSpeed = 0.1f,
         });
         SavedProfiles.Add("World - Right Wall", new PortalSettings()
         {
@@ -205,6 +213,10 @@ public static class PortalSettingsSaver
             GrabEnabled = true,
             ScaleEnabled = true,
             HapticsEnabled = true,
+
+            DodgeOffsetX = 2f,
+            DodgeOffsetY = 0f,
+            DodgeOffsetSpeed = 0.1f,
         });
         SavedProfiles.Add("World - Back Wall", new PortalSettings()
         {
@@ -231,6 +243,10 @@ public static class PortalSettingsSaver
             GrabEnabled = true,
             ScaleEnabled = true,
             HapticsEnabled = true,
+
+            DodgeOffsetX = 2f,
+            DodgeOffsetY = 0f,
+            DodgeOffsetSpeed = 0.1f,
         });
         SavedProfiles.Add("World - Left Wall", new PortalSettings()
         {
@@ -257,8 +273,12 @@ public static class PortalSettingsSaver
             GrabEnabled = true,
             ScaleEnabled = true,
             HapticsEnabled = true,
+
+            DodgeOffsetX = 2f,
+            DodgeOffsetY = 0f,
+            DodgeOffsetSpeed = 0.1f,
         });
-        SavedProfiles.Add("Controller - Back Side", new PortalSettings()
+        SavedProfiles.Add("Left Controller - Back Side", new PortalSettings()
         {
             SaveFileVersion = PortalSettings.CurrentSaveVersion,
 
@@ -283,8 +303,12 @@ public static class PortalSettingsSaver
             GrabEnabled = true,
             ScaleEnabled = true,
             HapticsEnabled = true,
+
+            DodgeOffsetX = 2f,
+            DodgeOffsetY = 0f,
+            DodgeOffsetSpeed = 0.1f,
         });
-        SavedProfiles.Add("Controller - Right Side", new PortalSettings()
+        SavedProfiles.Add("Left Controller - Right Side", new PortalSettings()
         {
             SaveFileVersion = PortalSettings.CurrentSaveVersion,
 
@@ -309,6 +333,10 @@ public static class PortalSettingsSaver
             GrabEnabled = true,
             ScaleEnabled = true,
             HapticsEnabled = true,
+
+            DodgeOffsetX = 2f,
+            DodgeOffsetY = 0f,
+            DodgeOffsetSpeed = 0.1f,
         });
         SavedProfiles.Add("Screen - Bottom Left", new PortalSettings()
         {
@@ -335,6 +363,10 @@ public static class PortalSettingsSaver
             GrabEnabled = true,
             ScaleEnabled = true,
             HapticsEnabled = true,
+
+            DodgeOffsetX = 2f,
+            DodgeOffsetY = 0f,
+            DodgeOffsetSpeed = 0.1f,
         });
         SavedProfiles.Add("Screen - Bottom Right", new PortalSettings()
         {
@@ -361,6 +393,10 @@ public static class PortalSettingsSaver
             GrabEnabled = true,
             ScaleEnabled = true,
             HapticsEnabled = true,
+
+            DodgeOffsetX = 2f,
+            DodgeOffsetY = 0f,
+            DodgeOffsetSpeed = 0.1f,
         });
     }
 

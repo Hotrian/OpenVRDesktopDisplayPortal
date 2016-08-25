@@ -26,7 +26,7 @@ public class AutoResizeRenderTextureForBacksideCamera : MonoBehaviour
         script.Camera.targetTexture = Texture;
         script.ResizeCamera(Texture, 2f);
         if (tex != null) tex.Release();
-
+        script.Camera.enabled = true;
         BacksideOverlay.OverlayTexture = Texture;
         StartCoroutine(UpdateAfterFrame());
     }
@@ -35,5 +35,6 @@ public class AutoResizeRenderTextureForBacksideCamera : MonoBehaviour
     {
         yield return new WaitForEndOfFrame();
         BacksideOverlay.DoUpdateOverlay();
+        script.Camera.enabled = false;
     }
 }

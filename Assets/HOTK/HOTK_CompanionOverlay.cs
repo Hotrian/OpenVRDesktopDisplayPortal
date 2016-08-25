@@ -7,20 +7,11 @@ public class HOTK_CompanionOverlay : HOTK_OverlayBase
     public HOTK_Overlay Overlay;
     public Texture OverlayTexture;
     public VROverlayInputMethod InputMethod = VROverlayInputMethod.None;
-    public Vector3 CompanionOffset;
 
-    public CompanionMode OverlayMode
-    {
-        get { return _overlayMode; }
-        set
-        {
-            if (_overlayMode == CompanionMode.Backside)
-            {
-                
-            }
-        }
-    }
+    public CompanionMode OverlayMode;
     private CompanionMode _overlayMode;
+
+    public Action<HOTK_OverlayBase, bool> OnOverlayGazed;
 
     private bool _subscribed;
     
@@ -57,6 +48,7 @@ public class HOTK_CompanionOverlay : HOTK_OverlayBase
             Overlay.OnOverlayAttachmentChanges += AttachToOverlay;
             Overlay.OnOverlayAlphaChanges += OverlayAlphaChanges;
             Overlay.OnOverlayScaleChanges += OverlayScaleChanges;
+            Overlay.OnOverlayPositionChanges += OverlayPositionChanges;
             Overlay.OnOverlayRotationChanges += OverlayRotationChanges;
         }
         updateCompanion = true;
@@ -77,13 +69,14 @@ public class HOTK_CompanionOverlay : HOTK_OverlayBase
 
     public void Update()
     {
+        CheckCompanionModeChanged();
         // Check if our Overlay's Texture has changed
-        CheckOverlayTextureChanged(ref updateCompanion);
+        CheckOverlayTextureChanged();
         // Check if our Overlay's Anchor has changed
         //CheckOverlayAnchorChanged(ref changed);
         // Check if our Overlay's rotation or position changed
         //CheckOverlayRotationChanged(ref changed);
-        //CheckOverlayPositionChanged(ref changed);
+        CheckOverlayPositionChanged();
         // Check if our Overlay's Alpha or Scale changed
         //CheckOverlayAlphaAndScale(ref changed);
         // Check if our Overlay is being Gazed at, or has been recently and is still animating
@@ -112,15 +105,38 @@ public class HOTK_CompanionOverlay : HOTK_OverlayBase
         updateCompanion = true;
     }
 
-    private void CheckOverlayTextureChanged(ref bool changed)
+    private void CheckCompanionModeChanged()
     {
-        if (_overlayTexture == OverlayTexture && _uvOffset == Overlay.UvOffset) return;
+        if (_overlayMode == OverlayMode) return;
+        _overlayMode = OverlayMode;
+
+        if (Overlay != null)
+            AttachToOverlay(Overlay);
+    }
+
+    private void CheckOverlayTextureChanged()
+    {
+        if (((OverlayTexture is RenderTexture || OverlayTexture is MovieTexture) && !AutoUpdateRenderTextures) && _overlayTexture == OverlayTexture && _uvOffset == Overlay.UvOffset) return;
         _overlayTexture = OverlayTexture;
         _uvOffset = Overlay.UvOffset;
-        changed = true;
+        updateCompanion = true;
 
         //if (MeshRenderer != null) // If our texture changes, change our MeshRenderer's texture also. The MeshRenderer is optional.
             //MeshRenderer.material.mainTexture = OverlayTexture;
+    }
+
+    private void CheckOverlayPositionChanged()
+    {
+        if (_objectPosition == gameObject.transform.localPosition) return;
+        if (OverlayMode == CompanionMode.Backside) gameObject.transform.localPosition = Vector3.zero;
+        _objectPosition = gameObject.transform.localPosition;
+        updateCompanion = true;
+    }
+
+    public override void UpdateGaze(bool wasHit)
+    {
+        if (OnOverlayGazed != null)
+            OnOverlayGazed(this, wasHit);
     }
 
     /// <summary>
@@ -131,6 +147,7 @@ public class HOTK_CompanionOverlay : HOTK_OverlayBase
     {
         if (_anchor == OpenVR.k_unTrackedDeviceIndexInvalid)
         {
+            //Debug.Log(OverlayReference.transform.position + " " + transform.position);
             var offset = new SteamVR_Utils.RigidTransform(OverlayReference.transform, transform);
             offset.pos.x /= OverlayReference.transform.localScale.x;
             offset.pos.y /= OverlayReference.transform.localScale.y;
@@ -176,20 +193,22 @@ public class HOTK_CompanionOverlay : HOTK_OverlayBase
                 break;
             case HOTK_Overlay.AttachmentDevice.World:
                 _anchor = OpenVR.k_unTrackedDeviceIndexInvalid;
-                gameObject.transform.localRotation = OverlayMode == CompanionMode.Backside ? Quaternion.AngleAxis(180f, Vector3.up) : Quaternion.identity;
+                gameObject.transform.parent = OverlayMode == CompanionMode.DodgeOnGaze ? o.gameObject.transform.parent : o.gameObject.transform;
+                gameObject.transform.localPosition = OverlayMode == CompanionMode.DodgeOnGaze ? o.gameObject.transform.localPosition : Vector3.zero;
+                gameObject.transform.localRotation = OverlayMode == CompanionMode.Backside ? Quaternion.AngleAxis(180f, Vector3.up) : OverlayMode == CompanionMode.DodgeOnGaze ? o.gameObject.transform.localRotation : Quaternion.identity;
                 OverlayReference.transform.localRotation = Quaternion.identity;
                 break;
             case HOTK_Overlay.AttachmentDevice.LeftController:
                 _anchor = HOTK_TrackedDeviceManager.Instance.LeftIndex;
                 gameObject.transform.localRotation = Quaternion.identity;
                 OverlayReference.transform.localRotation = OverlayMode == CompanionMode.Backside ? Quaternion.AngleAxis(180f, Vector3.up) : Quaternion.identity;
-                OverlayRotationChanges(true); // Force rotational update
+                OverlayRotationChanges(); // Force rotational update
                 break;
             case HOTK_Overlay.AttachmentDevice.RightController:
                 _anchor = HOTK_TrackedDeviceManager.Instance.RightIndex;
                 gameObject.transform.localRotation = Quaternion.identity;
                 OverlayReference.transform.localRotation = OverlayMode == CompanionMode.Backside ? Quaternion.AngleAxis(180f, Vector3.up) : Quaternion.identity;
-                OverlayRotationChanges(true); // Force rotational update
+                OverlayRotationChanges(); // Force rotational update
                 break;
             default:
                 throw new ArgumentOutOfRangeException("device", _anchorDevice, null);
@@ -215,23 +234,25 @@ public class HOTK_CompanionOverlay : HOTK_OverlayBase
 
     private void OverlayPositionChanges(HOTK_Overlay o, Vector3 pos)
     {
-        gameObject.transform.localPosition = pos;
+        if (OverlayMode != CompanionMode.DodgeOnGaze) return;
+        if (_anchorDevice == HOTK_Overlay.AttachmentDevice.World)
+            gameObject.transform.localPosition = pos;
         updateCompanion = true;
     }
 
     private void OverlayRotationChanges(HOTK_Overlay o, Quaternion rot)
     {
-        //_anchorRotation = rot;
+        if (OverlayMode == CompanionMode.DodgeOnGaze)
+        {
+            if (_anchorDevice == HOTK_Overlay.AttachmentDevice.World)
+                gameObject.transform.localRotation = rot;
+        }
         OverlayRotationChanges();
     }
 
-    private void OverlayRotationChanges(bool force = false)
+    private void OverlayRotationChanges()
     {
-        var gameObjectChanged = _objectRotation != gameObject.transform.localRotation;
-        if (gameObjectChanged)
-        {
-            _objectRotation = gameObject.transform.localRotation;
-        }
+        _objectRotation = gameObject.transform.localRotation;
         updateCompanion = true;
     }
 
@@ -319,6 +340,7 @@ public class HOTK_CompanionOverlay : HOTK_OverlayBase
     public enum CompanionMode
     {
         Backside,
-        VRInterface
+        VRInterface,
+        DodgeOnGaze
     }
 }

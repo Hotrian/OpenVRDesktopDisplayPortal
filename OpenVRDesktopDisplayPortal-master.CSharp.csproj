@@ -78,6 +78,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\AnimationPanelController.cs" />
     <Compile Include="Assets\HOTK\Example Content\DesktopCameraScript.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\AlphaMatchInputField.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\ApplicationDropdownScript.cs" />
@@ -85,6 +86,7 @@
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\ButtonHideWhenNotController.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\ButtonSwapControllers.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\DisableOnEventTrigger.cs" />
+    <Compile Include="Assets\HOTK\Example Content\UI Scripts\DodgeMatchInputField.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\DropdownApplicationModeController.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\DropdownHideWhenNotController.cs" />
     <Compile Include="Assets\HOTK\Example Content\UI Scripts\DropdownMatchEnumOptions.cs" />

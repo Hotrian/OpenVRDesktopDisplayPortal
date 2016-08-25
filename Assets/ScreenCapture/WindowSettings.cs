@@ -31,4 +31,7 @@ public class WindowSettings
     public int offsetBottom = 0;
     public int offsetWidth = 0;
     public int offsetHeight = 0;
+    public bool windowAspectLocked = false;
+    public float windowAspectW = 1.7777f;
+    public float windowAspectH = 0.5625f;
 }

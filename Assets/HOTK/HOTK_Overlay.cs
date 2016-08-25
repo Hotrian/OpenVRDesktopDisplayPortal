@@ -17,6 +17,7 @@ public class HOTK_Overlay : HOTK_OverlayBase
     public Texture OverlayTexture;
     [Tooltip("How, if at all, the Overlay is animated when being looked at.")]
     public AnimationType AnimateOnGaze = AnimationType.None;
+    private AnimationType _animateOnGaze;
     [Tooltip("The alpha at which the Overlay will be drawn.")]
     public float Alpha = 1.0f;			// opacity 0..1
     [Tooltip("The alpha at which the Overlay will be drawn.")]
@@ -40,6 +41,8 @@ public class HOTK_Overlay : HOTK_OverlayBase
     public Vector2 MouseScale = Vector3.one;
     public Vector2 CurvedRange = new Vector2(1, 2);
     public VROverlayInputMethod InputMethod = VROverlayInputMethod.None;
+    public Vector2 DodgeGazeOffset = Vector2.zero;
+    public float DodgeGazeSpeed = 0.1f;
 
     [Tooltip("Controls where the Overlay will be drawn.")]
     public AttachmentDevice AnchorDevice = AttachmentDevice.Screen;
@@ -50,6 +53,7 @@ public class HOTK_Overlay : HOTK_OverlayBase
     public FramerateMode Framerate = FramerateMode._30FPS;
     #endregion
 
+    public Action<HOTK_Overlay> OnOverlayAnimationChanges;
     public Action<HOTK_Overlay, Vector3> OnOverlayPositionChanges;
     public Action<HOTK_Overlay, Quaternion> OnOverlayRotationChanges;
     public Action<HOTK_Overlay, float> OnOverlayAlphaChanges;
@@ -139,6 +143,7 @@ public class HOTK_Overlay : HOTK_OverlayBase
     public void Update()
     {
         var changed = false;
+        CheckAnimationChanged(ref changed);
         // Check if our Overlay's Texture has changed
         CheckOverlayTextureChanged(ref changed);
         // Check if our Overlay's Anchor has changed
@@ -164,7 +169,17 @@ public class HOTK_Overlay : HOTK_OverlayBase
         }
     }
 
-    public void UpdateGaze(bool hit)
+    private void CheckAnimationChanged(ref bool changed)
+    {
+        if (_animateOnGaze == AnimateOnGaze) return;
+        StopDodging();
+        _animateOnGaze = AnimateOnGaze;
+        changed = true;
+        if (OnOverlayAnimationChanges != null)
+            OnOverlayAnimationChanges(this);
+    }
+
+    public override void UpdateGaze(bool hit)
     {
         IsBeingGazed = hit;
         HandleAnimateOnGaze(hit);
@@ -220,7 +235,7 @@ public class HOTK_Overlay : HOTK_OverlayBase
         #pragma warning restore 0168
         if (_handle != OpenVR.k_ulOverlayHandleInvalid)
         {
-            HOTK_TrackedDeviceManager.Instance.SetOverlayCanGaze(this);
+            HOTK_TrackedDeviceManager.Instance.SetOverlayCanGaze(this, AnimateOnGaze != AnimationType.DodgeGaze);
             HOTK_TrackedDeviceManager.Instance.SetOverlayCanAim(this);
         }
         if (error == EVROverlayError.None) return;
@@ -272,6 +287,8 @@ public class HOTK_Overlay : HOTK_OverlayBase
     /// <param name="point"></param>
     public void AttachTo(AttachmentDevice device, float scale, Vector3 offset, AttachmentPoint point = AttachmentPoint.Center)
     {
+        StopDodging();
+
         // Update Overlay Anchor position
         GetOverlayPosition();
 
@@ -296,11 +313,13 @@ public class HOTK_Overlay : HOTK_OverlayBase
             case AttachmentDevice.Screen:
                 _anchor = OpenVR.k_unTrackedDeviceIndexInvalid;
                 gameObject.transform.localPosition = offset;
+                OverlayReference.transform.localPosition = Vector3.zero;
                 OverlayReference.transform.localRotation = Quaternion.identity;
                 break;
             case AttachmentDevice.World:
                 _anchor = OpenVR.k_unTrackedDeviceIndexInvalid;
                 gameObject.transform.localPosition = offset;
+                OverlayReference.transform.localPosition = Vector3.zero;
                 OverlayReference.transform.localRotation = Quaternion.identity;
                 break;
             case AttachmentDevice.LeftController:
@@ -418,6 +437,7 @@ public class HOTK_Overlay : HOTK_OverlayBase
         {
             if (_alpha != Alpha) // Loss of precision but it should work
             {
+                StopDodging();
                 _alpha = Alpha;
                 changed = true;
             }
@@ -426,6 +446,7 @@ public class HOTK_Overlay : HOTK_OverlayBase
         {
             if (_scale != Scale) // Loss of precision but it should work
             {
+                StopDodging();
                 _scale = Scale;
                 changed = true;
             }
@@ -468,12 +489,13 @@ public class HOTK_Overlay : HOTK_OverlayBase
         var gameObjectChanged = _objectRotation != gameObject.transform.localRotation;
         if (gameObjectChanged)
         {
+            StopDodging();
             _objectRotation = gameObject.transform.localRotation;
             if (OnOverlayRotationChanges != null)
                 OnOverlayRotationChanges(this, _objectRotation);
             changed = true;
         }
-        if (_anchor == OpenVR.k_unTrackedDeviceIndexInvalid || OverlayReference == null) return; // This part below is only for Controllers
+        if (_anchor == OpenVR.k_unTrackedDeviceIndexInvalid) return; // This part below is only for Controllers
         if (!force && !gameObjectChanged && OverlayReference.transform.localRotation == _anchorRotation * _objectRotation) return;
         OverlayReference.transform.localRotation = _anchorRotation * _objectRotation;
         changed = true;
@@ -527,6 +549,92 @@ public class HOTK_Overlay : HOTK_OverlayBase
             offset.pos.z /= ZeroReference.transform.localScale.z;
             var t = offset.ToHmdMatrix34();
             return t;
+        }
+    }
+
+    private bool _dodging;
+    private Vector3 _dodgingBase;
+    private Vector3 _dodgingTarget;
+    private float _dodgingVal;
+    private float _dodgingOffsetX;
+    private float _dodgingOffsetY;
+    private bool _dodgingFull;
+
+    public void GazeDetectorGazed(HOTK_OverlayBase o, bool wasHit)
+    {
+        var changed = false;
+
+        if (_dodging && (_dodgingOffsetX != DodgeGazeOffset.x || _dodgingOffsetY != DodgeGazeOffset.y))
+        {
+            _dodgingOffsetX = DodgeGazeOffset.x;
+            _dodgingOffsetY = DodgeGazeOffset.y;
+            AnchorDodge();
+            if (_dodgingFull)
+            {
+                OverlayReference.transform.localPosition = _dodgingTarget;
+                changed = true;
+            }
+        }
+
+        if (wasHit)
+        {
+            if (!_dodging)
+            {
+                _dodging = true;
+                _dodgingBase = OverlayReference.transform.localPosition;
+                AnchorDodge();
+                _dodgingVal = 0f;
+            }else if (_dodgingVal < 1f)
+            {
+                _dodgingVal += DodgeGazeSpeed;
+                if (_dodgingVal > 1f)
+                    _dodgingVal = 1f;
+                OverlayReference.transform.localPosition = Vector3.Lerp(_dodgingBase, _dodgingTarget, _dodgingVal);
+                changed = true;
+            }
+            else _dodgingFull = true;
+        }
+        else
+        {
+            _dodgingFull = false;
+            if (_dodging)
+            {
+                if (_dodgingVal > 0f)
+                {
+                    _dodgingVal -= DodgeGazeSpeed;
+                    if (_dodgingVal < 0f)
+                        _dodgingVal = 0f;
+                    OverlayReference.transform.localPosition = Vector3.Lerp(_dodgingBase, _dodgingTarget, _dodgingVal);
+                    changed = true;
+                }
+                else
+                {
+                    _dodging = false;
+                    OverlayReference.transform.localPosition = _dodgingBase;
+                }
+            }
+        }
+
+        if (changed)
+            DoUpdate();
+    }
+
+    private void AnchorDodge()
+    {
+        _dodgingOffsetX = DodgeGazeOffset.x;
+        _dodgingOffsetY = DodgeGazeOffset.y;
+        var aspect = (float) OverlayTexture.height/(float) OverlayTexture.width;
+        if (_anchorDevice == AttachmentDevice.LeftController || _anchorDevice == AttachmentDevice.RightController)
+            _dodgingTarget = _dodgingBase + (OverlayReference.transform.right * _dodgingOffsetX * Scale) + (OverlayReference.transform.up * _dodgingOffsetY * Scale * aspect);
+        else _dodgingTarget = _dodgingBase - (gameObject.transform.right * _dodgingOffsetX * Scale) - (gameObject.transform.up * _dodgingOffsetY * Scale * aspect);
+    }
+
+    public void StopDodging()
+    {
+        if (_dodging)
+        {
+            OverlayReference.transform.localPosition = _dodgingBase;
+            _dodging = false;
         }
     }
 
@@ -857,6 +965,7 @@ public class HOTK_Overlay : HOTK_OverlayBase
         /// Animate this Overlay by changing its Alpha and scaling it.
         /// </summary>
         AlphaAndScale,
+        DodgeGaze,
     }
 
     public enum FramerateMode

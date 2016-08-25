@@ -77,6 +77,7 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
     private uint _hmdIndex = OpenVR.k_unTrackedDeviceIndexInvalid;
 
     private readonly List<HOTK_Overlay> _gazeableOverlays = new List<HOTK_Overlay>();
+    private readonly List<HOTK_OverlayBase> _gazeableCompanionOverlays = new List<HOTK_OverlayBase>();
     private readonly List<HOTK_OverlayBase> _interactableOverlays = new List<HOTK_OverlayBase>();
 
     public void Start()
@@ -109,6 +110,24 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
             if (_gazeableOverlays.Contains(overlay))
             {
                 _gazeableOverlays.Remove(overlay);
+            }
+        }
+    }
+
+    public void SetCompanionCanGaze(HOTK_OverlayBase overlayBase, bool isInteractable = true)
+    {
+        if (isInteractable)
+        {
+            if (!_gazeableCompanionOverlays.Contains(overlayBase))
+            {
+                _gazeableCompanionOverlays.Add(overlayBase);
+            }
+        }
+        else
+        {
+            if (_gazeableCompanionOverlays.Contains(overlayBase))
+            {
+                _gazeableCompanionOverlays.Remove(overlayBase);
             }
         }
     }
@@ -616,19 +635,60 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
     private void UpdateGaze()
     {
         FindTracker(ref _hmdTracker, HOTK_TrackedDevice.EType.HMD);
+        HOTK_Overlay hitOverlay = null;
+        HOTK_OverlayBase hitOverlayBase = null;
+        SteamVR_Overlay.IntersectionResults? hitResult = null;
+
+        // Test Overlays
         foreach (var overlay in _gazeableOverlays)
         {
             if (overlay.AnimateOnGaze == HOTK_Overlay.AnimationType.None) continue;
-            var hit = overlay.GazeLocked && overlay.GazeLockedOn;
-            if (!overlay.GazeLocked && _hmdTracker != null && _hmdTracker.IsValid)
+            if (overlay.GazeLocked || _hmdTracker == null || !_hmdTracker.IsValid) continue;
+            if (!(Vector3.Angle(_hmdTracker.transform.forward, overlay.RotationTracker.transform.forward) <= 90f))
+                continue;
+            var result = new SteamVR_Overlay.IntersectionResults();
+            var hit = ComputeIntersection(overlay, _hmdTracker.gameObject.transform.position, _hmdTracker.gameObject.transform.forward, ref result);
+            if (!hit || (hitResult != null && !(result.distance < hitResult.Value.distance))) continue;
+            hitOverlay = overlay;
+            hitResult = result;
+        }
+        // Test Companions
+        foreach (var overlay in _gazeableCompanionOverlays)
+        {
+            if (_hmdTracker == null || !_hmdTracker.IsValid) continue;
+            if (!(Vector3.Angle(_hmdTracker.transform.forward, overlay.RotationTracker.transform.forward) <= 90f))
+                continue;
+            var result = new SteamVR_Overlay.IntersectionResults();
+            var hit = ComputeIntersection(overlay, _hmdTracker.gameObject.transform.position, _hmdTracker.gameObject.transform.forward, ref result);
+            if (!hit || (hitResult != null && !(result.distance < hitResult.Value.distance))) continue;
+            hitOverlay = null;
+            hitOverlayBase = overlay;
+            hitResult = result;
+        }
+
+        if (hitOverlay != null)
+        {
+            foreach (var overlay in _gazeableOverlays)
             {
-                if (Vector3.Angle(_hmdTracker.transform.forward, overlay.RotationTracker.transform.forward) <= 90f)
-                {
-                    var result = new SteamVR_Overlay.IntersectionResults();
-                    hit = ComputeIntersection(overlay, _hmdTracker.gameObject.transform.position, _hmdTracker.gameObject.transform.forward, ref result);
-                }
+                overlay.UpdateGaze((overlay.GazeLocked && overlay.GazeLockedOn) || (!overlay.GazeLocked && overlay == hitOverlay));
             }
-            overlay.UpdateGaze(hit);
+            foreach (var companion in _gazeableCompanionOverlays)
+                companion.UpdateGaze(false);
+        }
+        else if (hitOverlayBase != null)
+        {
+            foreach (var overlay in _gazeableOverlays)
+                overlay.UpdateGaze(overlay.GazeLocked && overlay.GazeLockedOn);
+            foreach (var companion in _gazeableCompanionOverlays.Where(o => o != hitOverlayBase))
+                companion.UpdateGaze(false);
+            hitOverlayBase.UpdateGaze(true);
+        }
+        else
+        {
+            foreach (var overlay in _gazeableOverlays)
+                overlay.UpdateGaze(overlay.GazeLocked && overlay.GazeLockedOn);
+            foreach (var companion in _gazeableCompanionOverlays)
+                companion.UpdateGaze(false);
         }
     }
 

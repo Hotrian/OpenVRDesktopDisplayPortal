@@ -8,11 +8,19 @@ public class AutoResizeRenderTextureForPrimaryCamera : MonoBehaviour
 
     private float _width;
     private float _height;
+
+    private bool skipUpdate;
 	
 	public void Update ()
     {
 	    if (_width == transform.localScale.x && _height == transform.localScale.y) return;
-	    _width = transform.localScale.x;
+	    if (skipUpdate)
+	    {
+	        skipUpdate = false;
+	        return;
+        }
+        skipUpdate = true;
+        _width = transform.localScale.x;
 	    _height = transform.localScale.y;
 	    var marginX = Math.Max(4, (((int) (transform.localScale.x/100f)) / 2) * 2);
 	    var marginY = Math.Max(4, (((int) (transform.localScale.y/100f)) / 2) * 2);

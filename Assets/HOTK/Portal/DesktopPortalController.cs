@@ -30,6 +30,9 @@ public class DesktopPortalController : MonoBehaviour
     public Image SizeLockSprite;
     public Sprite LockSprite;
     public Sprite UnlockSprite;
+    public Image AspectLinkedSprite;
+    public Sprite AspectLockSprite;
+    public Sprite AspectUnlockSprite;
 
     public Material OutlineMaterial; // Material used for the outline
 
@@ -73,6 +76,8 @@ public class DesktopPortalController : MonoBehaviour
     public GameObject BacksideDisplayQuad; // A Quad used to show the Backside, which is captured by a RenderCamera
     public Material BacksideDisplayMaterial; // The Material we are drawing to
     public Texture[] BacksideTextures;
+
+    public HOTK_CompanionOverlay DodgeGazeDetector;
 
     public DropdownMatchEnumOptions ClickAPIDropdown;
     public Toggle WindowOnTopToggle;
@@ -242,8 +247,7 @@ public class DesktopPortalController : MonoBehaviour
     private static readonly float[] FramerateFractions = {
         1f, 1f/2f, 1f/5f, 1f/10f, 1/15f, 1/24f, 1f/30f, 1f/60f, 1f/90f, 1f/120f
     };
-
-    private bool _started;
+    
     #endregion
 
     #region Unity Methods
@@ -254,7 +258,6 @@ public class DesktopPortalController : MonoBehaviour
         if (Overlay == null) return;
         SaveLoad.Load();
         Overlay.OverlayTexture = RenderTexture;
-        _started = true;
         _bitmap = CaptureScreen.CaptureDesktop();
         _texture = new Texture2D(_bitmap.Width, _bitmap.Height) { filterMode = SelectedWindowSettings != null ? SelectedWindowSettings.filterMode : FilterMode.Point };
 
@@ -279,21 +282,22 @@ public class DesktopPortalController : MonoBehaviour
             _currentWindowWidth = 0; // Tricks the system into recalculating the size of the Overlay before capturing.
             StartCoroutine("CaptureWindow");
         }
-        if (!_subscribed)
-        {
-            _subscribed = true;
-            HOTK_TrackedDeviceManager.OnControllerTriggerClicked += SingleClickApplication;
-            HOTK_TrackedDeviceManager.OnControllerTriggerDoubleClicked += DoubleClickApplication;
-            HOTK_TrackedDeviceManager.OnControllerTouchpadClicked += RightClickApplication;
-            HOTK_TrackedDeviceManager.OnControllerGripsClicked += MiddleClickApplication;
-            HOTK_TrackedDeviceManager.OnControllerTriggerDown += TriggerDown;
-            HOTK_TrackedDeviceManager.OnControllerTriggerUp += TriggerUp;
-            HOTK_TrackedDeviceManager.OnControllerTouchpadDown += TouchpadDown;
-            Overlay.OnControllerHitsOverlay += AimAtApplication;
-            Overlay.OnControllerUnhitsOverlay += UnsetLastHit;
-            Overlay.OnControllerTouchesOverlay += TouchOverlay;
-            Overlay.OnControllerStopsTouchingOverlay += UnTouchOverlay;
-        }
+        if (_subscribed) return;
+        _subscribed = true;
+        HOTK_TrackedDeviceManager.OnControllerTriggerClicked += SingleClickApplication;
+        HOTK_TrackedDeviceManager.OnControllerTriggerDoubleClicked += DoubleClickApplication;
+        HOTK_TrackedDeviceManager.OnControllerTouchpadClicked += RightClickApplication;
+        HOTK_TrackedDeviceManager.OnControllerGripsClicked += MiddleClickApplication;
+        HOTK_TrackedDeviceManager.OnControllerTriggerDown += TriggerDown;
+        HOTK_TrackedDeviceManager.OnControllerTriggerUp += TriggerUp;
+        HOTK_TrackedDeviceManager.OnControllerTouchpadDown += TouchpadDown;
+        Overlay.OnControllerHitsOverlay += AimAtApplication;
+        Overlay.OnControllerUnhitsOverlay += UnsetLastHit;
+        Overlay.OnControllerTouchesOverlay += TouchOverlay;
+        Overlay.OnControllerStopsTouchingOverlay += UnTouchOverlay;
+        Overlay.OnOverlayAnimationChanges += AnimationChanges;
+
+        DodgeGazeDetector.OnOverlayGazed += Overlay.GazeDetectorGazed;
     }
 
     public void OnDisable()
@@ -442,6 +446,14 @@ public class DesktopPortalController : MonoBehaviour
         _touchingOverlay = null;
         if (!_didHitOverlay) StartCoroutine("GoToDefaultColor");
     }
+
+    private void AnimationChanges(HOTK_Overlay o)
+    {
+        DodgeGazeDetector.gameObject.SetActive(o.AnimateOnGaze == HOTK_Overlay.AnimationType.DodgeGaze);
+        HOTK_TrackedDeviceManager.Instance.SetOverlayCanGaze(o, o.AnimateOnGaze != HOTK_Overlay.AnimationType.DodgeGaze);
+        HOTK_TrackedDeviceManager.Instance.SetCompanionCanGaze(DodgeGazeDetector, o.AnimateOnGaze == HOTK_Overlay.AnimationType.DodgeGaze);
+    }
+
     /// <summary>
     /// Occurs when a controller is aiming at an Overlay
     /// </summary>
@@ -930,6 +942,7 @@ public class DesktopPortalController : MonoBehaviour
     /// </summary>
     public RenderTexture GetNewRenderTexture(int width = 0, int height = 0)
     {
+        Overlay.StopDodging();
         _renderTextureMarginWidth = width;
         _renderTextureMarginHeight = height;
         _renderTexture = null;
@@ -1178,6 +1191,18 @@ public class DesktopPortalController : MonoBehaviour
         SaveLoad.Save();
     }
 
+    public void ToggleAspectLocked()
+    {
+        if (_selectedWindow == IntPtr.Zero) return;
+        SelectedWindowSettings.windowAspectLocked = !SelectedWindowSettings.windowAspectLocked;
+        var r = CaptureScreen.GetWindowRect(_selectedWindow);
+        SelectedWindowSettings.windowAspectW = (float)r.Height / (float)r.Width;
+        SelectedWindowSettings.windowAspectH = (float)r.Width / (float)r.Height;
+        AspectLinkedSprite.sprite = SelectedWindowSettings.windowAspectLocked ? AspectLockSprite : AspectUnlockSprite;
+
+        SaveLoad.Save();
+    }
+
     public void WindowSettingConfirmed(string setting)
     {
         if (_selectedWindow == IntPtr.Zero) return;
@@ -1222,6 +1247,12 @@ public class DesktopPortalController : MonoBehaviour
                     {
                         r.Width = v;
                         SelectedWindowSettings.offsetWidth = v;
+                        if (SelectedWindowSettings.windowAspectLocked)
+                        {
+                            r.Height = (int)(r.Width * SelectedWindowSettings.windowAspectW);
+                            OffsetHeightField.text = r.Height.ToString();
+                            SelectedWindowSettings.offsetHeight = r.Height;
+                        }
                         if (SelectedWindowSettings.offsetHeight <= 0) SelectedWindowSettings.offsetHeight = r.Height;
                         SetWindowSize(r);
                     }
@@ -1245,6 +1276,12 @@ public class DesktopPortalController : MonoBehaviour
                     {
                         r.Height = v;
                         SelectedWindowSettings.offsetHeight = v;
+                        if (SelectedWindowSettings.windowAspectLocked)
+                        {
+                            r.Width = (int)(r.Height * SelectedWindowSettings.windowAspectH);
+                            OffsetWidthField.text = r.Width.ToString();
+                            SelectedWindowSettings.offsetWidth = r.Width;
+                        }
                         if (SelectedWindowSettings.offsetWidth <= 0) SelectedWindowSettings.offsetWidth = r.Width;
                         SetWindowSize(r);
                     }
@@ -1334,6 +1371,7 @@ public class DesktopPortalController : MonoBehaviour
         OffsetRightField.text = settings.offsetRight.ToString();
         OffsetBottomField.text = settings.offsetBottom.ToString();
         SizeLockSprite.sprite = settings.windowSizeLocked ? LockSprite : UnlockSprite;
+        AspectLinkedSprite.sprite = settings.windowAspectLocked ? AspectLockSprite : AspectUnlockSprite;
         CaptureModeDropdown.SetToOption(DropdownMatchEnumOptions.CaptureModeNames[(int) settings.captureMode], true);
         FramerateModeDropdown.SetToOption(DropdownMatchEnumOptions.FramerateModeNames[(int) settings.framerateMode], true);
 

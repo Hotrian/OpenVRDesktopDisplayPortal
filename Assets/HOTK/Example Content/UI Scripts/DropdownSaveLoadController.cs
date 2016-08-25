@@ -3,6 +3,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using Valve.VR;
 
 [RequireComponent(typeof(Dropdown))]
 public class DropdownSaveLoadController : MonoBehaviour
@@ -27,6 +28,15 @@ public class DropdownSaveLoadController : MonoBehaviour
     public InputField ScaleStartField;
     public InputField ScaleEndField;
     public InputField ScaleSpeedField;
+
+    public InputField AlphaDodgeField;
+    public InputField ScaleDodgeField;
+    public InputField AlphaNoneField;
+    public InputField ScaleNoneField;
+
+    public InputField DodgeXField;
+    public InputField DodgeYField;
+    public InputField DodgeSpeedField;
 
     public Button SaveButton;
     public Button LoadButton;
@@ -157,6 +167,13 @@ public class DropdownSaveLoadController : MonoBehaviour
             settings.HapticsEnabled = true;
             settings.SaveFileVersion = 5;
         }
+        if (settings.SaveFileVersion == 5)
+        {
+            settings.DodgeOffsetX = 2f;
+            settings.DodgeOffsetY = 0f;
+            settings.DodgeOffsetSpeed = 0.1f;
+            settings.SaveFileVersion = 6;
+        }
         DesktopPortalController.Instance.ScreenOffsetPerformed = settings.ScreenOffsetPerformed;
 
         // Recenter XYZ Sliders
@@ -184,7 +201,10 @@ public class DropdownSaveLoadController : MonoBehaviour
         if (RYSlider.RotationField != null) RYSlider.RotationField.SetSafeValue(settings.RY);
         if (RZSlider.RotationField != null) RZSlider.RotationField.SetSafeValue(settings.RZ);
 
-        DeviceDropdown.SetToOption(settings.Device.ToString());
+        // Swap Selected Controllers when Saved Controller is absent and the other Controller is present
+        DeviceDropdown.SetToOption(((settings.Device == HOTK_Overlay.AttachmentDevice.LeftController && HOTK_TrackedDeviceManager.Instance.LeftIndex == OpenVR.k_unTrackedDeviceIndexInvalid && HOTK_TrackedDeviceManager.Instance.RightIndex != OpenVR.k_unTrackedDeviceIndexInvalid) ? HOTK_Overlay.AttachmentDevice.RightController : // Left Controller not found but Right Controller found. Use Right Controller.
+                                   ((settings.Device == HOTK_Overlay.AttachmentDevice.RightController && HOTK_TrackedDeviceManager.Instance.RightIndex == OpenVR.k_unTrackedDeviceIndexInvalid && HOTK_TrackedDeviceManager.Instance.LeftIndex != OpenVR.k_unTrackedDeviceIndexInvalid) ? HOTK_Overlay.AttachmentDevice.LeftController : // Right Controller not found but Left Controller found. Use Left Controller.
+                                     settings.Device)).ToString()); // Use Device setting otherwise
         PointDropdown.SetToOption(settings.Point.ToString());
         AnimationDropdown.SetToOption(settings.Animation.ToString());
 
@@ -195,12 +215,31 @@ public class DropdownSaveLoadController : MonoBehaviour
         ScaleEndField.text = settings.ScaleEnd.ToString();
         ScaleSpeedField.text = settings.ScaleSpeed.ToString();
 
+        AlphaDodgeField.text = settings.AlphaStart.ToString();
+        ScaleDodgeField.text = settings.ScaleStart.ToString();
+        AlphaNoneField.text = settings.AlphaStart.ToString();
+        ScaleNoneField.text = settings.ScaleStart.ToString();
+
+        DodgeXField.text = settings.DodgeOffsetX.ToString();
+        DodgeYField.text = settings.DodgeOffsetY.ToString();
+        DodgeSpeedField.text = settings.DodgeOffsetSpeed.ToString();
+
         AlphaStartField.onEndEdit.Invoke("");
         AlphaEndField.onEndEdit.Invoke("");
         AlphaSpeedField.onEndEdit.Invoke("");
         ScaleStartField.onEndEdit.Invoke("");
         ScaleEndField.onEndEdit.Invoke("");
         ScaleSpeedField.onEndEdit.Invoke("");
+
+        AlphaDodgeField.onEndEdit.Invoke("");
+        ScaleDodgeField.onEndEdit.Invoke("");
+        AlphaNoneField.onEndEdit.Invoke("");
+        ScaleNoneField.onEndEdit.Invoke("");
+
+        DodgeXField.onEndEdit.Invoke("");
+        DodgeYField.onEndEdit.Invoke("");
+        DodgeSpeedField.onEndEdit.Invoke("");
+
 
         DesktopPortalController.Instance.OutlineColorDefault =  new Color(settings.OutlineDefaultR,     settings.OutlineDefaultG,   settings.OutlineDefaultB,   settings.OutlineDefaultA);
         DesktopPortalController.Instance.OutlineColorAiming =   new Color(settings.OutlineAimingR,      settings.OutlineAimingG,    settings.OutlineAimingB,    settings.OutlineAimingA);
@@ -316,6 +355,10 @@ public class DropdownSaveLoadController : MonoBehaviour
             settings.ScaleEnabled = DesktopPortalController.Instance.ScaleEnabledToggle.isOn;
             settings.HapticsEnabled = DesktopPortalController.Instance.HapticsEnabledToggle.isOn;
 
+            settings.DodgeOffsetX = OverlayToSave.DodgeGazeOffset.x;
+            settings.DodgeOffsetY = OverlayToSave.DodgeGazeOffset.y;
+            settings.DodgeOffsetSpeed = OverlayToSave.DodgeGazeSpeed;
+
             PortalSettingsSaver.SaveProfiles();
         }
     }
@@ -383,6 +426,10 @@ public class DropdownSaveLoadController : MonoBehaviour
             GrabEnabled = DesktopPortalController.Instance.GrabEnabledToggle.isOn,
             ScaleEnabled = DesktopPortalController.Instance.ScaleEnabledToggle.isOn,
             HapticsEnabled = DesktopPortalController.Instance.HapticsEnabledToggle.isOn,
+
+            DodgeOffsetX = o.DodgeGazeOffset.x,
+            DodgeOffsetY = o.DodgeGazeOffset.y,
+            DodgeOffsetSpeed = o.DodgeGazeSpeed,
         };
     }
 

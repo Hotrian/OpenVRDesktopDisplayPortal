@@ -18,7 +18,8 @@ public class InputFieldScrollScriptEditor : Editor
         }
 
         var field = (InputFieldScrollScript)target;
-        EditorGUILayout.PropertyField(serializedObject.FindProperty("UseInt"), new GUIContent() { text = "Use Integer Values" });
+        if (!EditorGUILayout.PropertyField(serializedObject.FindProperty("UseInt"), new GUIContent() { text = "Use Integer Values" }))
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("TwoDecimalPlaces"), new GUIContent() { text = "Use Two Decimal Places" });
         EditorGUILayout.PropertyField(serializedObject.FindProperty("ValMultiplier"), new GUIContent() { text = "Scroll Value Multiplier" });
 
         field.UseLimits = EditorGUILayout.Foldout(field.UseLimits, "Use Limits", _boldFoldoutStyle);
