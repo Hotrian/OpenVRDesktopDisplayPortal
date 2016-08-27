@@ -4,7 +4,7 @@
 [System.Serializable]
 public class WindowSettings
 {
-    public const uint CurrentSaveVersion = 5;
+    public const uint CurrentSaveVersion = 6;
 
     public uint SaveFileVersion = 0;
     public bool directMode = true; // SaveFile Version 1 Compat
@@ -15,6 +15,8 @@ public class WindowSettings
     public DesktopPortalController.MouseInteractionMode interactionMode = DesktopPortalController.MouseInteractionMode.Disabled; // SaveFile Version <4 Compat
     public DesktopPortalController.ClickAPI clickAPI = DesktopPortalController.ClickAPI.SendInput;
     public bool clickForceWindowOnTop = true;
+    public bool clickScrollEnabled = true;
+    public bool clickScrollRequiresGrips = true;
     public bool clickMoveDesktopCursor = true;
     public bool clickShowDesktopCursor = false;
     public bool clickDesktopCursorForceWindowOnTop = true;

@@ -82,6 +82,8 @@ public class DesktopPortalController : MonoBehaviour
     public DropdownMatchEnumOptions ClickAPIDropdown;
     public Toggle WindowOnTopToggle;
     public Toggle MoveDesktopCursorToggle;
+    public Toggle ScrollEnabledToggle;
+    public Toggle ScrollRequiresGripsToggle;
     public Toggle ShowDesktopCursorToggle;
     public Toggle DesktopCursorWindowOnTopToggle;
     public Toggle DesktopCursorAutoHideToggle;
@@ -218,6 +220,18 @@ public class DesktopPortalController : MonoBehaviour
     private Vector3 _grabbingOffset;
     private bool _didHitOverlay;
     private bool _isHittingOverlay;
+    
+    private bool _touchingTouchpadGripsDown;
+    private bool _touchingTouchpad;
+    private float _touchingTouchpadX;
+    private float _touchingTouchpadY;
+    private bool _touchingTouchpadAxisIsVertical;
+
+    private const float TouchingTouchpadRange = 0.5f;
+    private const float TouchingTouchpadRange2 = 0.25f;
+    private const float TouchingTouchpadTickDistance = 0.1f;
+    private const ushort TouchingTouchpadHapticStrength = 500;
+
     private int _localWindowPosX;
     private int _localWindowPosY;
     private int _lastWindowPosX;
@@ -533,6 +547,7 @@ public class DesktopPortalController : MonoBehaviour
         _didHitOverlay = false;
         _isHittingOverlay = false;
         _aimingAtOverlay = null;
+        _touchingTouchpadGripsDown = false;
         if (_touchingOverlay == null) StartCoroutine("GoToDefaultColor");
     }
 
@@ -646,58 +661,43 @@ public class DesktopPortalController : MonoBehaviour
     /// </summary>
     private void TouchpadDown(HOTK_TrackedDevice tracker)
     {
-        if (_touchingOverlay == null)
-        {
-            if (tracker == _aimingAtOverlay)
-            {
-                if (_didHitOverlay) // Test if we were aiminag at the overlay when the click action started
-                    _isHittingOverlay = true;
-            }
-        }
+        if (_touchingOverlay != null) return;
+        if (tracker != _aimingAtOverlay) return;
+        if (_didHitOverlay) // Test if we were aiminag at the overlay when the click action started
+            _isHittingOverlay = true;
     }
-
-    private bool _gripsDown;
 
     private void GripsDown(HOTK_TrackedDevice tracker)
     {
-        //if (_selectedWindow == IntPtr.Zero) return;
-        //if (SelectedWindowSettings.clickAPI == ClickAPI.None) return;
-        //if (tracker != _aimingAtOverlay) return;
-        _gripsDown = true;
+        if (_selectedWindow == IntPtr.Zero) return;
+        if (SelectedWindowSettings.clickAPI == ClickAPI.None) return;
+        if (tracker != _aimingAtOverlay) return;
+        _touchingTouchpadGripsDown = true;
     }
-
     private void GripsUp(HOTK_TrackedDevice tracker)
-    {
-        //if (_selectedWindow == IntPtr.Zero) return;
-        //if (SelectedWindowSettings.clickAPI == ClickAPI.None) return;
-        //if (tracker != _aimingAtOverlay) return;
-        _gripsDown = false;
-    }
-
-    private bool _touchingTouchpad;
-    private float _touchingTouchpadX;
-    private float _touchingTouchpadY;
-    private bool _touchingTouchpadAxisIsVertical;
-
-    private float _touchingTouchpadRange = 0.5f;
-    private float _touchingTouchpadRange2 = 0.25f;
-
-    private void TouchStart(HOTK_TrackedDevice tracker, float dx, float dy)
     {
         if (_selectedWindow == IntPtr.Zero) return;
         if (SelectedWindowSettings.clickAPI == ClickAPI.None) return;
-        if (!_gripsDown) return;
         if (tracker != _aimingAtOverlay) return;
-        //Debug.Log("Start Touch at " + dx + " " + dy);
-        if (dy > -_touchingTouchpadRange && dy < _touchingTouchpadRange) // Vertical Range
+        _touchingTouchpadGripsDown = false;
+    }
+
+    private void TouchStart(HOTK_TrackedDevice tracker, float dx, float dy)
+    {
+        if (!ScrollEnabledToggle.isOn) return;
+        if (_selectedWindow == IntPtr.Zero) return;
+        if (SelectedWindowSettings.clickAPI == ClickAPI.None) return;
+        if (!_touchingTouchpadGripsDown && ScrollRequiresGripsToggle.isOn) return;
+        if (tracker != _aimingAtOverlay) return;
+        if (dy > -TouchingTouchpadRange && dy < TouchingTouchpadRange) // Vertical Range
         {
-            if (dx < -_touchingTouchpadRange2 || dx > _touchingTouchpadRange2)
+            if (dx < -TouchingTouchpadRange2 || dx > TouchingTouchpadRange2)
                 _touchingTouchpadAxisIsVertical = true;
             else return;
         }
-        else if (dx > -_touchingTouchpadRange && dx < _touchingTouchpadRange) // Horizontal Range
+        else if (dx > -TouchingTouchpadRange && dx < TouchingTouchpadRange) // Horizontal Range
         {
-            if (dy < -_touchingTouchpadRange2 || dy > _touchingTouchpadRange2)
+            if (dy < -TouchingTouchpadRange2 || dy > TouchingTouchpadRange2)
                 _touchingTouchpadAxisIsVertical = false;
             else return;
         }
@@ -706,63 +706,57 @@ public class DesktopPortalController : MonoBehaviour
         _touchingTouchpadX = dx;
         _touchingTouchpadY = dy;
     }
-
-    private float _touchingTouchpadTickDistance = 0.1f;
-    private ushort _touchingTouchpadHapticStrength = 500;
-
     private void TouchMove(HOTK_TrackedDevice tracker, float dx, float dy)
     {
         if (!_touchingTouchpad) return;
         if (_selectedWindow == IntPtr.Zero) return;
         if (SelectedWindowSettings.clickAPI == ClickAPI.None) return;
-        if (!_gripsDown || tracker != _aimingAtOverlay)
+        if ((!_touchingTouchpadGripsDown && ScrollRequiresGripsToggle.isOn && tracker == _aimingAtOverlay) || _aimingAtOverlay == null || !ScrollEnabledToggle.isOn)
         {
             _touchingTouchpad = false;
             return;
         }
-        //Debug.Log("Moving Touch at " + dx + " " + dy);
+        if (tracker != _aimingAtOverlay) return;
         if (_touchingTouchpadAxisIsVertical)
         {
-            if (_touchingTouchpadX - dx > _touchingTouchpadTickDistance)
+            if (_touchingTouchpadX - dx > TouchingTouchpadTickDistance)
             {
                 _touchingTouchpadX = dx;
-                if (dy <= -_touchingTouchpadRange || dy >= _touchingTouchpadRange) return;
-                if (HapticsEnabledToggle.isOn) tracker.TriggerHapticPulse(_touchingTouchpadHapticStrength);
+                if (dy <= -TouchingTouchpadRange || dy >= TouchingTouchpadRange) return;
+                if (HapticsEnabledToggle.isOn) tracker.TriggerHapticPulse(TouchingTouchpadHapticStrength);
                 ScrollApplication(tracker, CursorInteraction.SimulationMode.ScrollH, -1);
             }
-            else if (_touchingTouchpadX - dx < -_touchingTouchpadTickDistance)
+            else if (_touchingTouchpadX - dx < -TouchingTouchpadTickDistance)
             {
                 _touchingTouchpadX = dx;
-                if (dy <= -_touchingTouchpadRange || dy >= _touchingTouchpadRange) return;
-                if (HapticsEnabledToggle.isOn) tracker.TriggerHapticPulse(_touchingTouchpadHapticStrength);
+                if (dy <= -TouchingTouchpadRange || dy >= TouchingTouchpadRange) return;
+                if (HapticsEnabledToggle.isOn) tracker.TriggerHapticPulse(TouchingTouchpadHapticStrength);
                 ScrollApplication(tracker, CursorInteraction.SimulationMode.ScrollH, 1);
             }
         }
         else
         {
-            if (_touchingTouchpadY - dy > _touchingTouchpadTickDistance)
+            if (_touchingTouchpadY - dy > TouchingTouchpadTickDistance)
             {
                 _touchingTouchpadY = dy;
-                if (dx <= -_touchingTouchpadRange || dx >= _touchingTouchpadRange) return;
-                if (HapticsEnabledToggle.isOn) tracker.TriggerHapticPulse(_touchingTouchpadHapticStrength);
+                if (dx <= -TouchingTouchpadRange || dx >= TouchingTouchpadRange) return;
+                if (HapticsEnabledToggle.isOn) tracker.TriggerHapticPulse(TouchingTouchpadHapticStrength);
                 ScrollApplication(tracker, CursorInteraction.SimulationMode.ScrollV, -1);
             }
-            else if (_touchingTouchpadY - dy < -_touchingTouchpadTickDistance)
+            else if (_touchingTouchpadY - dy < -TouchingTouchpadTickDistance)
             {
                 _touchingTouchpadY = dy;
-                if (dx <= -_touchingTouchpadRange || dx >= _touchingTouchpadRange) return;
-                if (HapticsEnabledToggle.isOn) tracker.TriggerHapticPulse(_touchingTouchpadHapticStrength);
+                if (dx <= -TouchingTouchpadRange || dx >= TouchingTouchpadRange) return;
+                if (HapticsEnabledToggle.isOn) tracker.TriggerHapticPulse(TouchingTouchpadHapticStrength);
                 ScrollApplication(tracker, CursorInteraction.SimulationMode.ScrollV, 1);
             }
         }
     }
     private void TouchEnd(HOTK_TrackedDevice tracker)
     {
+        if (!ScrollEnabledToggle.isOn) return;
         if (!_touchingTouchpad) return;
-        if (_selectedWindow == IntPtr.Zero) return;
-        if (SelectedWindowSettings.clickAPI == ClickAPI.None) return;
         if (tracker != _aimingAtOverlay) return;
-        //Debug.Log("End Touch");
         _touchingTouchpad = false;
     }
 
@@ -1490,6 +1484,13 @@ public class DesktopPortalController : MonoBehaviour
             settings.clickShowDesktopCursor = false;
             settings.SaveFileVersion = 5;
         }
+        if (settings.SaveFileVersion == 5)
+        {
+            Debug.Log("Upgrading [" + configName + "] to SaveFileVersion 6.");
+            settings.clickScrollEnabled = true;
+            settings.clickScrollRequiresGrips = true;
+            settings.SaveFileVersion = 6;
+        }
 
         if (_texture != null)
             _texture.filterMode = settings.filterMode;
@@ -1572,9 +1573,14 @@ public class DesktopPortalController : MonoBehaviour
 
                 WindowOnTopToggle.isOn = false;
                 MoveDesktopCursorToggle.isOn = false;
+                ScrollEnabledToggle.isOn = false;
+                ScrollRequiresGripsToggle.isOn = false;
                 ShowDesktopCursorToggle.isOn = settings.clickShowDesktopCursor;
                 DesktopCursorWindowOnTopToggle.isOn = settings.clickDesktopCursorForceWindowOnTop;
                 DesktopCursorAutoHideToggle.isOn = settings.clickDesktopCursorAutoHide;
+
+                ScrollEnabledToggle.interactable = false;
+                ScrollRequiresGripsToggle.interactable = false;
                 break;
             case ClickAPI.SendInput:
                 WindowOnTopToggle.interactable = false;
@@ -1588,6 +1594,8 @@ public class DesktopPortalController : MonoBehaviour
                 ShowDesktopCursorToggle.isOn = settings.clickShowDesktopCursor;
                 DesktopCursorWindowOnTopToggle.isOn = settings.clickDesktopCursorForceWindowOnTop;
                 DesktopCursorAutoHideToggle.isOn = settings.clickDesktopCursorAutoHide;
+
+                SetScrollWheelSettings(settings);
                 break;
             case ClickAPI.SendMessage:
                 WindowOnTopToggle.interactable = true;
@@ -1601,6 +1609,8 @@ public class DesktopPortalController : MonoBehaviour
                 ShowDesktopCursorToggle.isOn = settings.clickShowDesktopCursor;
                 DesktopCursorWindowOnTopToggle.isOn = settings.clickDesktopCursorForceWindowOnTop;
                 DesktopCursorAutoHideToggle.isOn = settings.clickDesktopCursorAutoHide;
+
+                SetScrollWheelSettings(settings);
                 break;
             case ClickAPI.SendNotifyMessage:
                 WindowOnTopToggle.interactable = true;
@@ -1614,22 +1624,35 @@ public class DesktopPortalController : MonoBehaviour
                 ShowDesktopCursorToggle.isOn = settings.clickShowDesktopCursor;
                 DesktopCursorWindowOnTopToggle.isOn = settings.clickDesktopCursorForceWindowOnTop;
                 DesktopCursorAutoHideToggle.isOn = settings.clickDesktopCursorAutoHide;
+
+                SetScrollWheelSettings(settings);
                 break;
             default:
                 throw new ArgumentOutOfRangeException("api", settings.clickAPI, null);
         }
     }
 
+    private void SetScrollWheelSettings(WindowSettings settings)
+    {
+        ScrollEnabledToggle.interactable = WindowOnTopToggle.isOn && MoveDesktopCursorToggle.isOn;
+        ScrollEnabledToggle.isOn = ScrollEnabledToggle.interactable && settings.clickScrollEnabled;
+
+        ScrollRequiresGripsToggle.interactable = ScrollEnabledToggle.interactable && ScrollEnabledToggle.isOn;
+        ScrollRequiresGripsToggle.isOn = ScrollRequiresGripsToggle.interactable && settings.clickScrollRequiresGrips;
+    }
+
     public void ToggleWindowOnTop()
     {
         if (!WindowOnTopToggle.IsInteractable()) return;
         SelectedWindowSettings.clickForceWindowOnTop = WindowOnTopToggle.isOn;
+        SetScrollWheelSettings(SelectedWindowSettings);
     }
 
     public void ToggleMoveCursor()
     {
         if (!MoveDesktopCursorToggle.IsInteractable()) return;
         SelectedWindowSettings.clickMoveDesktopCursor = MoveDesktopCursorToggle.isOn;
+        SetScrollWheelSettings(SelectedWindowSettings);
     }
 
     public void ToggleShowCursor()
@@ -1665,6 +1688,19 @@ public class DesktopPortalController : MonoBehaviour
     public void ToggleHapticsEnabled()
     {
         if (!HapticsEnabledToggle.IsInteractable()) return;
+    }
+
+    public void ToggleScrollEnabled()
+    {
+        if (!ScrollEnabledToggle.IsInteractable()) return;
+        SelectedWindowSettings.clickScrollEnabled = ScrollEnabledToggle.isOn;
+        SetScrollWheelSettings(SelectedWindowSettings);
+    }
+
+    public void ToggleScrollRequiresGrips()
+    {
+        if (!ScrollRequiresGripsToggle.IsInteractable()) return;
+        SelectedWindowSettings.clickScrollRequiresGrips = ScrollRequiresGripsToggle.isOn;
     }
 
     #endregion
