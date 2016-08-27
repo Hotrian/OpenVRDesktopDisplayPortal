@@ -286,11 +286,19 @@ public class DesktopPortalController : MonoBehaviour
         _subscribed = true;
         HOTK_TrackedDeviceManager.OnControllerTriggerClicked += SingleClickApplication;
         HOTK_TrackedDeviceManager.OnControllerTriggerDoubleClicked += DoubleClickApplication;
-        HOTK_TrackedDeviceManager.OnControllerTouchpadClicked += RightClickApplication;
-        HOTK_TrackedDeviceManager.OnControllerGripsClicked += MiddleClickApplication;
         HOTK_TrackedDeviceManager.OnControllerTriggerDown += TriggerDown;
         HOTK_TrackedDeviceManager.OnControllerTriggerUp += TriggerUp;
+
+        HOTK_TrackedDeviceManager.OnControllerGripsClicked += MiddleClickApplication;
+        HOTK_TrackedDeviceManager.OnControllerGripsDown += GripsDown;
+        HOTK_TrackedDeviceManager.OnControllerGripsUp += GripsUp;
+
+        HOTK_TrackedDeviceManager.OnControllerTouchpadClicked += RightClickApplication;
         HOTK_TrackedDeviceManager.OnControllerTouchpadDown += TouchpadDown;
+        HOTK_TrackedDeviceManager.OnControllerTouchpadTouchStart += TouchStart;
+        HOTK_TrackedDeviceManager.OnControllerTouchpadTouchMove += TouchMove;
+        HOTK_TrackedDeviceManager.OnControllerTouchpadTouchEnd += TouchEnd;
+
         Overlay.OnControllerHitsOverlay += AimAtApplication;
         Overlay.OnControllerUnhitsOverlay += UnsetLastHit;
         Overlay.OnControllerTouchesOverlay += TouchOverlay;
@@ -429,8 +437,9 @@ public class DesktopPortalController : MonoBehaviour
     {
         if (!Overlay.gameObject.activeSelf) return;
         if (_selectedWindow == IntPtr.Zero) return;
-        if (Overlay.AnchorDevice == HOTK_Overlay.AttachmentDevice.LeftController && tracker.Type == HOTK_TrackedDevice.EType.LeftController) return;
-        if (Overlay.AnchorDevice == HOTK_Overlay.AttachmentDevice.RightController && tracker.Type == HOTK_TrackedDevice.EType.RightController) return;
+        //if (Overlay.AnchorDevice == HOTK_Overlay.AttachmentDevice.LeftController && tracker.Type == HOTK_TrackedDevice.EType.LeftController) return;
+        //if (Overlay.AnchorDevice == HOTK_Overlay.AttachmentDevice.RightController && tracker.Type == HOTK_TrackedDevice.EType.RightController) return;
+        if (Overlay.AnimateOnGaze == HOTK_Overlay.AnimationType.DodgeGaze && Overlay.IsDodging) return; // Don't allow touching/grabbing overlays that are dodging
         if (Overlay.AnchorDevice != HOTK_Overlay.AttachmentDevice.World) return;
         if (_grabbingOverlay != null) return;
         // Hide the cursor from when we were just aiming
@@ -646,15 +655,131 @@ public class DesktopPortalController : MonoBehaviour
             }
         }
     }
-    
+
+    private bool _gripsDown;
+
+    private void GripsDown(HOTK_TrackedDevice tracker)
+    {
+        //if (_selectedWindow == IntPtr.Zero) return;
+        //if (SelectedWindowSettings.clickAPI == ClickAPI.None) return;
+        //if (tracker != _aimingAtOverlay) return;
+        _gripsDown = true;
+    }
+
+    private void GripsUp(HOTK_TrackedDevice tracker)
+    {
+        //if (_selectedWindow == IntPtr.Zero) return;
+        //if (SelectedWindowSettings.clickAPI == ClickAPI.None) return;
+        //if (tracker != _aimingAtOverlay) return;
+        _gripsDown = false;
+    }
+
+    private bool _touchingTouchpad;
+    private float _touchingTouchpadX;
+    private float _touchingTouchpadY;
+    private bool _touchingTouchpadAxisIsVertical;
+
+    private float _touchingTouchpadRange = 0.5f;
+    private float _touchingTouchpadRange2 = 0.25f;
+
+    private void TouchStart(HOTK_TrackedDevice tracker, float dx, float dy)
+    {
+        if (_selectedWindow == IntPtr.Zero) return;
+        if (SelectedWindowSettings.clickAPI == ClickAPI.None) return;
+        if (!_gripsDown) return;
+        if (tracker != _aimingAtOverlay) return;
+        //Debug.Log("Start Touch at " + dx + " " + dy);
+        if (dy > -_touchingTouchpadRange && dy < _touchingTouchpadRange) // Vertical Range
+        {
+            if (dx < -_touchingTouchpadRange2 || dx > _touchingTouchpadRange2)
+                _touchingTouchpadAxisIsVertical = true;
+            else return;
+        }
+        else if (dx > -_touchingTouchpadRange && dx < _touchingTouchpadRange) // Horizontal Range
+        {
+            if (dy < -_touchingTouchpadRange2 || dy > _touchingTouchpadRange2)
+                _touchingTouchpadAxisIsVertical = false;
+            else return;
+        }
+        else return;
+        _touchingTouchpad = true;
+        _touchingTouchpadX = dx;
+        _touchingTouchpadY = dy;
+    }
+
+    private float _touchingTouchpadTickDistance = 0.1f;
+    private ushort _touchingTouchpadHapticStrength = 500;
+
+    private void TouchMove(HOTK_TrackedDevice tracker, float dx, float dy)
+    {
+        if (!_touchingTouchpad) return;
+        if (_selectedWindow == IntPtr.Zero) return;
+        if (SelectedWindowSettings.clickAPI == ClickAPI.None) return;
+        if (!_gripsDown || tracker != _aimingAtOverlay)
+        {
+            _touchingTouchpad = false;
+            return;
+        }
+        //Debug.Log("Moving Touch at " + dx + " " + dy);
+        if (_touchingTouchpadAxisIsVertical)
+        {
+            if (_touchingTouchpadX - dx > _touchingTouchpadTickDistance)
+            {
+                _touchingTouchpadX = dx;
+                if (dy <= -_touchingTouchpadRange || dy >= _touchingTouchpadRange) return;
+                if (HapticsEnabledToggle.isOn) tracker.TriggerHapticPulse(_touchingTouchpadHapticStrength);
+                ScrollApplication(tracker, CursorInteraction.SimulationMode.ScrollH, -1);
+            }
+            else if (_touchingTouchpadX - dx < -_touchingTouchpadTickDistance)
+            {
+                _touchingTouchpadX = dx;
+                if (dy <= -_touchingTouchpadRange || dy >= _touchingTouchpadRange) return;
+                if (HapticsEnabledToggle.isOn) tracker.TriggerHapticPulse(_touchingTouchpadHapticStrength);
+                ScrollApplication(tracker, CursorInteraction.SimulationMode.ScrollH, 1);
+            }
+        }
+        else
+        {
+            if (_touchingTouchpadY - dy > _touchingTouchpadTickDistance)
+            {
+                _touchingTouchpadY = dy;
+                if (dx <= -_touchingTouchpadRange || dx >= _touchingTouchpadRange) return;
+                if (HapticsEnabledToggle.isOn) tracker.TriggerHapticPulse(_touchingTouchpadHapticStrength);
+                ScrollApplication(tracker, CursorInteraction.SimulationMode.ScrollV, -1);
+            }
+            else if (_touchingTouchpadY - dy < -_touchingTouchpadTickDistance)
+            {
+                _touchingTouchpadY = dy;
+                if (dx <= -_touchingTouchpadRange || dx >= _touchingTouchpadRange) return;
+                if (HapticsEnabledToggle.isOn) tracker.TriggerHapticPulse(_touchingTouchpadHapticStrength);
+                ScrollApplication(tracker, CursorInteraction.SimulationMode.ScrollV, 1);
+            }
+        }
+    }
+    private void TouchEnd(HOTK_TrackedDevice tracker)
+    {
+        if (!_touchingTouchpad) return;
+        if (_selectedWindow == IntPtr.Zero) return;
+        if (SelectedWindowSettings.clickAPI == ClickAPI.None) return;
+        if (tracker != _aimingAtOverlay) return;
+        //Debug.Log("End Touch");
+        _touchingTouchpad = false;
+    }
+
     private void ClickApplication(HOTK_TrackedDevice tracker, CursorInteraction.SimulationMode mode)
     {
         if (_selectedWindow == IntPtr.Zero) return;
         if (SelectedWindowSettings.clickAPI == ClickAPI.None) return;
         if (!_isHittingOverlay) return;
         if (tracker != _aimingAtOverlay) return;
+        CursorInteraction.CursorSendInput(_selectedWindow, mode, SelectedWindowSettings.clickAPI, new Point(_localWindowPosX, _localWindowPosY), 0);
+    }
+    private void ScrollApplication(HOTK_TrackedDevice tracker, CursorInteraction.SimulationMode mode, int delta = 0)
+    {
         if (_selectedWindow == IntPtr.Zero) return;
-        CursorInteraction.ClickSendInput(_selectedWindow, mode, SelectedWindowSettings.clickAPI, new Point(_localWindowPosX, _localWindowPosY));
+        if (SelectedWindowSettings.clickAPI == ClickAPI.None) return;
+        if (tracker != _aimingAtOverlay) return;
+        CursorInteraction.CursorSendInput(_selectedWindow, mode, SelectedWindowSettings.clickAPI, new Point(_localWindowPosX, _localWindowPosY), delta);
     }
 
     /// <summary>
@@ -1597,23 +1722,55 @@ public static class SaveLoad
 {
     public static Dictionary<string, WindowSettings> SavedSettings = new Dictionary<string, WindowSettings>();
 
+    public static readonly string TargetSettingsFile = Application.persistentDataPath + "/savedSettings.gd";
+    public static readonly string TargetSettingsBackupFile = Application.persistentDataPath + "/savedSettings.bak";
+
     public static void Save()
     {
         var bf = new BinaryFormatter();
-        var file = File.Create(Application.persistentDataPath + "/savedSettings.gd");
+        var file = File.Create(TargetSettingsFile);
         bf.Serialize(file, SavedSettings);
         file.Close();
         Debug.Log("Saved " + SavedSettings.Count + " config(s).");
+        Debug.Log("Testing Settings File");
+        var settings = LoadSettingsFile(TargetSettingsFile);
+        if (settings != null && settings.Count > 0)
+        {
+            Debug.Log("Settings File valid; Backing up");
+            if (File.Exists(TargetSettingsBackupFile))
+                File.Delete(TargetSettingsBackupFile);
+            File.Copy(TargetSettingsFile, TargetSettingsBackupFile);
+        }else Debug.LogError("Settings File Invalid!");
     }
 
     public static void Load()
     {
-        if (!File.Exists(Application.persistentDataPath + "/savedSettings.gd")) return;
+        var settings = LoadSettingsFile(TargetSettingsFile);
+        if (settings != null && settings.Count > 0)
+        {
+            SavedSettings = settings;
+            Debug.Log("Loaded " + SavedSettings.Count + " config(s).");
+            return;
+        }
+        settings = LoadSettingsFile(TargetSettingsBackupFile);
+        if (settings != null && settings.Count > 0)
+        {
+            SavedSettings = settings;
+            Debug.LogWarning("Target Application Settings not found, but Backup found.");
+            Debug.Log("Loaded " + SavedSettings.Count + " config(s) from Backup.");
+            return;
+        }
+        Debug.Log("Target Application Settings not found.");
+    }
+
+    public static Dictionary<string, WindowSettings> LoadSettingsFile(string filename)
+    {
+        if (!File.Exists(filename)) return null;
         var bf = new BinaryFormatter();
-        var file = File.Open(Application.persistentDataPath + "/savedSettings.gd", FileMode.Open);
-        SavedSettings = (Dictionary<string, WindowSettings>) bf.Deserialize(file);
+        var file = File.Open(filename, FileMode.Open);
+        var settings = (Dictionary<string, WindowSettings>)bf.Deserialize(file);
         file.Close();
-        Debug.Log("Loaded " + SavedSettings.Count + " config(s).");
+        return settings;
     }
 }
 

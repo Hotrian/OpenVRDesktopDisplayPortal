@@ -69,7 +69,12 @@ public class HOTK_Overlay : HOTK_OverlayBase
     public static string Key { get { return "unity:" + Application.companyName + "." + Application.productName + "." + Rand.Next(); } }
     public static GameObject ZeroReference;         // Used to get a reference to the world 0, 0, 0 point
     public bool IsBeingGazed;
-    
+
+    public bool IsDodging
+    {
+        get { return _dodging; }
+    }
+
     private bool _wasHighQuality;
     private bool _wasAntiAlias;
     private bool _wasCurved;

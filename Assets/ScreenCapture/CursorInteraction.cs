@@ -998,7 +998,7 @@ public class CursorInteraction
         }
     }
 
-    public static void ClickSendInput(IntPtr wndHandle, SimulationMode mode, DesktopPortalController.ClickAPI api, Point clickPoint)
+    public static void CursorSendInput(IntPtr wndHandle, SimulationMode mode, DesktopPortalController.ClickAPI api, Point clickPoint, int delta)
     {
         Point oldPos;
         IntPtr lPrm;
@@ -1007,16 +1007,16 @@ public class CursorInteraction
             case DesktopPortalController.ClickAPI.None:
                 break;
             case DesktopPortalController.ClickAPI.SendInput:
-                SendInput(mode);
+                SendInput(mode, delta);
                 break;
             case DesktopPortalController.ClickAPI.SendMessage:
                 lPrm = GetLParam(wndHandle, clickPoint, out oldPos);
-                SendMessage(wndHandle, mode, lPrm);
+                SendMessage(wndHandle, mode, lPrm, delta);
                 Cursor.Position = oldPos;
                 break;
             case DesktopPortalController.ClickAPI.SendNotifyMessage:
                 lPrm = GetLParam(wndHandle, clickPoint, out oldPos);
-                SendNotifyMessage(wndHandle, mode, lPrm);
+                SendNotifyMessage(wndHandle, mode, lPrm, delta);
                 Cursor.Position = oldPos;
                 break;
             default:
@@ -1033,7 +1033,7 @@ public class CursorInteraction
         return lParam;
     }
 
-    private static void SendInput(SimulationMode mode)
+    private static void SendInput(SimulationMode mode, int delta)
     {
         INPUT[] pInputs;
         // Click Mouse
@@ -1058,6 +1058,18 @@ public class CursorInteraction
                     new INPUT() {type = InputType.MOUSE, U = new InputUnion() {mi = new MOUSEINPUT() {dwFlags = MOUSEEVENTF.MIDDLEDOWN,}}}, new INPUT() {type = InputType.MOUSE, U = new InputUnion() {mi = new MOUSEINPUT() {dwFlags = MOUSEEVENTF.MIDDLEUP,}}}
                 };
                 break;
+            case SimulationMode.ScrollH:
+                pInputs = new[]
+                {
+                    new INPUT() {type = InputType.MOUSE, U = new InputUnion() {mi = new MOUSEINPUT() {dwFlags = MOUSEEVENTF.HWHEEL, mouseData = delta * 60}}}
+                };
+                break;
+            case SimulationMode.ScrollV:
+                pInputs = new[]
+                {
+                    new INPUT() {type = InputType.MOUSE, U = new InputUnion() {mi = new MOUSEINPUT() {dwFlags = MOUSEEVENTF.WHEEL, mouseData = delta * 60}}}
+                };
+                break;
             default:
                 throw new ArgumentOutOfRangeException("mode", mode, null);
         }
@@ -1065,7 +1077,7 @@ public class CursorInteraction
             SendInput((uint)pInputs.Length, pInputs, INPUT.Size);
     }
 
-    private static void SendMessage(IntPtr wndHandle, SimulationMode mode, IntPtr lParam)
+    private static void SendMessage(IntPtr wndHandle, SimulationMode mode, IntPtr lParam, int delta)
     {
         switch (mode)
         {
@@ -1085,12 +1097,18 @@ public class CursorInteraction
                 SendMessage(wndHandle, (uint)MouseEvents.WM_MBUTTONDOWN, (IntPtr)10, lParam);
                 SendMessage(wndHandle, (uint)MouseEvents.WM_MBUTTONUP, IntPtr.Zero, lParam);
                 break;
+            case SimulationMode.ScrollH:
+                SendMessage(wndHandle, (uint)MouseEvents.WM_MOUSEHWHEEL, (IntPtr)((delta * 60) << 16), lParam);
+                break;
+            case SimulationMode.ScrollV:
+                SendMessage(wndHandle, (uint)MouseEvents.WM_MOUSEWHEEL, (IntPtr)((delta * 60) << 16), lParam);
+                break;
             default:
                 throw new ArgumentOutOfRangeException("mode", mode, null);
         }
     }
 
-    private static void SendNotifyMessage(IntPtr wndHandle, SimulationMode mode, IntPtr lParam)
+    private static void SendNotifyMessage(IntPtr wndHandle, SimulationMode mode, IntPtr lParam, int delta)
     {
         switch (mode)
         {
@@ -1109,6 +1127,12 @@ public class CursorInteraction
             case SimulationMode.MiddleClick:
                 SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_MBUTTONDOWN, (UIntPtr)10, lParam);
                 SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_MBUTTONUP, UIntPtr.Zero, lParam);
+                break;
+            case SimulationMode.ScrollH:
+                SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_MOUSEHWHEEL, (UIntPtr)((delta * 60) << 16), lParam);
+                break;
+            case SimulationMode.ScrollV:
+                SendNotifyMessage(wndHandle, (uint)MouseEvents.WM_MOUSEWHEEL, (UIntPtr)((delta * 60) << 16), lParam);
                 break;
             default:
                 throw new ArgumentOutOfRangeException("mode", mode, null);
@@ -1141,7 +1165,9 @@ public class CursorInteraction
         LeftClick,
         RightClick,
         DoubleClick,
-        MiddleClick
+        MiddleClick,
+        ScrollH,
+        ScrollV,
     }
 
     private enum MouseEvents
