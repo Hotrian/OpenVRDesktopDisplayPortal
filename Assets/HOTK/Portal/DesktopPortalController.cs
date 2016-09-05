@@ -113,7 +113,7 @@ public class DesktopPortalController : MonoBehaviour
     }
     public GameObject OverlayOffsetTracker // Cache and return a GameObject used to track the relative position of the Overlay when grabbing
     {
-        get { return _overlayOffsetTracker ?? (_overlayOffsetTracker = new GameObject("Overlay Offset Tracker") {hideFlags = HideFlags.HideInHierarchy}); }
+        get { return _overlayOffsetTracker ?? (_overlayOffsetTracker = new GameObject("Overlay Offset Tracker") { hideFlags = HideFlags.HideInHierarchy }); }
     }
     [HideInInspector]
     public bool ScreenOffsetPerformed;
@@ -220,7 +220,7 @@ public class DesktopPortalController : MonoBehaviour
     private Vector3 _grabbingOffset;
     private bool _didHitOverlay;
     private bool _isHittingOverlay;
-    
+
     private bool _touchingTouchpadGripsDown;
     private bool _touchingTouchpad;
     private float _touchingTouchpadX;
@@ -239,9 +239,9 @@ public class DesktopPortalController : MonoBehaviour
     private int _fpsCount;
     private bool _reselecting;
     private CaptureScreen.SIZE _size;
-    #pragma warning disable 0414
+#pragma warning disable 0414
     private Win32Stuff.WINDOWINFO _info;
-    #pragma warning restore 0414
+#pragma warning restore 0414
     private bool _wasDirect;
 
     private HOTK_TrackedDevice _scalingOverlay;
@@ -261,7 +261,7 @@ public class DesktopPortalController : MonoBehaviour
     private static readonly float[] FramerateFractions = {
         1f, 1f/2f, 1f/5f, 1f/10f, 1/15f, 1/24f, 1f/30f, 1f/60f, 1f/90f, 1f/120f
     };
-    
+
     #endregion
 
     #region Unity Methods
@@ -409,7 +409,7 @@ public class DesktopPortalController : MonoBehaviour
                 {
                     _trueCursorRelativeX = -1;
                     _trueCursorRelativeY = -1;
-                    
+
                     if (_grabbingOverlay == null && _touchingOverlay == null && _aimingAtOverlay == null)
                     {
                         StartCoroutine("GoToDefaultColor");
@@ -429,7 +429,8 @@ public class DesktopPortalController : MonoBehaviour
             if (_scalingScale2) Overlay.Scale2 = scale;
             else Overlay.Scale = scale;
 
-        }else if (_grabbingOverlay != null)
+        }
+        else if (_grabbingOverlay != null)
         {
             Overlay.AnchorOffset = _grabbingOverlay.transform.position + _grabbingOffset;
             Overlay.transform.rotation = OverlayOffsetTracker.transform.rotation;
@@ -494,12 +495,12 @@ public class DesktopPortalController : MonoBehaviour
 
         if (_currentWindowWidth > 0 && _currentWindowHeight > 0)
         {
-            var p = new Point((int) ((_currentWindowWidth + _renderTextureMarginWidth) * result.UVs.x),
-                              (int) ((_currentWindowHeight + _renderTextureMarginHeight) * result.UVs.y));
+            var p = new Point((int)((_currentWindowWidth + _renderTextureMarginWidth) * result.UVs.x),
+                              (int)((_currentWindowHeight + _renderTextureMarginHeight) * result.UVs.y));
             var v1 = new Vector3(-(_currentWindowWidth / 2f) + p.X - (_renderTextureMarginWidth / 2f), (_currentWindowHeight / 2f) - p.Y + (_renderTextureMarginHeight / 2f), -0.5f);
             var v2 = new Vector2((_currentWindowWidth / 2f) + v1.x + SelectedWindowSettings.offsetLeft, (_currentWindowHeight / 2f) - v1.y + SelectedWindowSettings.offsetTop);
 
-            if ((int) v2.x == _lastWindowPosX && (int) v2.y == _lastWindowPosY) return;
+            if ((int)v2.x == _lastWindowPosX && (int)v2.y == _lastWindowPosY) return;
             _lastWindowPosX = (int)v2.x;
             _lastWindowPosY = (int)v2.y;
 
@@ -514,7 +515,7 @@ public class DesktopPortalController : MonoBehaviour
 
                 if (MoveDesktopCursorToggle.isOn)
                 {
-                    CursorInteraction.MoveOverWindow(_selectedWindow, new Point((int) v2.x, (int) v2.y));
+                    CursorInteraction.MoveOverWindow(_selectedWindow, new Point((int)v2.x, (int)v2.y));
                 }
                 _localWindowPosX = (int)v2.x;
                 _localWindowPosY = (int)v2.y;
@@ -626,7 +627,8 @@ public class DesktopPortalController : MonoBehaviour
             if (tracker == _grabbingOverlay)
             {
                 DetachOverlayGrab();
-            }else StartCoroutine("GoToTouchColor");
+            }
+            else StartCoroutine("GoToTouchColor");
         }
         else if (_grabbingOverlay != null)
         {
@@ -1047,7 +1049,7 @@ public class DesktopPortalController : MonoBehaviour
     /// </summary>
     private RenderTexture NewRenderTexture()
     {
-        var r = new RenderTexture(((int) DisplayQuad.transform.localScale.x + _renderTextureMarginWidth)*2, ((int) DisplayQuad.transform.localScale.y + _renderTextureMarginHeight)*2, 24);
+        var r = new RenderTexture(((int)DisplayQuad.transform.localScale.x + _renderTextureMarginWidth) * 2, ((int)DisplayQuad.transform.localScale.y + _renderTextureMarginHeight) * 2, 24);
         var previous = RenderCamera.targetTexture;
         if (_selectedWindow != IntPtr.Zero)
         {
@@ -1264,14 +1266,14 @@ public class DesktopPortalController : MonoBehaviour
             if (!string.IsNullOrEmpty(_selectedWindowFullPath))
             {
                 SelectedWindowSettings = LoadConfig(_selectedWindowFullPath);
-                CaptureModeDropdown.SetToOption(DropdownMatchEnumOptions.CaptureModeNames[(int) SelectedWindowSettings.captureMode]);
+                CaptureModeDropdown.SetToOption(DropdownMatchEnumOptions.CaptureModeNames[(int)SelectedWindowSettings.captureMode]);
             }
             else
             {
                 Debug.LogWarning("Failed to grab path info. Settings might not work properly.");
                 _selectedWindowFullPath = string.Empty;
                 SelectedWindowSettings = LoadConfig(SelectedWindowTitle);
-                CaptureModeDropdown.SetToOption(DropdownMatchEnumOptions.CaptureModeNames[(int) SelectedWindowSettings.captureMode]);
+                CaptureModeDropdown.SetToOption(DropdownMatchEnumOptions.CaptureModeNames[(int)SelectedWindowSettings.captureMode]);
             }
             var r = CaptureScreen.GetWindowRect(_selectedWindow);
             _currentCaptureWidth = r.Width;
@@ -1435,9 +1437,10 @@ public class DesktopPortalController : MonoBehaviour
         if (!SaveLoad.SavedSettings.TryGetValue(configName, out settings))
         {
             Debug.Log("Config [" + configName + "] not found.");
-            settings = new WindowSettings {SaveFileVersion = WindowSettings.CurrentSaveVersion};
+            settings = new WindowSettings { SaveFileVersion = WindowSettings.CurrentSaveVersion };
             SaveLoad.SavedSettings.Add(configName, settings);
-        }else Debug.Log("Config [" + configName + "] Loaded.");
+        }
+        else Debug.Log("Config [" + configName + "] Loaded.");
 
         if (settings.SaveFileVersion == 0)
         {
@@ -1501,8 +1504,10 @@ public class DesktopPortalController : MonoBehaviour
         OffsetBottomField.text = settings.offsetBottom.ToString();
         SizeLockSprite.sprite = settings.windowSizeLocked ? LockSprite : UnlockSprite;
         AspectLinkedSprite.sprite = settings.windowAspectLocked ? AspectLockSprite : AspectUnlockSprite;
-        CaptureModeDropdown.SetToOption(DropdownMatchEnumOptions.CaptureModeNames[(int) settings.captureMode], true);
-        FramerateModeDropdown.SetToOption(DropdownMatchEnumOptions.FramerateModeNames[(int) settings.framerateMode], true);
+        CaptureModeDropdown.SetToOption(DropdownMatchEnumOptions.CaptureModeNames[(int)settings.captureMode], true);
+        FramerateModeDropdown.SetToOption(DropdownMatchEnumOptions.FramerateModeNames[(int)settings.framerateMode], true);
+
+        Overlay.Framerate = settings.framerateMode;
 
         FilterModeDropdown.Dropdown.interactable = true;
         FilterModeDropdown.SetToOption(settings.filterMode.ToString(), true);
@@ -1776,7 +1781,8 @@ public static class SaveLoad
             if (File.Exists(TargetSettingsBackupFile))
                 File.Delete(TargetSettingsBackupFile);
             File.Copy(TargetSettingsFile, TargetSettingsBackupFile);
-        }else Debug.LogError("Settings File Invalid!");
+        }
+        else Debug.LogError("Settings File Invalid!");
     }
 
     public static void Load()

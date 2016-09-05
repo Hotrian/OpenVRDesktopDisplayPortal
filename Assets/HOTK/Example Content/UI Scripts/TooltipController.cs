@@ -19,12 +19,19 @@ public class TooltipController : MonoBehaviour
 
     private static GameObject _tooltip;
     private static RectTransform _tooltipRectTransform;
+    private static Image _tooltipImage;
     private static Text _tooltipText;
 
     private static Vector3 _tooltipOffset;
 
+    private static float _tooltipTime;
+    private static float _tooltipAlpha;
+
     public GameObject Canvas;
     public GameObject TooltipPrefab;
+
+    public float TooltipDelay = 1f;
+    public float TooltipFadeSpeed = 4f;
 
 	// Use this for initialization
 	public void Start()
@@ -33,6 +40,7 @@ public class TooltipController : MonoBehaviour
 	    _tooltip = Instantiate(TooltipPrefab);
         _tooltip.transform.SetParent(Canvas.transform);
 	    _tooltipRectTransform = _tooltip.GetComponent<RectTransform>();
+        _tooltipImage = _tooltip.gameObject.GetComponent<Image>();
         _tooltipText = _tooltip.transform.FindChild("Text").gameObject.GetComponent<Text>();
         SetTooltipText("");
     }
@@ -42,8 +50,11 @@ public class TooltipController : MonoBehaviour
 	{
 	    if (_tooltipText == null || string.IsNullOrEmpty(_tooltipText.text)) return;
 	    _tooltip.transform.position = Input.mousePosition + _tooltipOffset;
+	    if (Time.time < _tooltipTime) return;
+	    if (_tooltipAlpha >= 1f) return;
+        SetTooltipAlpha(_tooltipAlpha + (Time.deltaTime * TooltipFadeSpeed));
 
-	}
+    }
 
     public void SetTooltipText(string text)
     {
@@ -51,6 +62,15 @@ public class TooltipController : MonoBehaviour
         _tooltipText.text = text.Replace("<br>", "\n");
         Tooltip.SetActive(!string.IsNullOrEmpty(text));
         _tooltipRectTransform.sizeDelta = new Vector2(_tooltipText.preferredWidth, _tooltipText.preferredHeight);
+        _tooltipTime = Time.time + TooltipDelay;
+        SetTooltipAlpha(0f);
+    }
+
+    private void SetTooltipAlpha(float alpha)
+    {
+        _tooltipAlpha = Mathf.Clamp01(alpha);
+        _tooltipImage.color = new Color(_tooltipImage.color.r, _tooltipImage.color.g, _tooltipImage.color.b, _tooltipAlpha);
+        _tooltipText.color = new Color(_tooltipText.color.r, _tooltipText.color.g, _tooltipText.color.b, _tooltipAlpha);
     }
 
     public string GetTooltipText()
