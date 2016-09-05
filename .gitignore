@@ -45,3 +45,12 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+
+# VS Files
+*.csproj
+*.sln
+.vs/
+
+# Unity Temp Files
+Temp/
+Library/
