@@ -231,7 +231,8 @@ public class DesktopPortalController : MonoBehaviour
     private const float TouchingTouchpadRange = 0.5f;
     private const float TouchingTouchpadRange2 = 0.25f;
     private const float TouchingTouchpadTickDistance = 0.1f;
-    private const ushort TouchingTouchpadHapticStrength = 500;
+    public const ushort HitOverlayHapticStrength = 2000;
+    public const ushort TouchingTouchpadHapticStrength = 500;
 
     private int _localWindowPosX;
     private int _localWindowPosY;
@@ -425,8 +426,8 @@ public class DesktopPortalController : MonoBehaviour
             if (HapticsEnabledToggle.isOn && Mathf.Abs(scale - _lastScalingHapticPulse) > 0.1f)
             {
                 _lastScalingHapticPulse = scale;
-                _grabbingOverlay.TriggerHapticPulse(2000);
-                _scalingOverlay.TriggerHapticPulse(2000);
+                _grabbingOverlay.TriggerHapticPulse(HitOverlayHapticStrength);
+                _scalingOverlay.TriggerHapticPulse(HitOverlayHapticStrength);
             }
             if (_scalingScale2) Overlay.Scale2 = scale;
             else Overlay.Scale = scale;
@@ -462,7 +463,7 @@ public class DesktopPortalController : MonoBehaviour
         // Hide the cursor from when we were just aiming
         _didHitOverlay = false;
         if (HapticsEnabledToggle.isOn && _touchingOverlay != tracker)
-            tracker.TriggerHapticPulse(2000);
+            tracker.TriggerHapticPulse(HitOverlayHapticStrength);
         _touchingOverlay = tracker;
         StartCoroutine("GoToTouchColor");
     }

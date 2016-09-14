@@ -148,13 +148,15 @@ public class HOTK_TrackedDevice : MonoBehaviour
 
     public void TriggerHapticPulse(ushort strength)
     {
+        if (!enabled) return; // Only Enabled devices should have feedback
+        if (Type != EType.LeftController && Type != EType.RightController) return; // Only controllers can have feedback
         HOTK_TrackedDeviceManager.Instance.TriggerHapticPulse(this, strength);
     }
 
     public void TriggerHapticPulse(ushort strength, float duration, float interval)
     {
-        if (!enabled)
-            return;
+        if (!enabled) return; // Only Enabled devices should have feedback
+        if (Type != EType.LeftController && Type != EType.RightController) return; // Only controllers can have feedback
         StartCoroutine(HapticPulse(duration, (strength > 3999 ? (ushort)3999 : strength), interval));
     }
 

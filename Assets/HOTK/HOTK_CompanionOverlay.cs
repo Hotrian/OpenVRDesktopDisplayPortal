@@ -1,6 +1,14 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 using Valve.VR;
+using Color = UnityEngine.Color;
+using Image = UnityEngine.UI.Image;
 
 public class HOTK_CompanionOverlay : HOTK_OverlayBase
 {
@@ -41,6 +49,21 @@ public class HOTK_CompanionOverlay : HOTK_OverlayBase
 
     private GameObject _pivot;
 
+    public Canvas VRInterfaceCanvas;
+    public GameObject VRInterfaceCursor;
+    public SpriteRenderer VRInterfaceCursorRenderer;
+
+    public GraphicRaycaster Raycaster;
+
+    public Raycastable[] Raycastables;
+
+    [System.Serializable]
+    public struct Raycastable
+    {
+        public Selectable Selectable;
+        public Image Handle;
+    }
+
     public void OnEnable()
     {
         #pragma warning disable 0168
@@ -71,14 +94,213 @@ public class HOTK_CompanionOverlay : HOTK_OverlayBase
         if (!_subscribed && Overlay != null)
         {
             _subscribed = true;
+            HOTK_TrackedDeviceManager.OnControllerTriggerDown += ClickOverlay;
+            HOTK_TrackedDeviceManager.OnControllerTriggerHold += ClickOverlay;
+            HOTK_TrackedDeviceManager.OnControllerTriggerUp += UnclickOverlay;
+
             Overlay.OnOverlayAttachmentChanges += AttachToOverlay;
             Overlay.OnOverlayAlphaChanges += OverlayAlphaChanges;
             Overlay.OnOverlayScaleChanges += OverlayScaleChanges;
             Overlay.OnOverlayAspectChanges += OverlayAspectChanges;
             Overlay.OnOverlayPositionChanges += OverlayPositionChanges;
             Overlay.OnOverlayRotationChanges += OverlayRotationChanges;
+
+            OnControllerHitsOverlay += AimAtCompanion;
+            OnControllerUnhitsOverlay += UnAimAtCompanion;
         }
+        _overlayMode = OverlayMode;
+
+        HOTK_TrackedDeviceManager.Instance.SetOverlayCanAim(this, _overlayMode == CompanionMode.VRInterface);
         updateCompanion = true;
+    }
+
+    public void TestButton(string text)
+    {
+        Debug.Log("TestButton");
+    }
+
+    public void TestSlider(string text)
+    {
+        Debug.Log("TestSlider");
+    }
+
+    private void ClickOverlay(HOTK_TrackedDevice tracker, Point p)
+    {
+        ClickOverlay(tracker);
+    }
+
+    private Selectable _clickedSelectable;
+    private Slider _draggingSlider;
+    private float _sliderVal;
+
+    private void ClickOverlay(HOTK_TrackedDevice tracker)
+    {
+        if (!_aiming) return;
+        if (_aimedSelectable == null) return;
+        var data = new PointerEventData(EventSystem.current) { position = new Vector2(_aimingX, _aimingY), dragging = true, button = PointerEventData.InputButton.Left};
+        if (_clickedSelectable == null)
+        {
+            _clickedSelectable = _aimedSelectable;
+            _clickedSelectable.OnPointerDown(data);
+            var s = _clickedSelectable as Slider;
+            if (s == null) return;
+            _draggingSlider = s;
+            _sliderVal = s.value;
+        }
+        else
+        {
+            if (_draggingSlider == null) return;
+            _draggingSlider.OnDrag(data);
+            if (_draggingSlider.value == _sliderVal) return;
+            _sliderVal = _draggingSlider.value;
+            _draggingSlider.onValueChanged.Invoke(_sliderVal);
+        }
+    }
+
+    private void UnclickOverlay(HOTK_TrackedDevice tracker)
+    {
+        if (_clickedSelectable == null) return;
+        _clickedSelectable.OnPointerUp(new PointerEventData(EventSystem.current) { position = new Vector2(_aimingX, _aimingY) });
+        if (_clickedSelectable == _aimedSelectable)
+        {
+            var b = _clickedSelectable as Button;
+            if (b != null)
+            {
+                b.onClick.Invoke();
+            }
+        }
+        _clickedSelectable = null;
+        _draggingSlider = null;
+    }
+
+    private bool _aiming;
+    private float _aimingX;
+    private float _aimingY;
+
+    private readonly List<Selectable> _aimedSelectables = new List<Selectable>();
+    Selectable _aimedSelectable = null;
+
+    private void AimAtCompanion(HOTK_OverlayBase o, HOTK_TrackedDevice tracker, SteamVR_Overlay.IntersectionResults result)
+    {
+        if (VRInterfaceCanvas == null || VRInterfaceCursor == null) return;
+        var lx = (VRInterfaceCanvas.pixelRect.width * result.UVs.x);
+        var ly = (VRInterfaceCanvas.pixelRect.height * result.UVs.y);
+        var x = -(VRInterfaceCanvas.pixelRect.width / 2f) + lx;
+        var y = (VRInterfaceCanvas.pixelRect.height / 2f) - ly;
+        VRInterfaceCursor.transform.localPosition = new Vector3(x, y, -10f);
+        if (!_aiming)
+        {
+            if (DesktopPortalController.Instance.HapticsEnabledToggle.isOn) tracker.TriggerHapticPulse(DesktopPortalController.HitOverlayHapticStrength);
+        }
+        _aiming = true;
+        StartCoroutine(FadeInCursor());
+
+        if (_aimingX == x && _aimingY == y) return;
+        _aimingX = x;
+        _aimingY = y;
+
+        if (_draggingSlider != null) return;
+
+        var data = new PointerEventData(EventSystem.current) {position = new Vector2(lx, ly)};
+
+        _aimedSelectable = null;
+
+        foreach (var r in Raycastables)
+        {
+            float left, right, top, bottom;
+            RectTransform re;
+            if (r.Handle != null)
+            {
+                re = (RectTransform)r.Handle.transform;
+                if (re == null) continue;
+                left = (re.position.x + re.rect.xMin);
+                right = (re.position.x + re.rect.xMax);
+                top = (re.position.y + re.rect.yMin);
+                bottom = (re.position.y + re.rect.yMax);
+            }
+            else
+            {
+                re = (RectTransform)r.Selectable.transform;
+                if (re == null) continue;
+                left = (re.position.x + re.rect.xMin);
+                right = (re.position.x + re.rect.xMax);
+                top = (re.position.y + re.rect.yMin);
+                bottom = (re.position.y + re.rect.yMax);
+            }
+            if (x >= left && x <= right && y >= top && y <= bottom)
+            {
+                if (!_aimedSelectables.Contains(r.Selectable))
+                {
+                    _aimedSelectables.Add(r.Selectable);
+                    r.Selectable.OnPointerEnter(data);
+                }
+                _aimedSelectable = r.Selectable;
+                break;
+            }
+        }
+
+        foreach (var b in _aimedSelectables.Where(b => _aimedSelectable == null || b != _aimedSelectable))
+        {
+            b.OnPointerExit(data);
+            //if (b == _clickedSelectable)
+                //b.OnPointerUp(data);
+        }
+
+        _aimedSelectables.Clear();
+        if (_aimedSelectable != null)
+            _aimedSelectables.Add(_aimedSelectable);
+    }
+
+    private void UnAimAtCompanion(HOTK_OverlayBase o, HOTK_TrackedDevice tracker)
+    {
+        if (!_aiming) return;
+
+        _aimedSelectable = null;
+
+        _aiming = false;
+        _aimingX = -1f;
+        _aimingY = -1f;
+        StartCoroutine(FadeOutCursor());
+
+    }
+
+    private IEnumerator FadeInCursor()
+    {
+        StopCoroutine("FadeOutCursor");
+        if (VRInterfaceCursorRenderer == null || VRInterfaceCursor == null) yield break;
+        var t = VRInterfaceCursorRenderer.color.a;
+        ShowCursor();
+        while (t < 1f)
+        {
+            t += 0.1f;
+            if (VRInterfaceCursorRenderer != null) VRInterfaceCursorRenderer.color = new Color(VRInterfaceCursorRenderer.color.r, VRInterfaceCursorRenderer.color.g, VRInterfaceCursorRenderer.color.b, t);
+            yield return new WaitForSeconds(0.025f);
+        }
+    }
+
+    private IEnumerator FadeOutCursor()
+    {
+        StopCoroutine("FadeInCursor");
+        if (VRInterfaceCursorRenderer == null || VRInterfaceCursor == null) yield break;
+        var t = VRInterfaceCursorRenderer.color.a;
+        while (t > 0)
+        {
+            t -= 0.1f;
+            if (VRInterfaceCursorRenderer != null) VRInterfaceCursorRenderer.color = new Color(VRInterfaceCursorRenderer.color.r, VRInterfaceCursorRenderer.color.g, VRInterfaceCursorRenderer.color.b, t);
+            yield return new WaitForSeconds(0.025f);
+        }
+        HideCursor();
+    }
+
+    private void ShowCursor()
+    {
+        if (VRInterfaceCursor.activeSelf) return;
+        VRInterfaceCursor.SetActive(true);
+    }
+    private void HideCursor()
+    {
+        if (!VRInterfaceCursor.activeSelf) return;
+        VRInterfaceCursor.SetActive(false);
     }
 
     /// <summary>
@@ -90,6 +312,8 @@ public class HOTK_CompanionOverlay : HOTK_OverlayBase
         var overlay = OpenVR.Overlay;
         if (overlay != null) overlay.DestroyOverlay(_handle);
         _handle = OpenVR.k_ulOverlayHandleInvalid;
+
+        HOTK_TrackedDeviceManager.Instance.SetOverlayCanAim(this, false);
     }
 
     public void OnParentEnabled(HOTK_Overlay o)
@@ -146,6 +370,8 @@ public class HOTK_CompanionOverlay : HOTK_OverlayBase
     {
         if (_overlayMode == OverlayMode) return;
         _overlayMode = OverlayMode;
+
+        HOTK_TrackedDeviceManager.Instance.SetOverlayCanAim(this, _overlayMode == CompanionMode.VRInterface);
 
         if (Overlay != null)
             AttachToOverlay(Overlay);
@@ -345,6 +571,7 @@ public class HOTK_CompanionOverlay : HOTK_OverlayBase
         Pivot.hideFlags = HideFlags.None;
         Pivot.SetActive(true);
         Pivot.transform.parent = o.gameObject.transform;
+        Pivot.transform.localRotation = Quaternion.identity;
     }
     private void SetPivotOffset(HOTK_Overlay overlay)
     {
