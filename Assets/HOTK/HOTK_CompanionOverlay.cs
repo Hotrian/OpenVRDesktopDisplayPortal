@@ -124,6 +124,11 @@ public class HOTK_CompanionOverlay : HOTK_OverlayBase
         Debug.Log("TestSlider");
     }
 
+    public void TestToggle(string text)
+    {
+        Debug.Log("TestButton");
+    }
+
     private void ClickOverlay(HOTK_TrackedDevice tracker, Point p)
     {
         ClickOverlay(tracker);
@@ -135,11 +140,13 @@ public class HOTK_CompanionOverlay : HOTK_OverlayBase
 
     private void ClickOverlay(HOTK_TrackedDevice tracker)
     {
+        if (_overlayMode != CompanionMode.VRInterface) return;
         if (!_aiming) return;
         if (_aimedSelectable == null) return;
         var data = new PointerEventData(EventSystem.current) { position = new Vector2(_aimingX, _aimingY), dragging = true, button = PointerEventData.InputButton.Left};
         if (_clickedSelectable == null)
         {
+            if (!_aimedSelectable.interactable) return;
             _clickedSelectable = _aimedSelectable;
             _clickedSelectable.OnPointerDown(data);
             var s = _clickedSelectable as Slider;
@@ -153,20 +160,32 @@ public class HOTK_CompanionOverlay : HOTK_OverlayBase
             _draggingSlider.OnDrag(data);
             if (_draggingSlider.value == _sliderVal) return;
             _sliderVal = _draggingSlider.value;
-            _draggingSlider.onValueChanged.Invoke(_sliderVal);
         }
     }
 
     private void UnclickOverlay(HOTK_TrackedDevice tracker)
     {
+        if (_overlayMode != CompanionMode.VRInterface) return;
         if (_clickedSelectable == null) return;
-        _clickedSelectable.OnPointerUp(new PointerEventData(EventSystem.current) { position = new Vector2(_aimingX, _aimingY) });
+        var data = new PointerEventData(EventSystem.current) {position = new Vector2(_aimingX, _aimingY)};
+        _clickedSelectable.OnPointerUp(data);
         if (_clickedSelectable == _aimedSelectable)
         {
             var b = _clickedSelectable as Button;
             if (b != null)
             {
-                b.onClick.Invoke();
+                if (b.interactable) b.onClick.Invoke();
+            }
+            else
+            {
+                var t = _clickedSelectable as Toggle;
+                if (t != null)
+                {
+                    if (t.interactable)
+                    {
+                        t.OnPointerClick(data);
+                    }
+                }
             }
         }
         _clickedSelectable = null;
@@ -205,7 +224,7 @@ public class HOTK_CompanionOverlay : HOTK_OverlayBase
 
         _aimedSelectable = null;
 
-        foreach (var r in Raycastables)
+        foreach (var r in Raycastables.Where(r => r.Selectable.interactable))
         {
             float left, right, top, bottom;
             RectTransform re;
@@ -239,11 +258,9 @@ public class HOTK_CompanionOverlay : HOTK_OverlayBase
             }
         }
 
-        foreach (var b in _aimedSelectables.Where(b => _aimedSelectable == null || b != _aimedSelectable))
+        foreach (var b in _aimedSelectables.Where(b => _aimedSelectable == null || b != _aimedSelectable).Where(b => b.interactable))
         {
             b.OnPointerExit(data);
-            //if (b == _clickedSelectable)
-                //b.OnPointerUp(data);
         }
 
         _aimedSelectables.Clear();
