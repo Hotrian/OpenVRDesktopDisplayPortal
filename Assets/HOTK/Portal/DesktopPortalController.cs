@@ -76,6 +76,7 @@ public class DesktopPortalController : MonoBehaviour
     public GameObject BacksideDisplayQuad; // A Quad used to show the Backside, which is captured by a RenderCamera
     public Material BacksideDisplayMaterial; // The Material we are drawing to
     public Texture[] BacksideTextures;
+    public AutoResizeCameraForRenderTexture BacksideScript;
 
     public HOTK_CompanionOverlay DodgeGazeDetector;
 
@@ -301,6 +302,7 @@ public class DesktopPortalController : MonoBehaviour
         HOTK_TrackedDeviceManager.OnControllerTriggerClicked += SingleClickApplication;
         HOTK_TrackedDeviceManager.OnControllerTriggerDoubleClicked += DoubleClickApplication;
         HOTK_TrackedDeviceManager.OnControllerTriggerDown += TriggerDown;
+        HOTK_TrackedDeviceManager.OnControllerTriggerHold += StartClickDragApplication;
         HOTK_TrackedDeviceManager.OnControllerTriggerUp += TriggerUp;
 
         HOTK_TrackedDeviceManager.OnControllerGripsClicked += MiddleClickApplication;
@@ -541,6 +543,7 @@ public class DesktopPortalController : MonoBehaviour
     private void UnsetLastHit(HOTK_OverlayBase o, HOTK_TrackedDevice tracker)
     {
         if (tracker != _aimingAtOverlay) return;
+        if (ClickDragging && tracker == ClickDraggingTracker) EndClickDragApplication(tracker);
         _lastWindowPosX = -1;
         _lastWindowPosY = -1;
         _localWindowPosX = -1;
@@ -609,6 +612,7 @@ public class DesktopPortalController : MonoBehaviour
     /// <param name="tracker"></param>
     private void TriggerUp(HOTK_TrackedDevice tracker)
     {
+        if (EndClickDragApplication(tracker)) return;
         if (_scalingOverlay != null)
         {
             _scalingOverlay = null;
@@ -778,6 +782,30 @@ public class DesktopPortalController : MonoBehaviour
         CursorInteraction.CursorSendInput(_selectedWindow, mode, SelectedWindowSettings.clickAPI, new Point(_localWindowPosX, _localWindowPosY), delta);
     }
 
+    private bool ClickDragging;
+    private HOTK_TrackedDevice ClickDraggingTracker;
+
+    private void StartClickDragApplication(HOTK_TrackedDevice tracker, Point p)
+    {
+        if (_selectedWindow == IntPtr.Zero) return;
+        if (SelectedWindowSettings.clickAPI == ClickAPI.None) return;
+        if (!_isHittingOverlay) return;
+        if (tracker != _aimingAtOverlay) return;
+        if (!ClickDragging) System.Windows.Forms.Cursor.Position = p; // Move cursor back to start point when starting
+        ClickDragging = true;
+        ClickDraggingTracker = tracker;
+        ClickApplication(tracker, CursorInteraction.SimulationMode.LeftDown);
+    }
+    private bool EndClickDragApplication(HOTK_TrackedDevice tracker)
+    {
+        if (ClickDraggingTracker != tracker) return false;
+        if (!ClickDragging) return false;
+        ClickDragging = false;
+        ClickDraggingTracker = null;
+        ClickApplication(tracker, CursorInteraction.SimulationMode.LeftUp);
+        return true;
+    }
+
     /// <summary>
     /// Occurs when a trigger has been clicked (pressed and released rapidly)
     /// </summary>
@@ -809,11 +837,9 @@ public class DesktopPortalController : MonoBehaviour
     {
         ClickApplication(tracker, CursorInteraction.SimulationMode.MiddleClick);
     }
-
     #endregion
 
     #region Coroutines
-
     // ReSharper disable UnusedMember.Local
     private IEnumerator GoToDefaultColor()
     {
@@ -1038,6 +1064,7 @@ public class DesktopPortalController : MonoBehaviour
     {
         yield return new WaitForEndOfFrame();
         Backside.DoUpdateOverlay();
+        BacksideScript.Camera.enabled = false;
     }
 
     // ReSharper restore UnusedMember.Local
@@ -1111,6 +1138,7 @@ public class DesktopPortalController : MonoBehaviour
         }
         BacksideDisplayMaterial.mainTexture = BacksideTextures[(int)texture - 1];
         BacksideDisplayQuad.gameObject.SetActive(true);
+        BacksideScript.Camera.enabled = true;
         if (Backside.gameObject.activeSelf)
             StartCoroutine(UpdateBacksideAfterFrame());
         else

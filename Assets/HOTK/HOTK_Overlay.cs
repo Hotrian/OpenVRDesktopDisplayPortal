@@ -60,6 +60,7 @@ public class HOTK_Overlay : HOTK_OverlayBase
     public Action<HOTK_Overlay, Quaternion> OnOverlayRotationChanges;
     public Action<HOTK_Overlay, float> OnOverlayAlphaChanges;
     public Action<HOTK_Overlay, float> OnOverlayScaleChanges;
+    public Action<HOTK_Overlay, float> OnOverlayAspectChanges;
     public Action<HOTK_Overlay, AttachmentDevice> OnOverlayAnchorChanges;
     public Action<HOTK_Overlay, Quaternion> OnOverlayAnchorRotationChanges;
 
@@ -738,11 +739,16 @@ public class HOTK_Overlay : HOTK_OverlayBase
     {
         return (AnimateOnGaze == AnimationType.Alpha || AnimateOnGaze == AnimationType.AlphaAndScale ? _alpha : Alpha);
     }
-    public float GetCurrentScale()
+
+    public override float GetCurrentScale()
     {
         return (AnimateOnGaze == AnimationType.Scale || AnimateOnGaze == AnimationType.AlphaAndScale ? _scale : Scale);
     }
-
+    public override float GetCurrentAspect()
+    {
+        return (float)OverlayTexture.height / (float)OverlayTexture.width;
+    }
+    
     /// <summary>
     /// Push Updates to our Overlay to the OpenVR System
     /// </summary>

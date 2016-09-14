@@ -5,6 +5,7 @@ public class AutoResizeRenderTextureForPrimaryCamera : MonoBehaviour
 {
     public AutoResizeCameraForRenderTexture script;
     public GameObject OutlineQuad;
+    public HOTK_Overlay Overlay;
 
     private float _width;
     private float _height;
@@ -28,5 +29,6 @@ public class AutoResizeRenderTextureForPrimaryCamera : MonoBehaviour
         var r = DesktopPortalController.Instance.GetNewRenderTexture(marginX, marginY);
 	    if (script != null) script.ResizeCamera(r, 4f);
         if (OutlineQuad != null) OutlineQuad.transform.localScale = new Vector3(transform.localScale.x + marginX, transform.localScale.y + marginY, 1f);
+        if (Overlay != null && Overlay.OnOverlayAspectChanges != null) Overlay.OnOverlayAspectChanges(Overlay, Overlay.GetCurrentAspect());
     }
 }

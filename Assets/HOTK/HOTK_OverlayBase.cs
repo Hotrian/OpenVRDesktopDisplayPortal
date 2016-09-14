@@ -52,4 +52,22 @@ public class HOTK_OverlayBase : MonoBehaviour
     protected Quaternion _objectRotation = Quaternion.identity;   // These are used to cache values and check for changes
 
     public virtual void UpdateGaze(bool wasHit) { }
+
+    public virtual float GetCurrentScale()
+    {
+        return 0f;
+    }
+
+    public virtual float GetCurrentAspect()
+    {
+        return 0f;
+    }
+    public float GetCurrentWidth()
+    {
+        return GetCurrentScale();
+    }
+    public float GetCurrentHeight()
+    {
+        return GetCurrentWidth() * GetCurrentAspect();
+    }
 }

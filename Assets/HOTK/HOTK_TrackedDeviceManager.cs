@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using UnityEngine;
 using Valve.VR;
@@ -8,6 +9,7 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
 {
     public static Action<ETrackedControllerRole, uint> OnControllerIndexChanged; // Called any time a specific controller changes index
     public static Action<HOTK_TrackedDevice> OnControllerTriggerDown;
+    public static Action<HOTK_TrackedDevice, Point> OnControllerTriggerHold;
     public static Action<HOTK_TrackedDevice> OnControllerTriggerUp;
     public static Action<HOTK_TrackedDevice> OnControllerTriggerClicked;
     public static Action<HOTK_TrackedDevice> OnControllerTriggerDoubleClicked;
@@ -212,6 +214,9 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
 
     private bool GetPress(VRControllerState_t state, EVRButtonId buttonId) { return (state.ulButtonPressed & (1ul << (int)buttonId)) != 0; }
 
+    public const float ClickTime = 0.25f;
+    private Point StartClickPoint;
+
     private void UpdateInput(HOTK_TrackedDevice device, ref bool clicked, ref float clickTime, ref float doubleClickTime, ref bool touchpadClicked, ref float touchpadTime, ref bool grips, ref float gripsTime, ref bool touchpadTouch, ETrackedControllerRole role)
     {
         if (device == null || !device.IsValid) return;
@@ -229,7 +234,13 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
             {
                 clicked = true;
                 clickTime = Time.time;
+                StartClickPoint = System.Windows.Forms.Cursor.Position;
                 if (OnControllerTriggerDown != null) OnControllerTriggerDown(device);
+            }
+            else
+            {
+                if ((Time.time - clickTime) < ClickTime) return;
+                if (OnControllerTriggerHold != null) OnControllerTriggerHold(device, StartClickPoint);
             }
         }
         else
@@ -239,14 +250,14 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
                 clicked = false;
                 if (OnControllerTriggerUp != null) OnControllerTriggerUp(device);
                 
-                if ((Time.time - doubleClickTime) < 0.25f)
+                if ((Time.time - doubleClickTime) < ClickTime)
                 {
                     if (OnControllerTriggerDoubleClicked != null) OnControllerTriggerDoubleClicked(device);
                     return;
                 }
                 doubleClickTime = Time.time;
 
-                if (!((Time.time - clickTime) < 0.25f)) return;
+                if (!((Time.time - clickTime) < ClickTime)) return;
                 if (OnControllerTriggerClicked != null) OnControllerTriggerClicked(device);
             }
         }
@@ -267,7 +278,7 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
             {
                 touchpadClicked = false;
                 if (OnControllerTouchpadUp != null) OnControllerTouchpadUp(device);
-                if (!((Time.time - touchpadTime) < 0.25f)) return;
+                if (!((Time.time - touchpadTime) < ClickTime)) return;
                 if (OnControllerTouchpadClicked != null) OnControllerTouchpadClicked(device);
             }
         }
@@ -288,7 +299,7 @@ public class HOTK_TrackedDeviceManager : MonoBehaviour
             {
                 grips = false;
                 if (OnControllerGripsUp != null) OnControllerGripsUp(device);
-                if (!((Time.time - gripsTime) < 0.25f)) return;
+                if (!((Time.time - gripsTime) < ClickTime)) return;
                 if (OnControllerGripsClicked != null) OnControllerGripsClicked(device);
             }
         }
