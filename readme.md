@@ -16,6 +16,9 @@ We're receiving reports that some Rift users find some games are incompatible wi
 #### Update for Rift users:
 We have at least [one confirmation](https://www.reddit.com/r/EliteDangerous/comments/4tr3gx/you_can_now_watch_netflixyoutubemovies_in_elite/d5khcj0?context=3) that you _might_ be able to use [Revive](https://github.com/LibreVR/Revive) to trick those Rift games into drawing through SteamVR instead of Direct-To-Rift. It will be funny if this turns out to be a solution :). Please test it out if you can!
 
+### Elite Dangerous on Rift Update:
+Elite Dangerous on Rift is now possible! [/u/jheggstrife](https://www.reddit.com/user/jheggstrife) on Reddit has discovered that [EDFX](http://edcodex.info/?m=tools&entry=58) brings support for OVRDDP to ED on Rift! See [his comment here](https://www.reddit.com/r/Vive/comments/4x1pvh/openvrdesktopdisplayportal_now_has_controller/d7fklpq) for specifics! The downside is that by running ED through SteamVR you will lose Asynchronous Timewarp for Reprojection. The upside is that you'll gain access to SteamVR Overlays including OpenVRDesktopDisplayPortal!
+
 #### If you can't find the Overlay:
 - Some games do not support Overlays. Check the [compatibiltiy article](https://github.com/Hotrian/OpenVRDesktopDisplayPortal/wiki/Compatibility) for more information.
 - Firstly, you can switch anchor devices using the Dropdown in the very bottom Left. It should say "World", "Screen", "LeftController", or "RightController" which will tell you what device it is anchored to and where you should be looking. If it has identified the wrong controller as left/right, you can click the "Swap Controllers" button to right the labels.
