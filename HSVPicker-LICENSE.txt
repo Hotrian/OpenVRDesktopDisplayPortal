@@ -1,3 +1,10 @@
+==================================================================
+=                                                                =
+= The following License File applies to the HSVPicker code, and  =
+= does not represent the License for OpenVRDesktopDisplayPortal. =
+=                                                                =
+==================================================================
+
 The MIT License (MIT)
 
 Copyright (c) 2016 Judah Perez
