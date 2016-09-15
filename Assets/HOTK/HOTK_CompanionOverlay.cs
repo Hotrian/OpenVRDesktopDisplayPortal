@@ -42,12 +42,14 @@ public class HOTK_CompanionOverlay : HOTK_OverlayBase
 
     private Vector3 _pivotOffset;
 
-    private GameObject Pivot
+    public GameObject Pivot
     {
         get { return _pivot ?? (_pivot = new GameObject("Pivot"));}
     }
 
     private GameObject _pivot;
+
+    public Vector3 PivotEuler;
 
     public Canvas VRInterfaceCanvas;
     public GameObject VRInterfaceCursor;
@@ -356,7 +358,8 @@ public class HOTK_CompanionOverlay : HOTK_OverlayBase
         CheckOverlayRotationChanged();
         CheckOverlayPositionChanged();
         // Check if our Overlay's Alpha or Scale changed
-        CheckOverlayAlphaAndScale();
+        CheckOverlayAlpha();
+        CheckOverlayScale();
         // Check if our Overlay is being Gazed at, or has been recently and is still animating
         //if (AnimateOnGaze != AnimationType.None) UpdateGaze(ref changed);
         // Check if a controller is aiming at our Overlay
@@ -456,16 +459,25 @@ public class HOTK_CompanionOverlay : HOTK_OverlayBase
         OverlayRotationChanges();
     }
 
-    private void CheckOverlayAlphaAndScale()
+    private void CheckOverlayAlpha()
     {
-        if (_relativeAlpha == RelativeAlpha && _relativeScale == RelativeScale) return;
+        if (_relativeAlpha == RelativeAlpha) return;
         _relativeAlpha = RelativeAlpha;
+
+        var overlay = OpenVR.Overlay;
+        if (overlay == null || !GetOverlay()) return;
+
+        overlay.SetOverlayAlpha(_handle, _alpha * _relativeAlpha);
+    }
+
+    private void CheckOverlayScale()
+    {
+        if (_relativeScale == RelativeScale) return;
         _relativeScale = RelativeScale;
 
         var overlay = OpenVR.Overlay;
         if (overlay == null || !GetOverlay()) return;
         
-        overlay.SetOverlayAlpha(_handle, _alpha * _relativeAlpha);
         overlay.SetOverlayWidthInMeters(_handle, _scale * _relativeScale);
     }
 
@@ -616,6 +628,7 @@ public class HOTK_CompanionOverlay : HOTK_OverlayBase
             default:
                 throw new ArgumentOutOfRangeException();
         }
+        Pivot.transform.localRotation = Quaternion.Euler(PivotEuler);
     }
     private void AttachToPivot()
     {

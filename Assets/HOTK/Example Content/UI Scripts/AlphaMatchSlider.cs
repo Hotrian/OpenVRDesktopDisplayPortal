@@ -1,25 +1,24 @@
 ﻿using System;
+using System.Globalization;
 using UnityEngine;
 using UnityEngine.UI;
 
-[RequireComponent(typeof(InputField))]
-public class AlphaMatchInputField : MonoBehaviour
+[RequireComponent(typeof(Slider))]
+public class AlphaMatchSlider : MonoBehaviour
 {
     public HOTK_Overlay Overlay;
     public InputValue Value;
-    
-    public InputField InputField
+
+    public Slider Slider
     {
-        get { return _inputField ?? (_inputField = GetComponent<InputField>()); }
+        get { return _slider ?? (_slider = GetComponent<Slider>()); }
     }
 
     public InputField LinkedField;
     public InputField LinkedField2;
-    public Slider LinkedSlider;
+    public InputField LinkedField3;
 
-    private InputField _inputField;
-
-    private float _lastSafeValue;
+    private Slider _slider;
 
     public void OnEnable()
     {
@@ -27,13 +26,13 @@ public class AlphaMatchInputField : MonoBehaviour
         switch (Value)
         {
             case InputValue.AlphaStart:
-                InputField.text = Overlay.Alpha.ToString();
+                Slider.value = Overlay.Alpha;
                 break;
             case InputValue.AlphaEnd:
-                InputField.text = Overlay.Alpha2.ToString();
+                Slider.value = Overlay.Alpha2;
                 break;
             case InputValue.AlphaSpeed:
-                InputField.text = Overlay.AlphaSpeed.ToString();
+                Slider.value = Overlay.AlphaSpeed;
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
@@ -42,67 +41,51 @@ public class AlphaMatchInputField : MonoBehaviour
 
     public void OnAlphaChanged()
     {
-        float f;
-        if (!float.TryParse(InputField.text, out f))
-        {
-            InputField.text = _lastSafeValue.ToString();
-            if (LinkedField != null)
-                LinkedField.text = InputField.text;
-            if (LinkedField2 != null)
-                LinkedField2.text = InputField.text;
-            if (LinkedSlider != null)
-                LinkedSlider.value = _lastSafeValue;
-            return;
-        }
         if (Overlay == null) return;
+        var f = (int) (Slider.value * 100f) / 100f;
         switch (Value)
         {
             case InputValue.AlphaStart:
                 if (f >= 0)
                 {
                     Overlay.Alpha = f;
-                    _lastSafeValue = f;
                 }
                 else
                 {
-                    InputField.text = Overlay.Alpha.ToString();
-                    _lastSafeValue = Overlay.Alpha;
+                    f = Overlay.Alpha;
                 }
                 break;
             case InputValue.AlphaEnd:
                 if (f >= 0)
                 {
                     Overlay.Alpha2 = f;
-                    _lastSafeValue = f;
                 }
                 else
                 {
-                    InputField.text = Overlay.Alpha2.ToString();
-                    _lastSafeValue = Overlay.Alpha2;
+                    f = Overlay.Alpha2;
                 }
                 break;
             case InputValue.AlphaSpeed:
                 if (f >= 0)
                 {
                     Overlay.AlphaSpeed = f;
-                    _lastSafeValue = f;
                 }
                 else
                 {
-                    InputField.text = Overlay.AlphaSpeed.ToString();
-                    _lastSafeValue = Overlay.AlphaSpeed;
+                    f = Overlay.AlphaSpeed;
                 }
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
         }
 
+        Slider.value = f;
         if (LinkedField != null)
-            LinkedField.text = InputField.text;
+            LinkedField.text = f.ToString(CultureInfo.InvariantCulture);
         if (LinkedField2 != null)
-            LinkedField2.text = InputField.text;
-        if (LinkedSlider != null)
-            LinkedSlider.value = _lastSafeValue;
+            LinkedField2.text = f.ToString(CultureInfo.InvariantCulture);
+        if (LinkedField3 != null)
+            LinkedField3.text = f.ToString(CultureInfo.InvariantCulture);
     }
 
     public enum InputValue
