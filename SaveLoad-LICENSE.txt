@@ -1,3 +1,10 @@
+==================================================================
+=                                                                =
+= The following License File applies to the SaveLoad code, and   =
+= does not represent the License for OpenVRDesktopDisplayPortal. =
+=                                                                =
+==================================================================
+
 Copyright (c) 2014, Tuts+
 All rights reserved.
 
