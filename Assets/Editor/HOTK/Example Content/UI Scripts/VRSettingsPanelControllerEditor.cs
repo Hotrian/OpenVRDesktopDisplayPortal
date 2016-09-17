@@ -43,6 +43,10 @@ public class VRSettingsPanelControllerEditor : Editor
         EditorGUILayout.PropertyField(serializedObject.FindProperty("ClosedPivotX"));
         EditorGUILayout.PropertyField(serializedObject.FindProperty("ClosedPosition"));
 
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("AimYLow"));
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("AimXLow"));
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("AimXHigh"));
+
         GUILayout.Label("");
 
         if (GUILayout.Button("Activate"))

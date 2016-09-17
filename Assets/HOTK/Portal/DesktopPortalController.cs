@@ -92,6 +92,12 @@ public class DesktopPortalController : MonoBehaviour
     public Toggle GrabEnabledToggle;
     public Toggle ScaleEnabledToggle;
     public Toggle HapticsEnabledToggle;
+
+    public VRSettingsPanelController SettingsController;
+    public HOTK_CompanionOverlay SettingsOverlay;
+    public float LastAimedAtTime { get; private set; }
+    public float AimedAtTime { get; private set; }
+    public float SettingsPanelAimTime = 3f;
     #endregion
 
     #region Public Variables
@@ -185,6 +191,7 @@ public class DesktopPortalController : MonoBehaviour
     }
 
     public WindowSettings SelectedWindowSettings { get; set; } // The WindowSettings of the current Target Application
+
 
     #endregion
 
@@ -298,34 +305,38 @@ public class DesktopPortalController : MonoBehaviour
             _currentWindowWidth = 0; // Tricks the system into recalculating the size of the Overlay before capturing.
             StartCoroutine("CaptureWindow");
         }
-        if (_subscribed) return;
-        _subscribed = true;
-        HOTK_TrackedDeviceManager.OnControllerTriggerClicked += SingleClickApplication;
-        HOTK_TrackedDeviceManager.OnControllerTriggerDoubleClicked += DoubleClickApplication;
-        HOTK_TrackedDeviceManager.OnControllerTriggerDown += TriggerDown;
-        HOTK_TrackedDeviceManager.OnControllerTriggerHold += StartClickDragApplication;
-        HOTK_TrackedDeviceManager.OnControllerTriggerUp += TriggerUp;
+        if (!_subscribed)
+        {
+            _subscribed = true;
+            HOTK_TrackedDeviceManager.OnControllerTriggerClicked += SingleClickApplication;
+            HOTK_TrackedDeviceManager.OnControllerTriggerDoubleClicked += DoubleClickApplication;
+            HOTK_TrackedDeviceManager.OnControllerTriggerDown += TriggerDown;
+            HOTK_TrackedDeviceManager.OnControllerTriggerHold += StartClickDragApplication;
+            HOTK_TrackedDeviceManager.OnControllerTriggerUp += TriggerUp;
 
-        HOTK_TrackedDeviceManager.OnControllerGripsClicked += MiddleClickApplication;
-        HOTK_TrackedDeviceManager.OnControllerGripsDown += GripsDown;
-        HOTK_TrackedDeviceManager.OnControllerGripsUp += GripsUp;
+            HOTK_TrackedDeviceManager.OnControllerGripsClicked += MiddleClickApplication;
+            HOTK_TrackedDeviceManager.OnControllerGripsDown += GripsDown;
+            HOTK_TrackedDeviceManager.OnControllerGripsUp += GripsUp;
 
-        HOTK_TrackedDeviceManager.OnControllerTouchpadClicked += RightClickApplication;
-        HOTK_TrackedDeviceManager.OnControllerTouchpadDown += TouchpadDown;
-        HOTK_TrackedDeviceManager.OnControllerTouchpadTouchStart += TouchStart;
-        HOTK_TrackedDeviceManager.OnControllerTouchpadTouchMove += TouchMove;
-        HOTK_TrackedDeviceManager.OnControllerTouchpadTouchEnd += TouchEnd;
+            HOTK_TrackedDeviceManager.OnControllerTouchpadClicked += RightClickApplication;
+            HOTK_TrackedDeviceManager.OnControllerTouchpadDown += TouchpadDown;
+            HOTK_TrackedDeviceManager.OnControllerTouchpadTouchStart += TouchStart;
+            HOTK_TrackedDeviceManager.OnControllerTouchpadTouchMove += TouchMove;
+            HOTK_TrackedDeviceManager.OnControllerTouchpadTouchEnd += TouchEnd;
 
-        Overlay.OnControllerHitsOverlay += AimAtApplication;
-        Overlay.OnControllerUnhitsOverlay += UnsetLastHit;
-        Overlay.OnControllerTouchesOverlay += TouchOverlay;
-        Overlay.OnControllerStopsTouchingOverlay += UnTouchOverlay;
-        Overlay.OnOverlayAnimationChanges += AnimationChanges;
+            Overlay.OnControllerHitsOverlay += AimAtApplication;
+            Overlay.OnControllerUnhitsOverlay += UnsetLastHit;
+            Overlay.OnControllerTouchesOverlay += TouchOverlay;
+            Overlay.OnControllerStopsTouchingOverlay += UnTouchOverlay;
+            Overlay.OnOverlayAnimationChanges += AnimationChanges;
 
-        DodgeGazeDetector.OnOverlayGazed += Overlay.GazeDetectorGazed;
+            DodgeGazeDetector.OnOverlayGazed += Overlay.GazeDetectorGazed;
 
-        Overlay.OnOverlayEnabled += DodgeGazeDetector.OnParentEnabled;
-        Overlay.OnOverlayDisabled += DodgeGazeDetector.OnParentDisabled;
+            Overlay.OnOverlayEnabled += DodgeGazeDetector.OnParentEnabled;
+            Overlay.OnOverlayDisabled += DodgeGazeDetector.OnParentDisabled;
+        }
+
+        SettingsOverlay.gameObject.SetActive(false);
     }
 
     public void OnDisable()
@@ -438,6 +449,50 @@ public class DesktopPortalController : MonoBehaviour
             Overlay.AnchorOffset = _grabbingOverlay.transform.position + _grabbingOffset;
             Overlay.transform.rotation = OverlayOffsetTracker.transform.rotation;
         }
+
+        if (Time.time > SettingsPanelAimTime && (AimedAtTime > SettingsPanelAimTime || Time.time - SettingsOverlay.LastAimedAtTime < SettingsPanelAimTime))
+        {
+            if (!SettingsOverlay.gameObject.activeSelf)
+            {
+                SettingsController.CloseImmediate();
+                SettingsOverlay.RelativeAlpha = 0f;
+                SettingsOverlay.gameObject.SetActive(true);
+            }
+            if (SettingsOverlay.RelativeAlpha < 1f)
+            {
+                SettingsOverlay.RelativeAlpha += Time.deltaTime;
+                if (SettingsOverlay.RelativeAlpha > 1f)
+                    SettingsOverlay.RelativeAlpha = 1f;
+            }
+        }
+        else if (Time.time < SettingsPanelAimTime || (Time.time - SettingsOverlay.LastAimedAtTime > SettingsPanelAimTime && Time.time - LastAimedAtTime > SettingsPanelAimTime))
+        {
+            if (SettingsOverlay.gameObject.activeSelf)
+            {
+                if (AimedAtTime > 0f)
+                {
+                    if (SettingsOverlay.RelativeAlpha < 1f)
+                    {
+                        SettingsOverlay.RelativeAlpha += Time.deltaTime;
+                        if (SettingsOverlay.RelativeAlpha > 1f)
+                            SettingsOverlay.RelativeAlpha = 1f;
+                    }
+                }
+                else
+                {
+                    if (SettingsOverlay.RelativeAlpha > 0f)
+                    {
+                        SettingsOverlay.RelativeAlpha -= Time.deltaTime;
+                        if (SettingsOverlay.RelativeAlpha <= 0f)
+                        {
+                            SettingsOverlay.RelativeAlpha = 0f;
+                            SettingsOverlay.gameObject.SetActive(false);
+                            SettingsController.CloseImmediate();
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public void OnDestroy()
@@ -523,6 +578,9 @@ public class DesktopPortalController : MonoBehaviour
                 _localWindowPosX = (int)v2.x;
                 _localWindowPosY = (int)v2.y;
 
+                LastAimedAtTime = Time.time;
+                AimedAtTime += Time.deltaTime;
+
                 CursorGameObject.transform.localPosition = v1;
                 StopCoroutine("GoToTouchColor");
                 StopCoroutine("GoToScalingColor");
@@ -554,6 +612,7 @@ public class DesktopPortalController : MonoBehaviour
         _aimingAtOverlay = null;
         _touchingTouchpadGripsDown = false;
         if (_touchingOverlay == null) StartCoroutine("GoToDefaultColor");
+        AimedAtTime = 0f;
     }
 
     private void ShowCursor()
@@ -635,7 +694,7 @@ public class DesktopPortalController : MonoBehaviour
             }
             else StartCoroutine("GoToTouchColor");
         }
-        else if (_grabbingOverlay != null)
+        else if (_grabbingOverlay != null && _grabbingOverlay == tracker)
         {
             DetachOverlayGrab();
         }

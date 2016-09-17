@@ -24,6 +24,10 @@ public class VRSettingsPanelController : MonoBehaviour
     public float ClosedTime = 1f;
     public float ClosedPivotTime = 1f;
 
+    public float AimYLow = 75f;
+    public float AimXLow = -140f;
+    public float AimXHigh = 140f;
+
     public bool IsOpen { get; private set; }
     public bool IsClosed { get; private set; }
 
@@ -38,22 +42,39 @@ public class VRSettingsPanelController : MonoBehaviour
 	    SettingsButtonText.text = ButtonOpenText;
 	}
 
+    public void CloseImmediate()
+    {
+        gameObject.transform.localPosition = ClosedPosition;
+        Overlay.Pivot.transform.localRotation = Quaternion.Euler(ClosedPivotX, 0f, 0f);
+        SettingsButtonText.text = ButtonOpenText;
+        IsOpen = false;
+        IsClosed = true;
+        SettingsButton.interactable = true;
+        _busy = false;
+
+        Overlay.AimLimitOn = true;
+        Overlay.AimLimitYLow = AimYLow;
+        Overlay.AimLimitXLow = AimXLow;
+        Overlay.AimLimitXHigh = AimXHigh;
+    }
+
     public void TogglePanel()
     {
         if (_busy) return;
         _busy = true;
-        if (IsOpen)
+        if (IsOpen) // Begin Closing Panel
         {
             IsOpen = false;
             SettingsButton.interactable = false;
             SettingsButtonText.text = ButtonClosingText;
             StartCoroutine(DoAnimate(OpenPosition, ClosedPosition, ClosedTime, true, Quaternion.Euler(OpenPivotX, 0f, 0f), Quaternion.Euler(ClosedPivotX, 0f, 0f), ClosedPivotTime));
         }
-        else if (IsClosed)
+        else if (IsClosed) // Begin Opening Panel
         {
             IsClosed = false;
             SettingsButton.interactable = false;
             SettingsButtonText.text = ButtonOpeningText;
+            Overlay.AimLimitOn = false;
             StartCoroutine(DoAnimate(ClosedPosition, OpenPosition, OpenTime, false, Quaternion.Euler(ClosedPivotX, 0f, 0f), Quaternion.Euler(OpenPivotX, 0f, 0f), OpenPivotTime));
         }
     }
@@ -111,12 +132,16 @@ public class VRSettingsPanelController : MonoBehaviour
 
         if (closing)
         {
-            SettingsButtonText.text = ButtonCloseText;
+            SettingsButtonText.text = ButtonOpenText;
             IsClosed = true;
+            Overlay.AimLimitYLow = AimYLow;
+            Overlay.AimLimitXLow = AimXLow;
+            Overlay.AimLimitXHigh = AimXHigh;
+            Overlay.AimLimitOn = true;
         }
         else
         {
-            SettingsButtonText.text = ButtonOpenText;
+            SettingsButtonText.text = ButtonCloseText;
             IsOpen = true;
         }
         SettingsButton.interactable = true;

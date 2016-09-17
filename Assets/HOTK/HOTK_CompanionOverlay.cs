@@ -51,6 +51,13 @@ public class HOTK_CompanionOverlay : HOTK_OverlayBase
 
     public Vector3 PivotEuler;
 
+    public float LastAimedAtTime { get; private set; }
+
+    internal bool AimLimitOn;
+    internal float AimLimitYLow;
+    internal float AimLimitXLow;
+    internal float AimLimitXHigh;
+
     public Canvas VRInterfaceCanvas;
     public GameObject VRInterfaceCursor;
     public SpriteRenderer VRInterfaceCursorRenderer;
@@ -114,21 +121,6 @@ public class HOTK_CompanionOverlay : HOTK_OverlayBase
 
         HOTK_TrackedDeviceManager.Instance.SetOverlayCanAim(this, _overlayMode == CompanionMode.VRInterface);
         updateCompanion = true;
-    }
-
-    public void TestButton(string text)
-    {
-        Debug.Log("TestButton");
-    }
-
-    public void TestSlider(string text)
-    {
-        Debug.Log("TestSlider");
-    }
-
-    public void TestToggle(string text)
-    {
-        Debug.Log("TestButton");
     }
 
     private void ClickOverlay(HOTK_TrackedDevice tracker, Point p)
@@ -208,56 +200,50 @@ public class HOTK_CompanionOverlay : HOTK_OverlayBase
         var ly = (VRInterfaceCanvas.pixelRect.height * result.UVs.y);
         var x = -(VRInterfaceCanvas.pixelRect.width / 2f) + lx;
         var y = (VRInterfaceCanvas.pixelRect.height / 2f) - ly;
-        VRInterfaceCursor.transform.localPosition = new Vector3(x, y, -10f);
-        if (!_aiming)
+
+        if (AimLimitOn)
         {
-            if (DesktopPortalController.Instance.HapticsEnabledToggle.isOn) tracker.TriggerHapticPulse(DesktopPortalController.HitOverlayHapticStrength);
+            if (y > AimLimitYLow && x > AimLimitXLow && x < AimLimitXHigh)
+            {
+                DoAimAction(x, y, tracker);
+            }
+            else
+            {
+                StartCoroutine(FadeOutCursor());
+                _aiming = false;
+            }
         }
-        _aiming = true;
-        StartCoroutine(FadeInCursor());
+        else
+        {
+            DoAimAction(x, y, tracker);
+        }
 
         if (_aimingX == x && _aimingY == y) return;
         _aimingX = x;
         _aimingY = y;
 
-        if (_draggingSlider != null) return;
+        if (!_aiming || _draggingSlider != null) return;
 
-        var data = new PointerEventData(EventSystem.current) {position = new Vector2(lx, ly)};
+        var data = new PointerEventData(EventSystem.current) {position = new Vector2(x, y)};
 
         _aimedSelectable = null;
 
         foreach (var r in Raycastables.Where(r => r.Selectable.interactable))
         {
-            float left, right, top, bottom;
-            RectTransform re;
-            if (r.Handle != null)
+            var re = r.Handle != null ? (RectTransform)r.Handle.transform : (RectTransform)r.Selectable.transform;
+            if (re == null) continue;
+            if (x < (re.position.x + re.rect.xMin) ||
+                x > (re.position.x + re.rect.xMax) ||
+                y < (re.position.y + re.rect.yMin) ||
+                y > (re.position.y + re.rect.yMax)) continue;
+            if (!_aimedSelectables.Contains(r.Selectable))
             {
-                re = (RectTransform)r.Handle.transform;
-                if (re == null) continue;
-                left = (re.position.x + re.rect.xMin);
-                right = (re.position.x + re.rect.xMax);
-                top = (re.position.y + re.rect.yMin);
-                bottom = (re.position.y + re.rect.yMax);
+                _aimedSelectables.Add(r.Selectable);
+                r.Selectable.OnPointerEnter(data);
+                if (DesktopPortalController.Instance.HapticsEnabledToggle.isOn) tracker.TriggerHapticPulse(DesktopPortalController.HitOverlayHapticStrength);
             }
-            else
-            {
-                re = (RectTransform)r.Selectable.transform;
-                if (re == null) continue;
-                left = (re.position.x + re.rect.xMin);
-                right = (re.position.x + re.rect.xMax);
-                top = (re.position.y + re.rect.yMin);
-                bottom = (re.position.y + re.rect.yMax);
-            }
-            if (x >= left && x <= right && y >= top && y <= bottom)
-            {
-                if (!_aimedSelectables.Contains(r.Selectable))
-                {
-                    _aimedSelectables.Add(r.Selectable);
-                    r.Selectable.OnPointerEnter(data);
-                }
-                _aimedSelectable = r.Selectable;
-                break;
-            }
+            _aimedSelectable = r.Selectable;
+            break;
         }
 
         foreach (var b in _aimedSelectables.Where(b => _aimedSelectable == null || b != _aimedSelectable).Where(b => b.interactable))
@@ -268,6 +254,18 @@ public class HOTK_CompanionOverlay : HOTK_OverlayBase
         _aimedSelectables.Clear();
         if (_aimedSelectable != null)
             _aimedSelectables.Add(_aimedSelectable);
+    }
+
+    internal void DoAimAction(float x, float y, HOTK_TrackedDevice tracker)
+    {
+        VRInterfaceCursor.transform.localPosition = new Vector3(x, y, -10f);
+        StartCoroutine(FadeInCursor());
+        LastAimedAtTime = Time.time;
+        if (!_aiming)
+        {
+            if (DesktopPortalController.Instance.HapticsEnabledToggle.isOn) tracker.TriggerHapticPulse(DesktopPortalController.HitOverlayHapticStrength);
+        }
+        _aiming = true;
     }
 
     private void UnAimAtCompanion(HOTK_OverlayBase o, HOTK_TrackedDevice tracker)
@@ -581,9 +579,9 @@ public class HOTK_CompanionOverlay : HOTK_OverlayBase
                 case InterfaceAttachMode.PivotRight:
                 case InterfaceAttachMode.PivotBottom:
                 case InterfaceAttachMode.PivotLeft:
-                    SetupPivot(o);
+                    SetupPivot(overlay);
                     SetPivotOffset(overlay);
-                    AttachToPivot();
+                    AttachToPivot(overlay);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -595,13 +593,27 @@ public class HOTK_CompanionOverlay : HOTK_OverlayBase
         updateCompanion = true;
     }
 
-    private void SetupPivot(HOTK_OverlayBase o)
+    private void SetupPivot(HOTK_Overlay o)
     {
         Pivot.hideFlags = HideFlags.None;
         Pivot.SetActive(true);
-        Pivot.transform.parent = o.gameObject.transform;
-        Pivot.transform.localRotation = Quaternion.identity;
+        PivotEuler = Pivot.transform.localEulerAngles;
+        switch (o.AnchorDevice)
+        {
+            case HOTK_Overlay.AttachmentDevice.World:
+            case HOTK_Overlay.AttachmentDevice.Screen:
+                Pivot.transform.parent = o.gameObject.transform;
+                break;
+            case HOTK_Overlay.AttachmentDevice.LeftController:
+            case HOTK_Overlay.AttachmentDevice.RightController:
+                Pivot.transform.parent = o.OverlayReference.transform;
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+        Pivot.transform.localRotation = Quaternion.Euler(PivotEuler);
     }
+
     private void SetPivotOffset(HOTK_Overlay overlay)
     {
         switch (_attachMode)
@@ -610,31 +622,47 @@ public class HOTK_CompanionOverlay : HOTK_OverlayBase
                 _pivotOffset = Vector3.zero;
                 break;
             case InterfaceAttachMode.PivotTop:
-                Pivot.transform.localPosition = new Vector3(0f, -(overlay.GetCurrentHeight() / 2f), 0f);
-                _pivotOffset = new Vector3(0f, -(GetCurrentHeight() / 2f), 0f);
+                Pivot.transform.localPosition = new Vector3(0f, -(overlay.GetCurrentHeight()/2f), 0f);
+                _pivotOffset = new Vector3(0f, -(GetCurrentHeight()/2f), 0f);
                 break;
             case InterfaceAttachMode.PivotRight:
-                Pivot.transform.localPosition = new Vector3((overlay.GetCurrentWidth() / 2f), 0f, 0f);
-                _pivotOffset = new Vector3((GetCurrentWidth() / 2f), 0f, 0f);
+                Pivot.transform.localPosition = new Vector3((overlay.GetCurrentWidth()/2f), 0f, 0f);
+                _pivotOffset = new Vector3((GetCurrentWidth()/2f), 0f, 0f);
                 break;
             case InterfaceAttachMode.PivotBottom:
-                Pivot.transform.localPosition = new Vector3(0f, (overlay.GetCurrentHeight() / 2f), 0f);
-                _pivotOffset = new Vector3(0f, (GetCurrentHeight() / 2f), 0f);
+                Pivot.transform.localPosition = new Vector3(0f, (overlay.GetCurrentHeight()/2f), 0f);
+                _pivotOffset = new Vector3(0f, (GetCurrentHeight()/2f), 0f);
                 break;
             case InterfaceAttachMode.PivotLeft:
-                Pivot.transform.localPosition = new Vector3(-(overlay.GetCurrentWidth() / 2f), 0f, 0f);
-                _pivotOffset = new Vector3(-(GetCurrentWidth() / 2f), 0f, 0f);
+                Pivot.transform.localPosition = new Vector3(-(overlay.GetCurrentWidth()/2f), 0f, 0f);
+                _pivotOffset = new Vector3(-(GetCurrentWidth()/2f), 0f, 0f);
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
         }
-        Pivot.transform.localRotation = Quaternion.Euler(PivotEuler);
+        //Pivot.transform.localRotation = Quaternion.Euler(PivotEuler);
     }
-    private void AttachToPivot()
+
+    private void AttachToPivot(HOTK_Overlay o)
     {
-        gameObject.transform.parent = Pivot.transform;
-        gameObject.transform.localPosition = _companionOffset + _pivotOffset;
-        gameObject.transform.localRotation = Quaternion.identity;
+        switch (o.AnchorDevice)
+        {
+            case HOTK_Overlay.AttachmentDevice.World:
+            case HOTK_Overlay.AttachmentDevice.Screen:
+                gameObject.transform.parent = Pivot.transform;
+                gameObject.transform.localPosition = _companionOffset + _pivotOffset;
+                gameObject.transform.localRotation = Quaternion.identity;
+                break;
+            case HOTK_Overlay.AttachmentDevice.LeftController:
+            case HOTK_Overlay.AttachmentDevice.RightController:
+                OverlayReference.transform.parent = Pivot.transform;
+                OverlayReference.transform.localPosition = _companionOffset + _pivotOffset;
+                OverlayReference.transform.localRotation = Quaternion.identity;
+                gameObject.transform.parent = o.gameObject.transform;
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
     }
 
     private void OverlayAlphaChanges(HOTK_Overlay o, float alpha)
@@ -743,8 +771,8 @@ public class HOTK_CompanionOverlay : HOTK_OverlayBase
             overlay.SetOverlayColor(_handle, 1f, 1f, 1f);
             //overlay.SetOverlayGamma(_handle, 2.2f); // Doesn't exist yet :(
             overlay.SetOverlayTexture(_handle, ref tex);
-            overlay.SetOverlayAlpha(_handle, _alpha * _relativeAlpha);
-            overlay.SetOverlayWidthInMeters(_handle, _scale * _relativeScale);
+            overlay.SetOverlayAlpha(_handle, _alpha*_relativeAlpha);
+            overlay.SetOverlayWidthInMeters(_handle, _scale*_relativeScale);
 
             var textureBounds = new VRTextureBounds_t
             {
