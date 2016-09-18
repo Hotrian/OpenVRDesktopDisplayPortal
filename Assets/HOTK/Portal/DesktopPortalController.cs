@@ -98,6 +98,7 @@ public class DesktopPortalController : MonoBehaviour
     public float LastAimedAtTime { get; private set; }
     public float AimedAtTime { get; private set; }
     public float SettingsPanelAimTime = 3f;
+    private float SettingsLastActiveTime;
     #endregion
 
     #region Public Variables
@@ -450,8 +451,9 @@ public class DesktopPortalController : MonoBehaviour
             Overlay.transform.rotation = OverlayOffsetTracker.transform.rotation;
         }
 
-        if (Time.time > SettingsPanelAimTime && (AimedAtTime > SettingsPanelAimTime || Time.time - SettingsOverlay.LastAimedAtTime < SettingsPanelAimTime))
+        if (Time.time > SettingsPanelAimTime && (AimedAtTime > SettingsPanelAimTime || (SettingsLastActiveTime > 0f && SettingsLastActiveTime - Time.time < SettingsPanelAimTime && (Time.time - SettingsOverlay.LastAimedAtTime < SettingsPanelAimTime || Time.time - LastAimedAtTime < SettingsPanelAimTime))))
         {
+            SettingsLastActiveTime = Time.time;
             if (!SettingsOverlay.gameObject.activeSelf)
             {
                 SettingsController.CloseImmediate();
@@ -487,6 +489,7 @@ public class DesktopPortalController : MonoBehaviour
                         {
                             SettingsOverlay.RelativeAlpha = 0f;
                             SettingsOverlay.gameObject.SetActive(false);
+                            SettingsLastActiveTime = 0f;
                             SettingsController.CloseImmediate();
                         }
                     }
