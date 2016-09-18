@@ -312,7 +312,7 @@ public static class PortalSettingsSaver
         {
             SaveFileVersion = PortalSettings.CurrentSaveVersion,
 
-            X = 0.5f, Y = 0f, Z = 0f,
+            X = 0.065f, Y = 0f, Z = 0f,
             RX = 0, RY = -90, RZ = 0,
 
             Device = HOTK_Overlay.AttachmentDevice.LeftController,
