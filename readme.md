@@ -14,7 +14,7 @@ To use this, you can **[download the latest release](https://github.com/Hotrian/
 
 #### Oculus Rift Users:
 - Certain games, even when launched through SteamVR, will insist on drawing directly to the Rift instead of through the SteamVR Compositor. Such games cannot utilize the SteamVR Overlay system, so these Overlays will not work there; please check the [Compatibility Article](https://github.com/Hotrian/OpenVRDesktopDisplayPortal/wiki/Compatibility#mirrored-to) for more details. It may be possible to launch Oculus SDK games through [Revive](https://github.com/LibreVR/Revive) to bring SteamVR compatibility to them, though you will lose Asynchronous Timewarp in trade for Reprojection. This is known to not work for Elite Dangerous due to their launcher system.
-- Elite Dangerous+OVRDDP on Rift is possibly using [EDFX](http://edcodex.info/?m=tools&entry=58) (thanks to [/u/jheggstrife](https://www.reddit.com/user/jheggstrife) for discovering this [here](https://www.reddit.com/r/Vive/comments/4x1pvh/openvrdesktopdisplayportal_now_has_controller/d7fklpq))! It might be possible to use EDFX to launch other games, but this has not been tested directly. The downside is that by running ED through SteamVR you will lose Asynchronous Timewarp for Reprojection. The upside is that you'll gain access to SteamVR Overlays including OpenVRDesktopDisplayPortal!
+- **Elite Dangerous+OVRDDP on Rift is possible using [EDFX](http://edcodex.info/?m=tools&entry=58)** (thanks to [/u/jheggstrife](https://www.reddit.com/user/jheggstrife) for discovering this [here](https://www.reddit.com/r/Vive/comments/4x1pvh/openvrdesktopdisplayportal_now_has_controller/d7fklpq))! It might be possible to use EDFX to launch other games, but this has not been tested directly. The downside is that by running ED through SteamVR you will lose Asynchronous Timewarp for Reprojection. The upside is that you'll gain access to SteamVR Overlays including OpenVRDesktopDisplayPortal! **[/u/Exigeous](https://www.reddit.com/user/Exigeous) has created a guide to set this up [here on Reddit](https://www.reddit.com/r/EliteDangerous/comments/53j9ka/openvrdesktopdisplayportal_overlay_for_oculus?st=itafwp3c&sh=d94e0380)!**
 
 ## Features
 - Clone almost any Desktop Window into VR.
@@ -48,6 +48,7 @@ To use this, you can **[download the latest release](https://github.com/Hotrian/
 
 ## Tutorials
 - A short [tutorial on Youtube](https://www.youtube.com/watch?v=jjnyjf7RuMU) (Thanks [Bumble](https://www.youtube.com/channel/UCahG62_Yv1IpL2RIOCV88qQ)!)
+- [Setup Elite Dangerous for OVRDDP on Rift](https://www.reddit.com/r/EliteDangerous/comments/53j9ka/openvrdesktopdisplayportal_overlay_for_oculus?st=itafwp3c&sh=d94e0380) (Thanks [/u/Exigeous](https://www.reddit.com/user/Exigeous)!)
 - More coming soon.
 
 ## Previews
