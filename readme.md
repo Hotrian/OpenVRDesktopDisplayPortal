@@ -6,8 +6,6 @@
 
 I intend to leave this Repository for the time being. You may use this repo for Educational and Personal uses only.
 
-I will post more updates as I move forward, and will add a notice here when the Steam version is available for purchase.
-
 ## OpenVRDesktopDisplayPortal
 
 [![Donate](https://img.shields.io/badge/Donate-PayPal-blue.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=UK5EVMA4DFBWY)
