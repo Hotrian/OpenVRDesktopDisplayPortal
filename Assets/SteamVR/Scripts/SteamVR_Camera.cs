@@ -36,7 +36,7 @@ public class SteamVR_Camera : MonoBehaviour
 
 	static public Material blitMaterial;
 
-#if (UNITY_5_3 || UNITY_5_2 || UNITY_5_1 || UNITY_5_0)
+#if (UNITY_5_3_OR_NEWER || UNITY_5_2 || UNITY_5_1 || UNITY_5_0)
 	// Using a single shared offscreen buffer to render the scene.  This needs to be larger
 	// than the backbuffer to account for distortion correction.  The default resolution
 	// gives us 1:1 sized pixels in the center of view, but quality can be adjusted up or
@@ -112,7 +112,7 @@ public class SteamVR_Camera : MonoBehaviour
 			enabled = false;
 			return;
 		}
-#if !(UNITY_5_3 || UNITY_5_2 || UNITY_5_1 || UNITY_5_0)
+#if !(UNITY_5_3_OR_NEWER || UNITY_5_2 || UNITY_5_1 || UNITY_5_0)
 		// Convert camera rig for native OpenVR integration.
 		var t = transform;
 		if (head != t)
@@ -223,7 +223,7 @@ public class SteamVR_Camera : MonoBehaviour
 
 			components = GetComponents<Component>();
 
-#if !(UNITY_5_3 || UNITY_5_2 || UNITY_5_1 || UNITY_5_0)
+#if !(UNITY_5_3_OR_NEWER || UNITY_5_2 || UNITY_5_1 || UNITY_5_0)
 			if (this != components[components.Length - 1])
 			{
 #else
@@ -379,7 +379,7 @@ public class SteamVR_Camera : MonoBehaviour
 
 	#endregion
 
-#if (UNITY_5_3 || UNITY_5_2 || UNITY_5_1 || UNITY_5_0)
+#if (UNITY_5_3_OR_NEWER || UNITY_5_2 || UNITY_5_1 || UNITY_5_0)
 
 	#region Render callbacks
 
