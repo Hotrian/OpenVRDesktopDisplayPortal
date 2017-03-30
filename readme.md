@@ -1,12 +1,15 @@
 # Development of this Repository has concluded.
 
-**OpenVRDesktopDisplayPortal will soon be available on Steam!** The new version will only support Windows 8 or above, but is now GPU accelerated and capable of capturing in 1440p and above at 60+ FPS. I don't have a monitor larger than 1440p so I can't test performance any higher, but I was able to get 200+ FPS @ 1440p on my GTX 1080. A number of new features have been added, but the most significant change between this version and the Steam version is the capture method.
+**OpenVRDesktopDisplayPortal is now [OVRdrop](https://github.com/Hotrian/OVRdrop-Public)!** The new version only supports Windows 8 or above, but is now GPU accelerated and capable of capturing in 1440p and above at 60+ FPS. A number of new features have been added, including an additional VR overlay that lets you switch target Applications as well as full monitor capture support and more, but the most significant change between this version and the Steam version is the capture method.
+
+**OVRdrop is [now on Steam](http://store.steampowered.com/app/586210)!**
 
 I intend to leave this Repository for the time being. You may use this repo for Educational and Personal uses only.
 
 I will post more updates as I move forward, and will add a notice here when the Steam version is available for purchase.
 
-##OpenVRDesktopDisplayPortal
+## OpenVRDesktopDisplayPortal
+
 [![Donate](https://img.shields.io/badge/Donate-PayPal-blue.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=UK5EVMA4DFBWY)
 
 OpenVRDesktopDisplayPortal is a Utility Application for SteamVR that can mirror a Desktop Window into a Cross Game SteamVR Overlay. OVRDDP works on SteamVR and should be fully compatible with any SteamVR headset, though you will need tracked controllers for many of the features. It is known to work for the HTC Vive as well as the Oculus Rift, though some games may not be compatible with the Rift; please check the [Compatibility Article](https://github.com/Hotrian/OpenVRDesktopDisplayPortal/wiki/Compatibility#mirrored-to) for more details. The only major downside is that Cross Game Overlays will always draw on top of game geometry because Depth information is not fed to the Compositor by SteamVR games.
